@@ -1,6 +1,13 @@
 {
     "extends": "@baltpeter/tsconfig",
-    "include": ["src/**/*"],
+    "include": ["src/**/*", "src/types/ipa-extract-info.d.ts"],
+    "compilerOptions": {
+        "module": "esnext",
+        "moduleResolution": "node",
+        "paths": {
+            "*": ["./*", "./src/types/*"]
+        }
+    },
     "typedocOptions": {
         "plugin": ["typedoc-plugin-markdown"],
         "entryPoints": ["src/index.ts"],
