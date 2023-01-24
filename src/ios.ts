@@ -1,7 +1,7 @@
 import { execa } from 'execa';
 import frida from 'frida';
 import type { PlatformApi, PlatformApiOptions, SupportedRunTarget } from '.';
-import { asyncNop, asyncUnimplemented, getObjFromFridaScript, ipaInfo } from './util';
+import { asyncNop, asyncUnimplemented, getObjFromFridaScript, ipaInfo, isRecord } from './util';
 
 const fridaScripts = {
     getPrefs: `// Taken from: https://codeshare.frida.re/@dki/ios-app-info/
@@ -110,7 +110,9 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     },
     async getPrefs(appId) {
         const pid = await this.getPidForAppId(appId);
-        return getObjFromFridaScript(pid, fridaScripts.getPrefs);
+        const res = await getObjFromFridaScript(pid, fridaScripts.getPrefs);
+        if (isRecord(res)) return res;
+        throw new Error('Failed to get prefs.');
     },
     async getPlatformSpecificData(appId) {
         const getIdfv = async () => {

@@ -2,8 +2,6 @@
     "extends": "@baltpeter/tsconfig",
     "include": ["src/**/*", "src/types/ipa-extract-info.d.ts"],
     "compilerOptions": {
-        "module": "esnext",
-        "moduleResolution": "node",
         "paths": {
             "*": ["./*", "./src/types/*"]
         }

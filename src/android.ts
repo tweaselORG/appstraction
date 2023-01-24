@@ -1,6 +1,6 @@
 import { execa } from 'execa';
 import type { PlatformApi, PlatformApiOptions, SupportedRunTarget } from '.';
-import { asyncNop, getObjFromFridaScript, pause } from './util';
+import { asyncNop, getObjFromFridaScript, isRecord, pause } from './util';
 
 const fridaScripts = {
     getPrefs: `var app_ctx = Java.use('android.app.ActivityThread').currentApplication().getApplicationContext();
@@ -64,7 +64,6 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     },
 
     async resetDevice() {
-        console.log('Resetting emulator…');
         if (options.runTarget !== 'emulator') throw new Error('Resetting devices is only supported for emulators.');
         await execa('adb', ['emu', 'avd', 'snapshot', 'load', options.targetOptions.snapshotName]);
         await this._internal.ensureFrida();
@@ -129,7 +128,9 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     },
     async getPrefs(appId) {
         const pid = await this.getPidForAppId(appId);
-        return getObjFromFridaScript(pid, fridaScripts.getPrefs);
+        const res = await getObjFromFridaScript(pid, fridaScripts.getPrefs);
+        if (isRecord(res)) return res;
+        throw new Error('Failed to get prefs.');
     },
     getPlatformSpecificData: asyncNop,
     async setClipboard(text) {

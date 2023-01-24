@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { platformApi } from '../dist/index.js';
 
 const android = platformApi({
@@ -27,3 +28,4 @@ android
     .then((prefs) => console.log(prefs))
     .then(() => android.clearStuckModals())
     .then(() => android.uninstallApp(appId));
+/* eslint-enable no-console */

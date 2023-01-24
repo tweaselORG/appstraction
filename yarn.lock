@@ -23,15 +23,15 @@
     chalk "^2.0.0"
     js-tokens "^4.0.0"
 
-"@baltpeter/eslint-config@1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@baltpeter/eslint-config/-/eslint-config-1.0.0.tgz#ce802ce8048f14eaae6ee81bb7d5e3ce56f40120"
-  integrity sha512-AlmxILGFmTLHpKkKg072tLeQdaNIO0NQiR8IZJkXmkQ7Vj82J7BqE/us29zG0WyVy/9QilzVbJOX1IKurJkL0Q==
+"@baltpeter/eslint-config@^2.1.2":
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/@baltpeter/eslint-config/-/eslint-config-2.1.2.tgz#17850ab2328d8029bb0ee12adeafb43fe2607aa7"
+  integrity sha512-zIgYu8Dh/xhNBbG8Z0XRv8RT8HR1jRE9CahIxDv7Gw96BASx1mdxm7g0InwlMYBm6jSGZA43vK+WDlG1YX0Wtw==
   dependencies:
     "@typescript-eslint/parser" "^5.48.0"
     eslint-config-prettier "^8.6.0"
 
-"@baltpeter/prettier-config@2.0.0":
+"@baltpeter/prettier-config@^2.0.0":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@baltpeter/prettier-config/-/prettier-config-2.0.0.tgz#c2268bd8241c1d87ffc786a39cca74fdfc593007"
   integrity sha512-eeci/p/YUCd2AhRSSyUCz1OcbnwEUPIFahvqeFnQXIKWXP1rFTeusDwBQ0T6I9979wHJp/+xrgEfM9dkfGXg1w==
@@ -40,10 +40,10 @@
     prettier-plugin-organize-imports "^3.2.1"
     prettier-plugin-packagejson "^2.3.0"
 
-"@baltpeter/tsconfig@1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@baltpeter/tsconfig/-/tsconfig-1.0.1.tgz#b79daadc3207fff4cbdea5cdf6f3ef7cd78d8bd9"
-  integrity sha512-4iwJA/mFxlgRVQ1qL2fkhBcuxgSXzMFAYmiNJKJ08Ew0kd2QgOiUPkuw9TbnMwkXl/TIkUI98KsYgBIOFduvaQ==
+"@baltpeter/tsconfig@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@baltpeter/tsconfig/-/tsconfig-2.0.0.tgz#2a7b21053472a204b4253518d9f897b84eafb4f6"
+  integrity sha512-pR9cZG/r6L6F057jMG0ez6Ii6hizoH70R1O0ki8kwEQbBhJvXiYjboxW+pbJUgJ6bZRRivdMOhscHEx0TV500g==
   dependencies:
     "@tsconfig/strictest" "^1.0.2"
 
