@@ -1,11 +1,11 @@
 {
-    "name": "platform-apis",
+    "name": "appstraction",
     "version": "0.0.0",
     "description": "A collection of scripts to interact with mobile platforms.",
-    "bugs": "https://github.com/tracking-weasel/platform-apis/issues",
+    "bugs": "https://github.com/tweaselORG/appstraction/issues",
     "repository": {
         "type": "git",
-        "url": "https://github.com/tracking-weasel/platform-apis.git"
+        "url": "https://github.com/tweaselORG/appstraction.git"
     },
     "license": "MIT",
     "author": "Lorenz Sieben <me@lorenz-sieben.com>",

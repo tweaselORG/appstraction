@@ -1,4 +1,4 @@
-# platform-apis
+# appstraction
 
 > A collection of scripts to interact with mobile platforms.
 
@@ -6,17 +6,17 @@ This is a collection of scripts to interact with mobile platforms, specifically 
 
 ## Installation
 
-You can install platform-apis using yarn or npm:
+You can install appstraction using yarn or npm:
 
 ```sh
-yarn add platform-apis
-# or `npm i platform-apis`
+yarn add appstraction
+# or `npm i appstraction`
 ```
 
 For full capability, you also need to install [frida-tools](https://frida.re/docs/installation/) and [objection](https://github.com/sensepost/objection).
 You can get the paths to the binaries after installation using `whereis frida-ps`.
 
-For Android, you also need the [Android command line tools](https://developer.android.com/studio/command-line/) installed (the best way to do this is to install [Android Studio](https://developer.android.com/studio)) and included in the `PATH` of the shell in which you are running platform-apis. E.g. by including something like this in you `.zshrc`/`.bashrc`:
+For Android, you also need the [Android command line tools](https://developer.android.com/studio/command-line/) installed (the best way to do this is to install [Android Studio](https://developer.android.com/studio)) and included in the `PATH` of the shell in which you are running appstraction. E.g. by including something like this in you `.zshrc`/`.bashrc`:
 
 ```zsh
 # Android SDK
@@ -70,7 +70,7 @@ For more examples, also look at the `examples` folder.
 
 ```ts
 // Install an app on android
-import { platformApi } from 'platform-apis';
+import { platformApi } from 'appstraction';
 
 const android = platformApi({
     platform: 'android',
