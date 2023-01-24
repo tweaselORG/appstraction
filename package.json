@@ -8,7 +8,18 @@
         "url": "https://github.com/tweaselORG/appstraction.git"
     },
     "license": "MIT",
-    "author": "Lorenz Sieben <me@lorenz-sieben.com>",
+    "contributors": [
+        {
+            "name": "Benjamin Altpeter",
+            "email": "hi@bn.al",
+            "url": "https://benjamin-altpeter.de"
+        },
+        {
+            "name": "Lorenz Sieben",
+            "email": "me@lorenz-sieben.com",
+            "url": "https://lorenz-sieben.com"
+        }
+    ],
     "type": "module",
     "main": "dist/index.js",
     "source": "src/index.ts",
