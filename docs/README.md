@@ -11,6 +11,7 @@ appstraction
 - [PlatformApi](README.md#platformapi)
 - [PlatformApiOptions](README.md#platformapioptions)
 - [RunTargetOptions](README.md#runtargetoptions)
+- [SupportedCapability](README.md#supportedcapability)
 - [SupportedPlatform](README.md#supportedplatform)
 - [SupportedRunTarget](README.md#supportedruntarget)
 
@@ -24,7 +25,7 @@ appstraction
 
 Ƭ **DeviceAttribute**<`Platform`\>: `Platform` extends ``"android"`` ? `never` : `Platform` extends ``"ios"`` ? ``"idfv"`` : `never`
 
-The supported attributes for the `getDeviceAttribute()` function.
+A supported attribute for the `getDeviceAttribute()` function, depending on the platform.
 
 #### Type parameters
 
@@ -34,7 +35,7 @@ The supported attributes for the `getDeviceAttribute()` function.
 
 #### Defined in
 
-[index.ts:170](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L170)
+[index.ts:222](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L222)
 
 ___
 
@@ -53,7 +54,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:176](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L176)
+[index.ts:228](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L228)
 
 ___
 
@@ -89,13 +90,13 @@ Functions that are available for the platforms.
 
 #### Defined in
 
-[index.ts:16](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L16)
+[index.ts:15](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L15)
 
 ___
 
 ### PlatformApiOptions
 
-Ƭ **PlatformApiOptions**<`Platform`, `RunTarget`\>: `Object`
+Ƭ **PlatformApiOptions**<`Platform`, `RunTarget`, `Capabilities`\>: `Object`
 
 The options for the `platformApi()` function.
 
@@ -105,47 +106,68 @@ The options for the `platformApi()` function.
 | :------ | :------ |
 | `Platform` | extends [`SupportedPlatform`](README.md#supportedplatform) |
 | `RunTarget` | extends [`SupportedRunTarget`](README.md#supportedruntarget)<`Platform`\> |
+| `Capabilities` | extends [`SupportedCapability`](README.md#supportedcapability)<`Platform`\>[] |
 
 #### Type declaration
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
+| `capabilities` | `Capabilities` | The capabilities you want. Depending on what you're trying to do, you may not need or want to root the device, install Frida, etc. In this case, you can exclude those capabilities. This will influence which functions you can run. |
 | `platform` | `Platform` | The platform you want to run on. |
 | `runTarget` | `RunTarget` | The target (emulator, physical device) you want to run on. |
-| `targetOptions` | [`RunTargetOptions`](README.md#runtargetoptions)[`Platform`][`RunTarget`] | The options for the selected platform/run target combination. |
+| `targetOptions` | [`RunTargetOptions`](README.md#runtargetoptions)<`Capabilities`\>[`Platform`][`RunTarget`] | The options for the selected platform/run target combination. |
 
 #### Defined in
 
-[index.ts:128](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L128)
+[index.ts:146](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L146)
 
 ___
 
 ### RunTargetOptions
 
-Ƭ **RunTargetOptions**: `Object`
+Ƭ **RunTargetOptions**<`Capabilities`, `Capability`\>: `Object`
 
 The options for a specific platform/run target combination.
+
+#### Type parameters
+
+| Name | Type |
+| :------ | :------ |
+| `Capabilities` | extends [`SupportedCapability`](README.md#supportedcapability)<``"android"`` \| ``"ios"``\>[] |
+| `Capability` | `Capabilities`[`number`] |
 
 #### Type declaration
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `android` | { `device`: `never` ; `emulator`: { `fridaPsPath`: `string` ; `objectionPath`: `string` ; `snapshotName`: `string`  }  } | The options for the Android platform. |
+| `android` | { `device`: `never` ; `emulator`: { `snapshotName`: `string`  } & ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` & ``"certificate-pinning-bypass"`` extends `Capability` ? { `objectionPath`: `string`  } : `unknown`  } | The options for the Android platform. |
 | `android.device` | `never` | The options for the Android physical device run target. |
-| `android.emulator` | { `fridaPsPath`: `string` ; `objectionPath`: `string` ; `snapshotName`: `string`  } | The options for the Android emulator run target. |
-| `android.emulator.fridaPsPath` | `string` | The path to the `frida-ps` binary. |
-| `android.emulator.objectionPath` | `string` | The path to the `objection` binary. |
-| `android.emulator.snapshotName` | `string` | The name of a snapshot to use for the `resetDevice()` function. |
-| `ios` | { `device`: { `fridaPsPath`: `string` ; `ip`: `string` ; `rootPw?`: `string`  } ; `emulator`: `never`  } | The options for the iOS platform. |
-| `ios.device` | { `fridaPsPath`: `string` ; `ip`: `string` ; `rootPw?`: `string`  } | The options for the iOS physical device run target. |
-| `ios.device.fridaPsPath` | `string` | The path to the `frida-ps` binary. |
-| `ios.device.ip` | `string` | The device's IP address. |
-| `ios.device.rootPw?` | `string` | The password of the root user on the device. |
+| `android.emulator` | { `snapshotName`: `string`  } & ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` & ``"certificate-pinning-bypass"`` extends `Capability` ? { `objectionPath`: `string`  } : `unknown` | The options for the Android emulator run target. |
+| `ios` | { `device`: `Record`<`string`, `never`\> & ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` & ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` ; `emulator`: `never`  } | The options for the iOS platform. |
+| `ios.device` | `Record`<`string`, `never`\> & ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` & ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` | The options for the iOS physical device run target. |
 | `ios.emulator` | `never` | The options for the iOS emulator run target. |
 
 #### Defined in
 
-[index.ts:138](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L138)
+[index.ts:166](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L166)
+
+___
+
+### SupportedCapability
+
+Ƭ **SupportedCapability**<`Platform`\>: `Platform` extends ``"android"`` ? ``"frida"`` \| ``"certificate-pinning-bypass"`` : `Platform` extends ``"ios"`` ? ``"ssh"`` \| ``"frida"`` : `never`
+
+A capability for the `platformApi()` function.
+
+#### Type parameters
+
+| Name | Type |
+| :------ | :------ |
+| `Platform` | extends [`SupportedPlatform`](README.md#supportedplatform) |
+
+#### Defined in
+
+[index.ts:215](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L215)
 
 ___
 
@@ -157,7 +179,7 @@ A platform that is supported by this library.
 
 #### Defined in
 
-[index.ts:7](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L7)
+[index.ts:6](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L6)
 
 ___
 
@@ -175,13 +197,13 @@ A run target that is supported by this library for the given platform.
 
 #### Defined in
 
-[index.ts:9](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L9)
+[index.ts:8](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L8)
 
 ## Functions
 
 ### platformApi
 
-▸ **platformApi**<`Platform`, `RunTarget`\>(`options`): [`PlatformApi`](README.md#platformapi)<`Platform`\>
+▸ **platformApi**<`Platform`, `RunTarget`, `Capabilities`\>(`options`): [`PlatformApi`](README.md#platformapi)<`Platform`\>
 
 Get the API object with the functions for the given platform and run target.
 
@@ -191,12 +213,13 @@ Get the API object with the functions for the given platform and run target.
 | :------ | :------ |
 | `Platform` | extends [`SupportedPlatform`](README.md#supportedplatform) |
 | `RunTarget` | extends ``"device"`` \| ``"emulator"`` |
+| `Capabilities` | extends [`SupportedCapability`](README.md#supportedcapability)<`Platform`\>[] |
 
 #### Parameters
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `options` | [`PlatformApiOptions`](README.md#platformapioptions)<`Platform`, `RunTarget`\> | The options for the API object. |
+| `options` | [`PlatformApiOptions`](README.md#platformapioptions)<`Platform`, `RunTarget`, `Capabilities`\> | The options for the API object. |
 
 #### Returns
 
@@ -206,4 +229,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:191](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L191)
+[index.ts:243](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L243)
