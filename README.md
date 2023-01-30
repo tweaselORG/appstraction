@@ -27,8 +27,8 @@ export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/33.0.0
 ## Supported targets
 
 | Platform  | Target | Tested versions |
-| --- | --- | --- | --- |
-| Android  | Emulator  | API 33.0.0 |
+| --- | --- | --- |
+| Android  | Emulator  | 11 (API level 30), 13 (API level 33) |
 
 ## Device preparation
 
