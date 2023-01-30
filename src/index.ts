@@ -1,7 +1,6 @@
+import type { ExecaChildProcess } from 'execa';
 import { androidApi } from './android';
 import { iosApi } from './ios';
-
-import type { ExecaChildProcess } from 'execa';
 
 /** A platform that is supported by this library. */
 export type SupportedPlatform = 'android' | 'ios';
@@ -18,7 +17,11 @@ export type PlatformApi<Platform extends SupportedPlatform> = {
     ensureDevice: () => Promise<void>;
     /** Reset the device to the snapshot specified in the `targetOptions` (only available for emulators). */
     resetDevice: () => Promise<void>;
-    /** Clear any potential stuck modals by pressing the back button followed by the home button. */
+    /**
+     * Clear any potential stuck modals by pressing the back button followed by the home button.
+     *
+     * Requires the `ssh` capability on iOS.
+     */
     clearStuckModals: () => Promise<void>;
 
     /**
@@ -40,6 +43,8 @@ export type PlatformApi<Platform extends SupportedPlatform> = {
     /**
      * Set the permissions for the app with the given app ID. This includes dangerous permissions on Android.
      *
+     * Requires the `ssh` and `frida` capabilities on iOS.
+     *
      * @param appId The app ID of the app to set the permissions for.
      *
      * @todo Allow specifying which permissions to grant.
@@ -49,6 +54,9 @@ export type PlatformApi<Platform extends SupportedPlatform> = {
      * Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning
      * bypass if enabled.
      *
+     * Requires the `ssh` capability on iOS. On Android, this will start the app with or without a certificate pinning
+     * bypass depending on the `certificate-pinning-bypass` capability.
+     *
      * @param appId The app ID of the app to start.
      */
     startApp: (appId: string) => Promise<void>;
@@ -56,12 +64,16 @@ export type PlatformApi<Platform extends SupportedPlatform> = {
     /**
      * Get the app ID of the running app that is currently in the foreground.
      *
+     * Requires the `frida` capability on iOS.
+     *
      * @returns The app ID of the app that is currently in the foreground, or `undefined` if no app is in the
      *   foreground.
      */
     getForegroundAppId: () => Promise<string | undefined>;
     /**
      * Get the PID of the app with the given app ID if it is currently running.
+     *
+     * Requires the `frida` capability on iOS.
      *
      * @param appId The app ID of the app to get the PID for.
      *
@@ -71,6 +83,8 @@ export type PlatformApi<Platform extends SupportedPlatform> = {
     /**
      * Get the preferences (`SharedPreferences` on Android, `NSUserDefaults` on iOS) of the app with the given app ID.
      *
+     * Requires the `frida` capability on Android and iOS.
+     *
      * @param appId The app ID of the app to get the preferences for.
      *
      * @returns The preferences of the app, or `undefined` if the app is not installed.
@@ -78,6 +92,8 @@ export type PlatformApi<Platform extends SupportedPlatform> = {
     getPrefs: (appId: string) => Promise<Record<string, unknown> | undefined>;
     /**
      * Get the value of the given attribute of the device.
+     *
+     * Requires the `frida` capability on iOS.
      *
      * @param attribute The attribute to get the value of, where:
      *
@@ -97,6 +113,8 @@ export type PlatformApi<Platform extends SupportedPlatform> = {
     ) => Promise<string>;
     /**
      * Set the clipboard to the given text.
+     *
+     * Requires the `frida` capability on Android and iOS.
      *
      * @param text The text to set the clipboard to.
      */
@@ -125,28 +143,48 @@ export type PlatformApi<Platform extends SupportedPlatform> = {
 };
 
 /** The options for the `platformApi()` function. */
-export type PlatformApiOptions<Platform extends SupportedPlatform, RunTarget extends SupportedRunTarget<Platform>> = {
+export type PlatformApiOptions<
+    Platform extends SupportedPlatform,
+    RunTarget extends SupportedRunTarget<Platform>,
+    Capabilities extends SupportedCapability<Platform>[]
+> = {
     /** The platform you want to run on. */
     platform: Platform;
     /** The target (emulator, physical device) you want to run on. */
     runTarget: RunTarget;
+    /**
+     * The capabilities you want. Depending on what you're trying to do, you may not need or want to root the device,
+     * install Frida, etc. In this case, you can exclude those capabilities. This will influence which functions you can
+     * run.
+     */
+    capabilities: Capabilities;
     /** The options for the selected platform/run target combination. */
-    targetOptions: RunTargetOptions[Platform][RunTarget];
+    targetOptions: RunTargetOptions<Capabilities>[Platform][RunTarget];
 };
 
 /** The options for a specific platform/run target combination. */
-export type RunTargetOptions = {
+export type RunTargetOptions<
+    Capabilities extends SupportedCapability<'android' | 'ios'>[],
+    Capability = Capabilities[number]
+> = {
     /** The options for the Android platform. */
     android: {
         /** The options for the Android emulator run target. */
         emulator: {
             /** The name of a snapshot to use for the `resetDevice()` function. */
             snapshotName: string;
-            /** The path to the `frida-ps` binary. */
-            fridaPsPath: string;
-            /** The path to the `objection` binary. */
-            objectionPath: string;
-        };
+        } & ('frida' extends Capability
+            ? {
+                  /** The path to the [`frida-ps`](https://frida.re/docs/frida-ps/) binary. */
+                  fridaPsPath: string;
+              }
+            : unknown) &
+            ('certificate-pinning-bypass' extends Capability
+                ? {
+                      /** The path to the [`objection`](https://github.com/sensepost/objection/) binary. */
+                      objectionPath: string;
+                  }
+                : unknown);
         /** The options for the Android physical device run target. */
         device: never;
     };
@@ -155,18 +193,32 @@ export type RunTargetOptions = {
         /** The options for the iOS emulator run target. */
         emulator: never;
         /** The options for the iOS physical device run target. */
-        device: {
-            /** The password of the root user on the device. */
-            rootPw?: string;
-            /** The device's IP address. */
-            ip: string;
-            /** The path to the `frida-ps` binary. */
-            fridaPsPath: string;
-        };
+        device: Record<string, never> &
+            ('ssh' extends Capability
+                ? {
+                      /** The password of the root user on the device, defaults to `alpine` if not set. */
+                      rootPw?: string;
+                      /** The device's IP address. */
+                      ip: string;
+                  }
+                : unknown) &
+            ('frida' extends Capability
+                ? {
+                      /** The path to the `frida-ps` binary. */
+                      fridaPsPath: string;
+                  }
+                : unknown);
     };
 };
 
-/** The supported attributes for the `getDeviceAttribute()` function. */
+/** A capability for the `platformApi()` function. */
+export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
+    ? 'frida' | 'certificate-pinning-bypass'
+    : Platform extends 'ios'
+    ? 'ssh' | 'frida'
+    : never;
+
+/** A supported attribute for the `getDeviceAttribute()` function, depending on the platform. */
 export type DeviceAttribute<Platform extends SupportedPlatform> = Platform extends 'android'
     ? never
     : Platform extends 'ios'
@@ -188,17 +240,21 @@ export type GetDeviceAttributeOptions = {
  *
  * @returns The API object for the given platform and run target.
  */
-export function platformApi<Platform extends SupportedPlatform, RunTarget extends SupportedRunTarget<Platform>>(
-    options: PlatformApiOptions<Platform, RunTarget>
-): PlatformApi<Platform> {
+export function platformApi<
+    Platform extends SupportedPlatform,
+    RunTarget extends SupportedRunTarget<Platform>,
+    Capabilities extends SupportedCapability<Platform>[]
+>(options: PlatformApiOptions<Platform, RunTarget, Capabilities>): PlatformApi<Platform> {
     switch (options.platform) {
         case 'android':
-            return androidApi(
-                options as PlatformApiOptions<'android', SupportedRunTarget<'android'>>
-            ) as PlatformApi<Platform>;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            return androidApi(options as any) as PlatformApi<Platform>;
         case 'ios':
-            return iosApi(options as PlatformApiOptions<'ios', SupportedRunTarget<'ios'>>) as PlatformApi<Platform>;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            return iosApi(options as any) as PlatformApi<Platform>;
         default:
             throw new Error(`Unsupported platform: ${options.platform}`);
     }
 }
+
+export { pause } from './util';

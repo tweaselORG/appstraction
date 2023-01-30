@@ -10,6 +10,7 @@ import { pause, platformApi } from '../src/index';
     const android = platformApi({
         platform: 'android',
         runTarget: 'emulator',
+        capabilities: ['frida', 'certificate-pinning-bypass'],
         targetOptions: {
             fridaPsPath: join(homedir(), '.local/bin/frida-ps'),
             objectionPath: join(homedir(), '.local/bin/objection'),

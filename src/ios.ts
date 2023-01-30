@@ -1,6 +1,6 @@
 import { execa } from 'execa';
 import frida from 'frida';
-import type { PlatformApi, PlatformApiOptions, SupportedRunTarget } from '.';
+import type { PlatformApi, PlatformApiOptions, SupportedCapability, SupportedRunTarget } from '.';
 import { asyncNop, asyncUnimplemented, getObjFromFridaScript, ipaInfo, isRecord } from './util';
 
 const fridaScripts = {
@@ -27,7 +27,7 @@ send({ name: "get_obj_from_frida_script", payload: idfv });`,
 } as const;
 
 export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
-    options: PlatformApiOptions<'ios', RunTarget>
+    options: PlatformApiOptions<'ios', RunTarget, SupportedCapability<'ios'>[]>
 ): PlatformApi<'ios'> => ({
     _internal: {
         getAppId: async (ipaPath) => (await ipaInfo(ipaPath)).info['CFBundleIdentifier'] as string | undefined,
@@ -37,6 +37,8 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     // TODO: Assert that we actually have a device here.
     ensureDevice: asyncNop,
     clearStuckModals: async () => {
+        if (!options.capabilities.includes('ssh')) throw new Error('SSH is required for clearing stuck modals.');
+
         await execa('sshpass', [
             '-p',
             options.targetOptions.rootPw || 'alpine',
@@ -55,6 +57,9 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         await execa('ideviceinstaller', ['--uninstall', appId]);
     },
     setAppPermissions: async (appId: string) => {
+        if (!options.capabilities.includes('ssh') || !options.capabilities.includes('frida'))
+            throw new Error('SSH and Frida are required for setting app permissions.');
+
         // prettier-ignore
         const permissionsToGrant = ['kTCCServiceLiverpool', 'kTCCServiceUbiquity', 'kTCCServiceCalendar', 'kTCCServiceAddressBook', 'kTCCServiceReminders', 'kTCCServicePhotos', 'kTCCServiceMediaLibrary', 'kTCCServiceBluetoothAlways', 'kTCCServiceMotion', 'kTCCServiceWillow', 'kTCCServiceExposureNotification'];
         const permissionsToDeny = ['kTCCServiceCamera', 'kTCCServiceMicrophone', 'kTCCServiceUserTracking'];
@@ -91,6 +96,8 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         await grantLocationPermission();
     },
     startApp: async (appId) => {
+        if (!options.capabilities.includes('ssh')) throw new Error('SSH is required for starting apps.');
+
         await execa('sshpass', [
             '-p',
             options.targetOptions.rootPw || 'alpine',
@@ -101,11 +108,17 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     },
 
     getForegroundAppId: async () => {
+        if (!options.capabilities.includes('frida'))
+            throw new Error('Frida is required for getting the foreground app ID.');
+
         const device = await frida.getUsbDevice();
         const app = await device.getFrontmostApplication();
         return app?.identifier;
     },
     getPidForAppId: async (appId) => {
+        if (!options.capabilities.includes('frida'))
+            throw new Error('Frida is required for getting the PID for an app ID.');
+
         const { stdout: psJson } = await execa(options.targetOptions.fridaPsPath, [
             '--usb',
             '--applications',
@@ -115,18 +128,23 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         return ps.find((p) => p.identifier === appId)?.pid;
     },
     async getPrefs(appId) {
+        if (!options.capabilities.includes('frida')) throw new Error('Frida is required for getting prefs.');
+
         const pid = await this.getPidForAppId(appId);
         const res = await getObjFromFridaScript(pid, fridaScripts.getPrefs);
         if (isRecord(res)) return res;
         throw new Error('Failed to get prefs.');
     },
     async getDeviceAttribute(attribute, ...args) {
+        if (!options.capabilities.includes('frida'))
+            throw new Error('Frida is required for getting device attributes.');
+
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const options = args[0]!;
+        const opts = args[0]!;
 
         switch (attribute) {
             case 'idfv': {
-                const pid = await this.getPidForAppId(options.appId);
+                const pid = await this.getPidForAppId(opts.appId);
                 const idfv = getObjFromFridaScript(pid, fridaScripts.getIdfv);
                 if (typeof idfv === 'string') return idfv;
                 throw new Error('Failed to get IDFV.');
@@ -136,6 +154,8 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         throw new Error(`Unsupported device attribute: ${attribute}`);
     },
     async setClipboard(text) {
+        if (!options.capabilities.includes('frida')) throw new Error('Frida is required for setting the clipboard.');
+
         const session = await frida.getUsbDevice().then((f) => f.attach('SpringBoard'));
         const script = await session.createScript(fridaScripts.setClipboard(text));
         await script.load();
