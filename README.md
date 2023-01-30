@@ -45,12 +45,14 @@ avdmanager create avd --abi google_apis/x86_64 --device "pixel_2" --force --name
 # Start the emulator for the first time.
 emulator -avd "instrumented-emu" -no-audio -no-boot-anim -writable-system -http-proxy 127.0.0.1:8080
 
+adb root
+
 # Set up Frida, see also the official docs: https://frida.re/docs/android/
 adb shell getprop ro.product.cpu.abi # should be x86_64
 wget https://github.com/frida/frida/releases/download/16.0.8/frida-server-16.0.8-android-x86_64.xz 
-7z x frida-server-16.0.8-linux-x86_64.xz
+7z x frida-server-16.0.8-android-x86_64.xz
 
-adb push frida-server-16.0.8-linux-x86_64 /data/local/tmp/frida-server
+adb push frida-server-16.0.8-android-x86_64 /data/local/tmp/frida-server
 adb shell chmod 777 /data/local/tmp/frida-server
 
 adb shell "nohup /data/local/tmp/frida-server >/dev/null 2>&1 &"
