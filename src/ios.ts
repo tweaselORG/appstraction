@@ -34,6 +34,7 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     },
 
     resetDevice: asyncUnimplemented('resetDevice'),
+    // TODO: Assert that we actually have a device here.
     ensureDevice: asyncNop,
     clearStuckModals: async () => {
         await execa('sshpass', [
@@ -47,8 +48,12 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
 
     // We're using `libimobiledevice` instead of `cfgutil` because the latter doesn't wait for the app to be fully
     // installed before exiting.
-    installApp: (ipaPath) => execa('ideviceinstaller', ['--install', ipaPath]),
-    uninstallApp: (appId) => execa('ideviceinstaller', ['--uninstall', appId]),
+    installApp: async (ipaPath) => {
+        await execa('ideviceinstaller', ['--install', ipaPath]);
+    },
+    uninstallApp: async (appId) => {
+        await execa('ideviceinstaller', ['--uninstall', appId]);
+    },
     setAppPermissions: async (appId: string) => {
         // prettier-ignore
         const permissionsToGrant = ['kTCCServiceLiverpool', 'kTCCServiceUbiquity', 'kTCCServiceCalendar', 'kTCCServiceAddressBook', 'kTCCServiceReminders', 'kTCCServicePhotos', 'kTCCServiceMediaLibrary', 'kTCCServiceBluetoothAlways', 'kTCCServiceMotion', 'kTCCServiceWillow', 'kTCCServiceExposureNotification'];
@@ -85,14 +90,15 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         for (const permission of permissionsToDeny) await setPermission(permission, 0);
         await grantLocationPermission();
     },
-    startApp: (appId) =>
-        execa('sshpass', [
+    startApp: async (appId) => {
+        await execa('sshpass', [
             '-p',
             options.targetOptions.rootPw || 'alpine',
             'ssh',
             `root@${options.targetOptions.ip}`,
             `open ${appId}`,
-        ]),
+        ]);
+    },
 
     getForegroundAppId: async () => {
         const device = await frida.getUsbDevice();
@@ -114,13 +120,20 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         if (isRecord(res)) return res;
         throw new Error('Failed to get prefs.');
     },
-    async getPlatformSpecificData(appId) {
-        const getIdfv = async () => {
-            const pid = await this.getPidForAppId(appId);
-            return getObjFromFridaScript(pid, fridaScripts.getIdfv);
-        };
+    async getDeviceAttribute(attribute, ...args) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const options = args[0]!;
 
-        return { idfv: await getIdfv() };
+        switch (attribute) {
+            case 'idfv': {
+                const pid = await this.getPidForAppId(options.appId);
+                const idfv = getObjFromFridaScript(pid, fridaScripts.getIdfv);
+                if (typeof idfv === 'string') return idfv;
+                throw new Error('Failed to get IDFV.');
+            }
+        }
+
+        throw new Error(`Unsupported device attribute: ${attribute}`);
     },
     async setClipboard(text) {
         const session = await frida.getUsbDevice().then((f) => f.attach('SpringBoard'));

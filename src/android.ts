@@ -1,6 +1,6 @@
 import { execa } from 'execa';
 import type { PlatformApi, PlatformApiOptions, SupportedRunTarget } from '.';
-import { asyncNop, getObjFromFridaScript, isRecord, pause } from './util';
+import { asyncUnimplemented, getObjFromFridaScript, isRecord, pause } from './util';
 
 const fridaScripts = {
     getPrefs: `var app_ctx = Java.use('android.app.ActivityThread').currentApplication().getApplicationContext();
@@ -70,7 +70,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     },
     async ensureDevice() {
         if ((await execa('adb', ['get-state'], { reject: false })).exitCode !== 0)
-            throw new Error('You need to start an emulator for dev mode.');
+            throw new Error('You need to start the emulator.');
 
         await this._internal.ensureFrida();
     },
@@ -81,12 +81,16 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         await execa('adb', ['shell', 'input', 'keyevent', '3']);
     },
 
-    installApp: (apkPath) => execa('adb', ['install-multiple', '-g', apkPath], { shell: true }),
-    uninstallApp: (appId) =>
-        execa('adb', ['shell', 'pm', 'uninstall', '--user', '0', appId]).catch((err) => {
+    installApp: async (apkPath) => {
+        // TODO: We shouldn't grant runtime permissions here. Move that to setAppPermissions().
+        await execa('adb', ['install-multiple', '-g', apkPath], { shell: true });
+    },
+    uninstallApp: async (appId) => {
+        await execa('adb', ['shell', 'pm', 'uninstall', '--user', '0', appId]).catch((err) => {
             // Don't fail if app wasn't installed.
             if (!err.stdout.includes('not installed for 0')) throw err;
-        }),
+        });
+    },
     // Basic permissions are granted at install time, we only need to grant dangerous permissions, see:
     // https://android.stackexchange.com/a/220297.
     setAppPermissions: async (appId) => {
@@ -132,7 +136,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         if (isRecord(res)) return res;
         throw new Error('Failed to get prefs.');
     },
-    getPlatformSpecificData: asyncNop,
+    getDeviceAttribute: asyncUnimplemented('getDeviceAttribute'),
     async setClipboard(text) {
         const launcherPid = await this.getPidForAppId('com.google.android.apps.nexuslauncher');
         const res = await getObjFromFridaScript(launcherPid, fridaScripts.setClipboard(text));

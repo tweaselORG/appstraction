@@ -1,7 +1,0 @@
-{
-    "extends": "@baltpeter/tsconfig",
-    "compilerOptions": {
-        "moduleResolution": "node",
-        "module": "esnext"
-    }
-}
