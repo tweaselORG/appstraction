@@ -73,20 +73,44 @@ The following example shows how to reset an Android emulator and then install an
 ```ts
 import { platformApi } from 'appstraction';
 
-const android = platformApi({
-    platform: 'android',
-    runTarget: 'emulator',
-    targetOptions: {
-        fridaPsPath: '</path/to/frida-ps>',
-        objectionPath: '</path/to/objection>',
-        snapshotName: '<snapshot name>',
-    },
-});
+(async () => {
+    const android = platformApi({
+        platform: 'android',
+        runTarget: 'emulator',
+        capabilities: [],
+        targetOptions: {
+            snapshotName: '<snapshot name>',
+        },
+    });
+    
+    await android.ensureDevice();
+    await android.resetDevice();
+    await android.installApp('</path/to/app/files/*.apk>');
+})();
+```
 
-android
-    .ensureDevice()
-    .then(() => android.resetDevice())
-    .then(() => android.installApp(`</path/to/app/files/*.apk>`));
+This example didn't need any capabilities. Resetting the emulator and installing apps can both be done in any emulator, without the need for any special preparation.
+
+Other functions do need capabilities, though, which you would pass to the `capabilities` array in the `targetOptions`. For example, reading the `SharedPreferences` requires the `frida` capability (and you need to set up Frida as described above). And for starting an app, you can optionally pass the `certificate-pinning-bypass`, which will use objection to try and bypass any certificate pinning the app may use.
+
+```ts
+(async () => {
+    const android = platformApi({
+        platform: 'android',
+        runTarget: 'emulator',
+        capabilities: ['frida', 'certificate-pinning-bypass'],
+        targetOptions: {
+            fridaPsPath: '</path/to/frida-ps>',
+            objectionPath: '</path/to/objection>',
+            snapshotName: '<snapshot name>',
+        },
+    });
+
+    await android.ensureDevice();
+    await android.startApp('<app id>');
+    const prefs = await android.getPrefs('<app id>');
+    console.log(prefs);
+})();
 ```
 
 For more examples, also look at the [`examples`](examples) folder.

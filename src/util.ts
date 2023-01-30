@@ -8,6 +8,11 @@ export const asyncUnimplemented = (action: string) => async () => {
     throw new Error('Unimplemented on this platform: ' + action);
 };
 
+/**
+ * Pause for a given duration.
+ *
+ * @param durationInMs The duration to pause for, in milliseconds.
+ */
 export const pause = (durationInMs: number) =>
     new Promise((res) => {
         setTimeout(res, durationInMs);

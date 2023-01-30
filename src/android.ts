@@ -1,5 +1,5 @@
 import { execa } from 'execa';
-import type { PlatformApi, PlatformApiOptions, SupportedRunTarget } from '.';
+import type { PlatformApi, PlatformApiOptions, SupportedCapability, SupportedRunTarget } from '.';
 import { asyncUnimplemented, getObjFromFridaScript, isRecord, pause } from './util';
 
 const fridaScripts = {
@@ -25,13 +25,15 @@ send({ name: "get_obj_from_frida_script", payload: true });`,
 } as const;
 
 export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
-    options: PlatformApiOptions<'android', RunTarget>
+    options: PlatformApiOptions<'android', RunTarget, SupportedCapability<'android'>[]>
 ): PlatformApi<'android'> => ({
     _internal: {
         emuProcess: undefined,
         objectionProcesses: [],
 
         ensureFrida: async () => {
+            if (!options.capabilities.includes('frida')) return;
+
             const fridaCheck = await execa(`${options.targetOptions.fridaPsPath} -U | grep frida-server`, {
                 shell: true,
                 reject: false,
@@ -107,15 +109,20 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         }
     },
     startApp(appId) {
-        // We deliberately don't await that since Objection doesn't exit after the app is started.
-        const process = execa(options.targetOptions.objectionPath, [
-            '--gadget',
-            appId,
-            'explore',
-            '--startup-command',
-            'android sslpinning disable',
-        ]);
-        this._internal.objectionProcesses.push(process);
+        // We deliberately don't await these since objection doesn't exit after the app is started.
+        if (options.capabilities.includes('certificate-pinning-bypass')) {
+            const process = execa(options.targetOptions.objectionPath, [
+                '--gadget',
+                appId,
+                'explore',
+                '--startup-command',
+                'android sslpinning disable',
+            ]);
+            this._internal.objectionProcesses.push(process);
+            return Promise.resolve();
+        }
+
+        execa('adb', ['shell', 'monkey', '-p', appId, '-v', '1', '--dbg-no-events']);
         return Promise.resolve();
     },
 
@@ -131,6 +138,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         return parseInt(stdout, 10);
     },
     async getPrefs(appId) {
+        if (!options.capabilities.includes('frida')) throw new Error('Frida is required for getting preferences.');
+
         const pid = await this.getPidForAppId(appId);
         const res = await getObjFromFridaScript(pid, fridaScripts.getPrefs);
         if (isRecord(res)) return res;
@@ -138,6 +147,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     },
     getDeviceAttribute: asyncUnimplemented('getDeviceAttribute'),
     async setClipboard(text) {
+        if (!options.capabilities.includes('frida')) throw new Error('Frida is required for setting the clipboard.');
+
         const launcherPid = await this.getPidForAppId('com.google.android.apps.nexuslauncher');
         const res = await getObjFromFridaScript(launcherPid, fridaScripts.setClipboard(text));
         if (!res) throw new Error('Setting clipboard failed.');
