@@ -18,7 +18,7 @@ You can get the paths to the binaries after installation using `whereis frida-ps
 
 For Android, you also need the [Android command line tools](https://developer.android.com/studio/command-line/) installed (the best way to do this is to install [Android Studio](https://developer.android.com/studio)) and included in the `PATH` of the shell in which you are running appstraction, e.g. by including something like this in you `.zshrc`/`.bashrc`:
 
-```zsh
+```sh
 # Android SDK
 export ANDROID_HOME="$HOME/Android/Sdk"
 export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/33.0.0:$ANDROID_HOME/cmdline-tools/latest/bin/:$ANDROID_HOME/emulator"
@@ -32,34 +32,49 @@ export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/33.0.0
 
 ## Device preparation
 
+You can only run one device at a time with the current version.
+
 ### Android emulator
 
-Currently, only emulators are supported for use on Android. You can only run one emulator at a time with the current version. For full functionality, you should properly prepare the emulator:
+Some of the functions in appstraction work without any special preparation. You can create the emulator using Android Studio or the command line tools, e.g. like this to create an emulator with Google APIs running Android 13 (API level 33)—we recommend using x86_64 as the architecture (you can still [run ARM apps if you use Android 11 or newer](https://android-developers.googleblog.com/2020/03/run-arm-apps-on-android-emulator.html)):
 
-```zsh
-# Fetch image.
+```sh
+# Fetch the system image.
 sdkmanager "system-images;android-33;google_apis;x86_64"
-# Create AVD.
-avdmanager create avd --abi google_apis/x86_64 --device "pixel_2" --force --name "instrumented-emu" --package "system-images;android-33;google_apis;x86_64"
+# Create the emulator.
+avdmanager create avd --abi google_apis/x86_64 --package "system-images;android-33;google_apis;x86_64" --device "pixel_4" --name "<emulator name>"
 
-# Start the emulator for the first time.
-emulator -avd "instrumented-emu" -no-audio -no-boot-anim -writable-system -http-proxy 127.0.0.1:8080
+# Start the emulator (you can also use a different storage size).
+emulator -avd "<emulator name>" -partition-size 8192 -wipe-data
+```
 
+On subsequent runs, don't include the `-partition-size 8192 -wipe-data` flags, i.e. run:
+
+```sh
+emulator -avd "<emulator name>"
+```
+
+Some functions require Frida. If you want to use them, you need to [set up Frida](https://frida.re/docs/android/) on the emulator (make sure that the version you're installing matches the version of the Frida tools you're using):
+
+```sh
 adb root
 
-# Set up Frida, see also the official docs: https://frida.re/docs/android/
 adb shell getprop ro.product.cpu.abi # should be x86_64
 wget https://github.com/frida/frida/releases/download/16.0.8/frida-server-16.0.8-android-x86_64.xz 
-7z x frida-server-16.0.8-android-x86_64.xz
+unxz frida-server-16.0.8-android-x86_64.xz
 
 adb push frida-server-16.0.8-android-x86_64 /data/local/tmp/frida-server
 adb shell chmod 777 /data/local/tmp/frida-server
 
+# Test that Frida is working. You don't need to start Frida manually in later runs, appstraction will do that for you.
 adb shell "nohup /data/local/tmp/frida-server >/dev/null 2>&1 &"
 frida-ps -U | grep frida # should have `frida-server`
+```
 
-# Create a snapshot to rollback to a neutral state.
-adb emu avd snapshot save clean-prepared # You can use this snapshot name in the options.
+After you have set up the emulator to your liking, you should create a snapshot to later be able to reset the emulator to this state:
+
+```sh
+adb emu avd snapshot save "<snapshot name>" # Specify this name in `targetOptions.snapshotName`.
 ```
 
 ## API reference
