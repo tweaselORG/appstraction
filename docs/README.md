@@ -35,7 +35,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:222](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L222)
+[index.ts:232](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L232)
 
 ___
 
@@ -54,13 +54,13 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:228](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L228)
+[index.ts:238](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L238)
 
 ___
 
 ### PlatformApi
 
-Ƭ **PlatformApi**<`Platform`\>: `Object`
+Ƭ **PlatformApi**<`Platform`, `RunTarget`\>: `Object`
 
 Functions that are available for the platforms.
 
@@ -69,24 +69,25 @@ Functions that are available for the platforms.
 | Name | Type |
 | :------ | :------ |
 | `Platform` | extends [`SupportedPlatform`](README.md#supportedplatform) |
+| `RunTarget` | extends [`SupportedRunTarget`](README.md#supportedruntarget)<`Platform`\> |
 
 #### Type declaration
 
-| Name | Type |
-| :------ | :------ |
-| `clearStuckModals` | () => `Promise`<`void`\> |
-| `ensureDevice` | () => `Promise`<`void`\> |
-| `getAppVersion` | (`appPath`: `string`) => `Promise`<`string` \| `undefined`\> |
-| `getDeviceAttribute` | <Attribute\>(`attribute`: `Attribute`, ...`options`: `Attribute` extends keyof [`GetDeviceAttributeOptions`](README.md#getdeviceattributeoptions) ? [options: GetDeviceAttributeOptions[Attribute]] : [options?: undefined]) => `Promise`<`string`\> |
-| `getForegroundAppId` | () => `Promise`<`string` \| `undefined`\> |
-| `getPidForAppId` | (`appId`: `string`) => `Promise`<`number` \| `undefined`\> |
-| `getPrefs` | (`appId`: `string`) => `Promise`<`Record`<`string`, `unknown`\> \| `undefined`\> |
-| `installApp` | (`appPath`: `string`) => `Promise`<`void`\> |
-| `resetDevice` | () => `Promise`<`void`\> |
-| `setAppPermissions` | (`appId`: `string`) => `Promise`<`void`\> |
-| `setClipboard` | (`text`: `string`) => `Promise`<`void`\> |
-| `startApp` | (`appId`: `string`) => `Promise`<`void`\> |
-| `uninstallApp` | (`appId`: `string`) => `Promise`<`void`\> |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `clearStuckModals` | () => `Promise`<`void`\> | Clear any potential stuck modals by pressing the back button followed by the home button. Requires the `ssh` capability on iOS. |
+| `ensureDevice` | () => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used. |
+| `getAppVersion` | (`appPath`: `string`) => `Promise`<`string` \| `undefined`\> | Get the version of the app at the given path. |
+| `getDeviceAttribute` | <Attribute\>(`attribute`: `Attribute`, ...`options`: `Attribute` extends keyof [`GetDeviceAttributeOptions`](README.md#getdeviceattributeoptions) ? [options: GetDeviceAttributeOptions[Attribute]] : [options?: undefined]) => `Promise`<`string`\> | Get the value of the given attribute of the device. Requires the `frida` capability on iOS. |
+| `getForegroundAppId` | () => `Promise`<`string` \| `undefined`\> | Get the app ID of the running app that is currently in the foreground. Requires the `frida` capability on iOS. |
+| `getPidForAppId` | (`appId`: `string`) => `Promise`<`number` \| `undefined`\> | Get the PID of the app with the given app ID if it is currently running. Requires the `frida` capability on iOS. |
+| `getPrefs` | (`appId`: `string`) => `Promise`<`Record`<`string`, `unknown`\> \| `undefined`\> | Get the preferences (`SharedPreferences` on Android, `NSUserDefaults` on iOS) of the app with the given app ID. Requires the `frida` capability on Android and iOS. |
+| `installApp` | (`appPath`: `string`) => `Promise`<`void`\> | Install the app at the given path. **`Todo`** How to handle split APKs on Android (#4)? |
+| `resetDevice` | `Platform` extends ``"android"`` ? `RunTarget` extends ``"emulator"`` ? () => `Promise`<`void`\> : `never` : `never` | Reset the device to the snapshot specified in the `targetOptions.snapshotName` (only available for emulators). |
+| `setAppPermissions` | (`appId`: `string`) => `Promise`<`void`\> | Set the permissions for the app with the given app ID. This includes dangerous permissions on Android. Requires the `ssh` and `frida` capabilities on iOS. **`Todo`** Allow specifying which permissions to grant. |
+| `setClipboard` | (`text`: `string`) => `Promise`<`void`\> | Set the clipboard to the given text. Requires the `frida` capability on Android and iOS. |
+| `startApp` | (`appId`: `string`) => `Promise`<`void`\> | Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning bypass if enabled. Requires the `ssh` capability on iOS. On Android, this will start the app with or without a certificate pinning bypass depending on the `certificate-pinning-bypass` capability. |
+| `uninstallApp` | (`appId`: `string`) => `Promise`<`void`\> | Uninstall the app with the given app ID. Will not fail if the app is not installed. This also removes any data stored by the app. |
 
 #### Defined in
 
@@ -140,11 +141,11 @@ The options for a specific platform/run target combination.
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `android` | { `device`: `never` ; `emulator`: { `snapshotName`: `string`  } & ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` & ``"certificate-pinning-bypass"`` extends `Capability` ? { `objectionPath`: `string`  } : `unknown`  } | The options for the Android platform. |
-| `android.device` | `never` | The options for the Android physical device run target. |
-| `android.emulator` | { `snapshotName`: `string`  } & ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` & ``"certificate-pinning-bypass"`` extends `Capability` ? { `objectionPath`: `string`  } : `unknown` | The options for the Android emulator run target. |
-| `ios` | { `device`: `Record`<`string`, `never`\> & ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` & ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` ; `emulator`: `never`  } | The options for the iOS platform. |
-| `ios.device` | `Record`<`string`, `never`\> & ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` & ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` | The options for the iOS physical device run target. |
+| `android` | { `device`: ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` & ``"certificate-pinning-bypass"`` extends `Capability` ? { `objectionPath`: `string`  } : `unknown` ; `emulator`: { `snapshotName?`: `string`  } & ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` & ``"certificate-pinning-bypass"`` extends `Capability` ? { `objectionPath`: `string`  } : `unknown`  } | The options for the Android platform. |
+| `android.device` | ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` & ``"certificate-pinning-bypass"`` extends `Capability` ? { `objectionPath`: `string`  } : `unknown` | The options for the Android physical device run target. |
+| `android.emulator` | { `snapshotName?`: `string`  } & ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` & ``"certificate-pinning-bypass"`` extends `Capability` ? { `objectionPath`: `string`  } : `unknown` | The options for the Android emulator run target. |
+| `ios` | { `device`: ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` & ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` ; `emulator`: `never`  } | The options for the iOS platform. |
+| `ios.device` | ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` & ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` | The options for the iOS physical device run target. |
 | `ios.emulator` | `never` | The options for the iOS emulator run target. |
 
 #### Defined in
@@ -167,7 +168,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:215](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L215)
+[index.ts:225](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L225)
 
 ___
 
@@ -185,7 +186,7 @@ ___
 
 ### SupportedRunTarget
 
-Ƭ **SupportedRunTarget**<`Platform`\>: `Platform` extends ``"android"`` ? ``"emulator"`` : `Platform` extends ``"ios"`` ? ``"device"`` : `never`
+Ƭ **SupportedRunTarget**<`Platform`\>: `Platform` extends ``"android"`` ? ``"emulator"`` \| ``"device"`` : `Platform` extends ``"ios"`` ? ``"device"`` : `never`
 
 A run target that is supported by this library for the given platform.
 
@@ -203,7 +204,7 @@ A run target that is supported by this library for the given platform.
 
 ### platformApi
 
-▸ **platformApi**<`Platform`, `RunTarget`, `Capabilities`\>(`options`): [`PlatformApi`](README.md#platformapi)<`Platform`\>
+▸ **platformApi**<`Platform`, `RunTarget`, `Capabilities`\>(`options`): [`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`\>
 
 Get the API object with the functions for the given platform and run target.
 
@@ -223,10 +224,10 @@ Get the API object with the functions for the given platform and run target.
 
 #### Returns
 
-[`PlatformApi`](README.md#platformapi)<`Platform`\>
+[`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`\>
 
 The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:243](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L243)
+[index.ts:253](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L253)
