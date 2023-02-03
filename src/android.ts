@@ -1,4 +1,5 @@
 import { execa } from 'execa';
+import frida from 'frida';
 import type { PlatformApi, PlatformApiOptions, SupportedCapability, SupportedRunTarget } from '.';
 import { asyncUnimplemented, getObjFromFridaScript, isRecord, pause } from './util';
 
@@ -26,7 +27,7 @@ send({ name: "get_obj_from_frida_script", payload: true });`,
 
 export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     options: PlatformApiOptions<'android', RunTarget, SupportedCapability<'android'>[]>
-): PlatformApi<'android'> => ({
+): PlatformApi<'android', 'device' | 'emulator'> => ({
     _internal: {
         emuProcess: undefined,
         objectionProcesses: [],
@@ -67,12 +68,17 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
     async resetDevice() {
         if (options.runTarget !== 'emulator') throw new Error('Resetting devices is only supported for emulators.');
+        if (!('snapshotName' in options.targetOptions) || !options.targetOptions.snapshotName)
+            throw new Error('Setting `snapshotName` in `targetOptions` is required for resetting the emulator.');
+
         await execa('adb', ['emu', 'avd', 'snapshot', 'load', options.targetOptions.snapshotName]);
         await this._internal.ensureFrida();
     },
     async ensureDevice() {
         if ((await execa('adb', ['get-state'], { reject: false })).exitCode !== 0)
-            throw new Error('You need to start the emulator.');
+            throw new Error(
+                options.runTarget === 'device' ? 'You need to connect your device.' : 'You need to start the emulator.'
+            );
 
         await this._internal.ensureFrida();
     },
@@ -149,9 +155,16 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     async setClipboard(text) {
         if (!options.capabilities.includes('frida')) throw new Error('Frida is required for setting the clipboard.');
 
-        const launcherPid = await this.getPidForAppId('com.google.android.apps.nexuslauncher');
-        const res = await getObjFromFridaScript(launcherPid, fridaScripts.setClipboard(text));
-        if (!res) throw new Error('Setting clipboard failed.');
+        // We need to find any running app that we can inject into to set the clipboard.
+        const fridaDevice = await frida.getUsbDevice();
+        const runningApps = (await fridaDevice.enumerateApplications()).filter((a) => a.pid !== 0);
+        if (runningApps.length === 0) throw new Error('Setting clipboard failed: No running app found.');
+
+        for (const app of runningApps) {
+            const res = await getObjFromFridaScript(app.pid, fridaScripts.setClipboard(text));
+            if (res) return;
+        }
+        throw new Error('Setting clipboard failed.');
     },
 
     getAppVersion: async (apkPath) =>

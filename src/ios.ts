@@ -28,12 +28,12 @@ send({ name: "get_obj_from_frida_script", payload: idfv });`,
 
 export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     options: PlatformApiOptions<'ios', RunTarget, SupportedCapability<'ios'>[]>
-): PlatformApi<'ios'> => ({
+): PlatformApi<'ios', 'device'> => ({
     _internal: {
         getAppId: async (ipaPath) => (await ipaInfo(ipaPath)).info['CFBundleIdentifier'] as string | undefined,
     },
 
-    resetDevice: asyncUnimplemented('resetDevice'),
+    resetDevice: asyncUnimplemented('resetDevice') as never,
     // TODO: Assert that we actually have a device here.
     ensureDevice: asyncNop,
     clearStuckModals: async () => {

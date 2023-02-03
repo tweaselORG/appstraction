@@ -26,17 +26,45 @@ export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/33.0.0
 
 ## Supported targets
 
-| Platform  | Target | Tested versions |
+Appstraction supports the following targets. Note that it will likely also work on other versions of the targets, but these are the ones we have tested.
+
+| Platform | Target | Tested versions |
 | --- | --- | --- |
-| Android  | Emulator  | 11 (API level 30), 13 (API level 33) |
+| Android | `device` | 13 (API level 33) |
+| Android | `emulator` | 11 (API level 30), 13 (API level 33) |
 
 ## Device preparation
 
 You can only run one device at a time with the current version.
 
+## Physical Android device
+
+To use appstraction with a physical Android device, you need to enable USB debugging. You can do this by going to Settings -> System -> Developer options -> USB debugging.
+
+Some functions require the device to be rooted. The steps to do this vary depending on the device. We recommend using [Magisk](https://topjohnwu.github.io/Magisk/). After you have rooted the device, you need to enable rooted debugging via Settings -> System -> Developer options -> Rooted debugging.
+
+Some functions require Frida. If you want to use them, you need to [set up Frida](https://frida.re/docs/android/) on the emulator (make sure that the version you're installing matches the version of the Frida tools you're using):
+
+```sh
+adb root
+
+# Find out the architecture of the device.
+adb shell getprop ro.product.cpu.abi
+# Download the correct frida-server, e.g. for ARM64:
+wget https://github.com/frida/frida/releases/download/16.0.8/frida-server-16.0.8-android-arm64.xz
+unxz frida-server-16.0.8-android-arm64.xz
+
+adb push frida-server-16.0.8-android-arm64 /data/local/tmp/frida-server
+adb shell chmod 777 /data/local/tmp/frida-server
+
+# Test that Frida is working. You don't need to start Frida manually in later runs, appstraction will do that for you.
+adb shell "/data/local/tmp/frida-server"
+frida-ps -U | grep frida # should have `frida-server`
+```
+
 ### Android emulator
 
-Some of the functions in appstraction work without any special preparation. You can create the emulator using Android Studio or the command line tools, e.g. like this to create an emulator with Google APIs running Android 13 (API level 33)—we recommend using x86_64 as the architecture (you can still [run ARM apps if you use Android 11 or newer](https://android-developers.googleblog.com/2020/03/run-arm-apps-on-android-emulator.html)):
+Some of the functions in appstraction work without any special preparation in an emulator. You can create the emulator using Android Studio or the command line tools, e.g. like this to create an emulator with Google APIs running Android 13 (API level 33)—we recommend using x86_64 as the architecture (you can still [run ARM apps if you use Android 11 or newer](https://android-developers.googleblog.com/2020/03/run-arm-apps-on-android-emulator.html)):
 
 ```sh
 # Fetch the system image.
@@ -67,7 +95,7 @@ adb push frida-server-16.0.8-android-x86_64 /data/local/tmp/frida-server
 adb shell chmod 777 /data/local/tmp/frida-server
 
 # Test that Frida is working. You don't need to start Frida manually in later runs, appstraction will do that for you.
-adb shell "nohup /data/local/tmp/frida-server >/dev/null 2>&1 &"
+adb shell "/data/local/tmp/frida-server"
 frida-ps -U | grep frida # should have `frida-server`
 ```
 

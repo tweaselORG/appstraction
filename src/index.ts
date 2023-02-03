@@ -6,17 +6,17 @@ import { iosApi } from './ios';
 export type SupportedPlatform = 'android' | 'ios';
 /** A run target that is supported by this library for the given platform. */
 export type SupportedRunTarget<Platform extends SupportedPlatform> = Platform extends 'android'
-    ? 'emulator'
+    ? 'emulator' | 'device'
     : Platform extends 'ios'
     ? 'device'
     : never;
 
 /** Functions that are available for the platforms. */
-export type PlatformApi<Platform extends SupportedPlatform> = {
+export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends SupportedRunTarget<Platform>> = {
     /** Assert that the selected device is connected and ready to be used. */
     ensureDevice: () => Promise<void>;
-    /** Reset the device to the snapshot specified in the `targetOptions` (only available for emulators). */
-    resetDevice: () => Promise<void>;
+    /** Reset the device to the snapshot specified in the `targetOptions.snapshotName` (only available for emulators). */
+    resetDevice: Platform extends 'android' ? (RunTarget extends 'emulator' ? () => Promise<void> : never) : never;
     /**
      * Clear any potential stuck modals by pressing the back button followed by the home button.
      *
@@ -172,7 +172,7 @@ export type RunTargetOptions<
         /** The options for the Android emulator run target. */
         emulator: {
             /** The name of a snapshot to use for the `resetDevice()` function. */
-            snapshotName: string;
+            snapshotName?: string;
         } & ('frida' extends Capability
             ? {
                   /** The path to the [`frida-ps`](https://frida.re/docs/frida-ps/) binary. */
@@ -186,25 +186,35 @@ export type RunTargetOptions<
                   }
                 : unknown);
         /** The options for the Android physical device run target. */
-        device: never;
+        device: ('frida' extends Capability
+            ? {
+                  /** The path to the [`frida-ps`](https://frida.re/docs/frida-ps/) binary. */
+                  fridaPsPath: string;
+              }
+            : unknown) &
+            ('certificate-pinning-bypass' extends Capability
+                ? {
+                      /** The path to the [`objection`](https://github.com/sensepost/objection/) binary. */
+                      objectionPath: string;
+                  }
+                : unknown);
     };
     /** The options for the iOS platform. */
     ios: {
         /** The options for the iOS emulator run target. */
         emulator: never;
         /** The options for the iOS physical device run target. */
-        device: Record<string, never> &
-            ('ssh' extends Capability
-                ? {
-                      /** The password of the root user on the device, defaults to `alpine` if not set. */
-                      rootPw?: string;
-                      /** The device's IP address. */
-                      ip: string;
-                  }
-                : unknown) &
+        device: ('ssh' extends Capability
+            ? {
+                  /** The password of the root user on the device, defaults to `alpine` if not set. */
+                  rootPw?: string;
+                  /** The device's IP address. */
+                  ip: string;
+              }
+            : unknown) &
             ('frida' extends Capability
                 ? {
-                      /** The path to the `frida-ps` binary. */
+                      /** The path to the [`frida-ps`](https://frida.re/docs/frida-ps/) binary. */
                       fridaPsPath: string;
                   }
                 : unknown);
@@ -244,14 +254,14 @@ export function platformApi<
     Platform extends SupportedPlatform,
     RunTarget extends SupportedRunTarget<Platform>,
     Capabilities extends SupportedCapability<Platform>[]
->(options: PlatformApiOptions<Platform, RunTarget, Capabilities>): PlatformApi<Platform> {
+>(options: PlatformApiOptions<Platform, RunTarget, Capabilities>): PlatformApi<Platform, RunTarget> {
     switch (options.platform) {
         case 'android':
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return androidApi(options as any) as PlatformApi<Platform>;
+            return androidApi(options as any) as PlatformApi<Platform, RunTarget>;
         case 'ios':
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return iosApi(options as any) as PlatformApi<Platform>;
+            return iosApi(options as any) as PlatformApi<Platform, RunTarget>;
         default:
             throw new Error(`Unsupported platform: ${options.platform}`);
     }
