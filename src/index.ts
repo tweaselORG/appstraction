@@ -20,9 +20,11 @@ export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends Su
     /**
      * Clear any potential stuck modals by pressing the back button followed by the home button.
      *
+     * This is currently broken on iOS (see https://github.com/tweaselORG/appstraction/issues/12).
+     *
      * Requires the `ssh` capability on iOS.
      */
-    clearStuckModals: () => Promise<void>;
+    clearStuckModals: Platform extends 'android' ? () => Promise<void> : never;
 
     /**
      * Install the app at the given path.
@@ -54,8 +56,8 @@ export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends Su
      * Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning
      * bypass if enabled.
      *
-     * Requires the `ssh` capability on iOS. On Android, this will start the app with or without a certificate pinning
-     * bypass depending on the `certificate-pinning-bypass` capability.
+     * Requires the `frida` or `ssh` capability on iOS. On Android, this will start the app with or without a
+     * certificate pinning bypass depending on the `certificate-pinning-bypass` capability.
      *
      * @param appId The app ID of the app to start.
      */

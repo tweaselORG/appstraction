@@ -13,16 +13,29 @@ yarn add appstraction
 # or `npm i appstraction`
 ```
 
-For full capabilities, you also need to install [frida-tools](https://frida.re/docs/installation/) and [objection](https://github.com/sensepost/objection).
-You can get the paths to the binaries after installation using `whereis frida-ps`.
+Additionally, you will need to [prepare the target device/emulator](#device-preparation) and install a few dependencies on the host machine.
 
-For Android, you also need the [Android command line tools](https://developer.android.com/studio/command-line/) installed (the best way to do this is to install [Android Studio](https://developer.android.com/studio)) and included in the `PATH` of the shell in which you are running appstraction, e.g. by including something like this in you `.zshrc`/`.bashrc`:
+### Host dependencies for Android
+
+For Android, you need the [Android command line tools](https://developer.android.com/studio/command-line/) (can also be installed through [Android Studio](https://developer.android.com/studio)). Note that these need to be included in your `PATH`, e.g. by including something like this in your `.zshrc`/`.bashrc`:
 
 ```sh
 # Android SDK
 export ANDROID_HOME="$HOME/Android/Sdk"
 export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/33.0.0:$ANDROID_HOME/cmdline-tools/latest/bin/:$ANDROID_HOME/emulator"
 ```
+
+For the `frida` capability, you need to install [`frida-tools`](https://frida.re/docs/installation/).
+
+For the `certificate-pinning-bypass` capability, you need to install [`objection`](https://github.com/sensepost/objection) in addition to `frida-tools`.
+
+### Host dependencies for iOS
+
+For iOS, you need [`libimobiledevice`](https://libimobiledevice.org/). The distribution packages are fine, you don't need to build from source.
+
+For the `frida` capability, you need to install [`frida-tools`](https://frida.re/docs/installation/).
+
+For the `ssh` capability, you need to install [`sshpass`](https://sourceforge.net/projects/sshpass).
 
 ## Supported targets
 
@@ -32,6 +45,7 @@ Appstraction supports the following targets. Note that it will likely also work 
 | --- | --- | --- |
 | Android | `device` | 13 (API level 33) |
 | Android | `emulator` | 11 (API level 30), 13 (API level 33) |
+| iOS | `device` | 15.6.1, 16.0 |
 
 ## Device preparation
 
@@ -105,6 +119,21 @@ After you have set up the emulator to your liking, you should create a snapshot 
 adb emu avd snapshot save "<snapshot name>" # Specify this name in `targetOptions.snapshotName`.
 ```
 
+### Physical iOS device
+
+Installing and uninstalling apps and querying the metadata of an IPA file work without any preparation on a physical iOS device.
+
+For everything else, the iOS device needs to be jailbroken. For iOS 15 and 16, we have tested [palera1n](https://github.com/palera1n/palera1n). For iOS 14, we have previously successfully used [checkra1n](https://checkra.in/) for other projects, but we have not tested appstraction on iOS 14 (as we don't have a device running iOS 14).
+
+Depending on the capabilities and features you want to use, you need to install the following packages from Cydia/Sileo:
+
+* [OpenSSH](sileo://package/openssh) (for the `ssh` capability)
+* [SQLite 3.x](sileo://package/sqlite3) (if you want to set app permissions)
+* [Frida](sileo://package/re.frida.server) (for the `frida` capability), you will need to [add the Frida repository to Cydia/Sileo](https://frida.re/docs/ios/#with-jailbreak): `https://build.frida.re`
+* [Open](http://cydia.saurik.com/package/com.conradkramer.open/) (if you want to launch apps without the `frida` capability), you will need to add a legacy Cydia repository if you are using Sileo: `https://apt.thebigboss.org/repofiles/cydia/`
+
+You may need to respring after installing the packages.
+
 ## API reference
 
 A full API reference can be found in the [`docs` folder](/docs/README.md).
@@ -156,7 +185,7 @@ Other functions do need capabilities, though, which you would pass to the `capab
 })();
 ```
 
-For more examples, also look at the [`examples`](examples) folder.
+For more examples, take a look at the [`examples`](examples) folder.
 
 ## License
 
