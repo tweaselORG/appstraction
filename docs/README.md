@@ -35,7 +35,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:240](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L240)
+[index.ts:242](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L242)
 
 ___
 
@@ -54,7 +54,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:246](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L246)
+[index.ts:248](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L248)
 
 ___
 
@@ -75,7 +75,7 @@ Functions that are available for the platforms.
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `clearStuckModals` | () => `Promise`<`void`\> | Clear any potential stuck modals by pressing the back button followed by the home button. Requires the `ssh` capability on iOS. |
+| `clearStuckModals` | `Platform` extends ``"android"`` ? () => `Promise`<`void`\> : `never` | Clear any potential stuck modals by pressing the back button followed by the home button. This is currently broken on iOS (see https://github.com/tweaselORG/appstraction/issues/12). Requires the `ssh` capability on iOS. |
 | `ensureDevice` | () => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities. |
 | `getAppId` | (`appPath`: `string`) => `Promise`<`string` \| `undefined`\> | Get the app/bundle ID of the app at the given path. |
 | `getAppVersion` | (`appPath`: `string`) => `Promise`<`string` \| `undefined`\> | Get the version of the app at the given path. |
@@ -87,7 +87,7 @@ Functions that are available for the platforms.
 | `resetDevice` | `Platform` extends ``"android"`` ? `RunTarget` extends ``"emulator"`` ? () => `Promise`<`void`\> : `never` : `never` | Reset the device to the snapshot specified in the `targetOptions.snapshotName` (only available for emulators). |
 | `setAppPermissions` | (`appId`: `string`) => `Promise`<`void`\> | Set the permissions for the app with the given app ID. This includes dangerous permissions on Android. Requires the `ssh` and `frida` capabilities on iOS. **`Todo`** Allow specifying which permissions to grant. |
 | `setClipboard` | (`text`: `string`) => `Promise`<`void`\> | Set the clipboard to the given text. Requires the `frida` capability on Android and iOS. |
-| `startApp` | (`appId`: `string`) => `Promise`<`void`\> | Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning bypass if enabled. Requires the `ssh` capability on iOS. On Android, this will start the app with or without a certificate pinning bypass depending on the `certificate-pinning-bypass` capability. |
+| `startApp` | (`appId`: `string`) => `Promise`<`void`\> | Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning bypass if enabled. Requires the `frida` or `ssh` capability on iOS. On Android, this will start the app with or without a certificate pinning bypass depending on the `certificate-pinning-bypass` capability. |
 | `uninstallApp` | (`appId`: `string`) => `Promise`<`void`\> | Uninstall the app with the given app ID. Will not fail if the app is not installed. This also removes any data stored by the app. |
 
 #### Defined in
@@ -121,7 +121,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:154](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L154)
+[index.ts:156](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L156)
 
 ___
 
@@ -151,7 +151,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:174](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L174)
+[index.ts:176](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L176)
 
 ___
 
@@ -169,7 +169,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:233](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L233)
+[index.ts:235](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L235)
 
 ___
 
@@ -231,4 +231,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:261](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L261)
+[index.ts:263](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L263)
