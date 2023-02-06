@@ -35,7 +35,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:232](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L232)
+[index.ts:240](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L240)
 
 ___
 
@@ -54,7 +54,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:238](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L238)
+[index.ts:246](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L246)
 
 ___
 
@@ -76,7 +76,8 @@ Functions that are available for the platforms.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `clearStuckModals` | () => `Promise`<`void`\> | Clear any potential stuck modals by pressing the back button followed by the home button. Requires the `ssh` capability on iOS. |
-| `ensureDevice` | () => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used. |
+| `ensureDevice` | () => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities. |
+| `getAppId` | (`appPath`: `string`) => `Promise`<`string` \| `undefined`\> | Get the app/bundle ID of the app at the given path. |
 | `getAppVersion` | (`appPath`: `string`) => `Promise`<`string` \| `undefined`\> | Get the version of the app at the given path. |
 | `getDeviceAttribute` | <Attribute\>(`attribute`: `Attribute`, ...`options`: `Attribute` extends keyof [`GetDeviceAttributeOptions`](README.md#getdeviceattributeoptions) ? [options: GetDeviceAttributeOptions[Attribute]] : [options?: undefined]) => `Promise`<`string`\> | Get the value of the given attribute of the device. Requires the `frida` capability on iOS. |
 | `getForegroundAppId` | () => `Promise`<`string` \| `undefined`\> | Get the app ID of the running app that is currently in the foreground. Requires the `frida` capability on iOS. |
@@ -120,7 +121,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:146](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L146)
+[index.ts:154](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L154)
 
 ___
 
@@ -150,7 +151,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:166](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L166)
+[index.ts:174](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L174)
 
 ___
 
@@ -168,7 +169,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:225](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L225)
+[index.ts:233](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L233)
 
 ___
 
@@ -230,4 +231,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:253](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L253)
+[index.ts:261](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L261)
