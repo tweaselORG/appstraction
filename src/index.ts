@@ -13,7 +13,7 @@ export type SupportedRunTarget<Platform extends SupportedPlatform> = Platform ex
 
 /** Functions that are available for the platforms. */
 export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends SupportedRunTarget<Platform>> = {
-    /** Assert that the selected device is connected and ready to be used. */
+    /** Assert that the selected device is connected and ready to be used with the selected capabilities. */
     ensureDevice: () => Promise<void>;
     /** Reset the device to the snapshot specified in the `targetOptions.snapshotName` (only available for emulators). */
     resetDevice: Platform extends 'android' ? (RunTarget extends 'emulator' ? () => Promise<void> : never) : never;
@@ -120,6 +120,14 @@ export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends Su
      */
     setClipboard: (text: string) => Promise<void>;
 
+    /**
+     * Get the app/bundle ID of the app at the given path.
+     *
+     * @param appPath Path to the app file (`.ipa` on iOS, `.apk` on Android) to get the app ID of.
+     *
+     * @returns The app ID, or `undefined` if the file doesn't exist or is not a valid app for the platform.
+     */
+    getAppId: (appPath: string) => Promise<string | undefined>;
     /**
      * Get the version of the app at the given path.
      *

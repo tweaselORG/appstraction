@@ -162,5 +162,6 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         await session.detach();
     },
 
+    getAppId: async (ipaPath) => (await ipaInfo(ipaPath)).info['CFBundleIdentifier'] as string | undefined,
     getAppVersion: async (ipaPath) => (await ipaInfo(ipaPath)).info['CFBundleShortVersionString'] as string | undefined,
 });

@@ -26,8 +26,9 @@ import { pause, platformApi } from '../src/index';
 
     await android.setClipboard('I copied this.');
 
+    const id = await android.getAppId(`${appPath}/${appId}/${appId}.apk`);
     const version = await android.getAppVersion(`${appPath}/${appId}/${appId}.apk`);
-    console.log('App version:', version);
+    console.log('App:', id, '@', version);
 
     await android.installApp(`${appPath}/${appId}/*.apk`);
     await android.setAppPermissions(appId);
