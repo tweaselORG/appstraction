@@ -6,8 +6,10 @@ appstraction
 
 ### Type Aliases
 
+- [AndroidPermission](README.md#androidpermission)
 - [DeviceAttribute](README.md#deviceattribute)
 - [GetDeviceAttributeOptions](README.md#getdeviceattributeoptions)
+- [IosPermission](README.md#iospermission)
 - [PlatformApi](README.md#platformapi)
 - [PlatformApiOptions](README.md#platformapioptions)
 - [RunTargetOptions](README.md#runtargetoptions)
@@ -15,11 +17,28 @@ appstraction
 - [SupportedPlatform](README.md#supportedplatform)
 - [SupportedRunTarget](README.md#supportedruntarget)
 
+### Variables
+
+- [androidPermissions](README.md#androidpermissions)
+- [iosPermissions](README.md#iospermissions)
+
 ### Functions
 
 - [platformApi](README.md#platformapi-1)
 
 ## Type Aliases
+
+### AndroidPermission
+
+Ƭ **AndroidPermission**: typeof [`androidPermissions`](README.md#androidpermissions)[`number`]
+
+An ID of a known permission on Android.
+
+#### Defined in
+
+[android.ts:322](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L322)
+
+___
 
 ### DeviceAttribute
 
@@ -35,7 +54,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:242](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L242)
+[index.ts:259](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L259)
 
 ___
 
@@ -54,7 +73,19 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:248](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L248)
+[index.ts:265](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L265)
+
+___
+
+### IosPermission
+
+Ƭ **IosPermission**: typeof [`iosPermissions`](README.md#iospermissions)[`number`]
+
+An ID of a known permission on iOS.
+
+#### Defined in
+
+[ios.ts:225](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L225)
 
 ___
 
@@ -85,14 +116,14 @@ Functions that are available for the platforms.
 | `getPrefs` | (`appId`: `string`) => `Promise`<`Record`<`string`, `unknown`\> \| `undefined`\> | Get the preferences (`SharedPreferences` on Android, `NSUserDefaults` on iOS) of the app with the given app ID. Requires the `frida` capability on Android and iOS. |
 | `installApp` | (`appPath`: `string`) => `Promise`<`void`\> | Install the app at the given path. **`Todo`** How to handle split APKs on Android (#4)? |
 | `resetDevice` | `Platform` extends ``"android"`` ? `RunTarget` extends ``"emulator"`` ? () => `Promise`<`void`\> : `never` : `never` | Reset the device to the snapshot specified in the `targetOptions.snapshotName` (only available for emulators). |
-| `setAppPermissions` | (`appId`: `string`) => `Promise`<`void`\> | Set the permissions for the app with the given app ID. This includes dangerous permissions on Android. Requires the `ssh` and `frida` capabilities on iOS. **`Todo`** Allow specifying which permissions to grant. |
+| `setAppPermissions` | (`appId`: `string`, `permissions?`: `Platform` extends ``"ios"`` ? { [p in IosPermission]?: "unset" \| "allow" \| "deny" } & { `location?`: ``"ask"`` \| ``"never"`` \| ``"always"`` \| ``"while-using"``  } : `Partial`<`Record`<`LiteralUnion`<[`AndroidPermission`](README.md#androidpermission), `string`\>, ``"allow"`` \| ``"deny"``\>\>) => `Promise`<`void`\> | Set the permissions for the app with the given app ID. By default, it will grant all known permissions (including dangerous permissions on Android) and set the location permission on iOS to `always`. You can specify which permissions to grant/deny using the `permissions` argument. Requires the `ssh` and `frida` capabilities on iOS. |
 | `setClipboard` | (`text`: `string`) => `Promise`<`void`\> | Set the clipboard to the given text. Requires the `frida` capability on Android and iOS. |
 | `startApp` | (`appId`: `string`) => `Promise`<`void`\> | Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning bypass if enabled. Requires the `frida` or `ssh` capability on iOS. On Android, this will start the app with or without a certificate pinning bypass depending on the `certificate-pinning-bypass` capability. |
 | `uninstallApp` | (`appId`: `string`) => `Promise`<`void`\> | Uninstall the app with the given app ID. Will not fail if the app is not installed. This also removes any data stored by the app. |
 
 #### Defined in
 
-[index.ts:15](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L15)
+[index.ts:18](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L18)
 
 ___
 
@@ -121,7 +152,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:156](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L156)
+[index.ts:173](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L173)
 
 ___
 
@@ -151,7 +182,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:176](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L176)
+[index.ts:193](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L193)
 
 ___
 
@@ -169,7 +200,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:235](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L235)
+[index.ts:252](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L252)
 
 ___
 
@@ -181,7 +212,7 @@ A platform that is supported by this library.
 
 #### Defined in
 
-[index.ts:6](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L6)
+[index.ts:9](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L9)
 
 ___
 
@@ -199,7 +230,31 @@ A run target that is supported by this library for the given platform.
 
 #### Defined in
 
-[index.ts:8](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L8)
+[index.ts:11](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L11)
+
+## Variables
+
+### androidPermissions
+
+• `Const` **androidPermissions**: readonly [``"android.permission.ACCEPT_HANDOVER"``, ``"android.permission.ACCESS_BACKGROUND_LOCATION"``, ``"android.permission.ACCESS_COARSE_LOCATION"``, ``"android.permission.ACCESS_FINE_LOCATION"``, ``"android.permission.ACCESS_LOCATION_EXTRA_COMMANDS"``, ``"android.permission.ACCESS_MEDIA_LOCATION"``, ``"android.permission.ACCESS_NETWORK_STATE"``, ``"android.permission.ACCESS_NOTIFICATION_POLICY"``, ``"android.permission.ACCESS_WIFI_STATE"``, ``"android.permission.ACTIVITY_RECOGNITION"``, ``"android.permission.ANSWER_PHONE_CALLS"``, ``"android.permission.AUTHENTICATE_ACCOUNTS"``, ``"android.permission.BLUETOOTH_ADMIN"``, ``"android.permission.BLUETOOTH_ADVERTISE"``, ``"android.permission.BLUETOOTH_CONNECT"``, ``"android.permission.BLUETOOTH_SCAN"``, ``"android.permission.BLUETOOTH"``, ``"android.permission.BODY_SENSORS_BACKGROUND"``, ``"android.permission.BODY_SENSORS"``, ``"android.permission.BROADCAST_STICKY"``, ``"android.permission.CALL_COMPANION_APP"``, ``"android.permission.CALL_PHONE"``, ``"android.permission.CAMERA"``, ``"android.permission.CHANGE_NETWORK_STATE"``, ``"android.permission.CHANGE_WIFI_MULTICAST_STATE"``, ``"android.permission.CHANGE_WIFI_STATE"``, ``"android.permission.DELIVER_COMPANION_MESSAGES"``, ``"android.permission.DISABLE_KEYGUARD"``, ``"android.permission.EXPAND_STATUS_BAR"``, ``"android.permission.FLASHLIGHT"``, ``"android.permission.FOREGROUND_SERVICE"``, ``"android.permission.GET_ACCOUNTS"``, ``"android.permission.GET_PACKAGE_SIZE"``, ``"android.permission.GET_TASKS"``, ``"android.permission.HIDE_OVERLAY_WINDOWS"``, ``"android.permission.HIGH_SAMPLING_RATE_SENSORS"``, ``"android.permission.INTERNET"``, ``"android.permission.KILL_BACKGROUND_PROCESSES"``, ``"android.permission.MANAGE_ACCOUNTS"``, ``"android.permission.MANAGE_OWN_CALLS"``, ``"android.permission.MODIFY_AUDIO_SETTINGS"``, ``"android.permission.NEARBY_WIFI_DEVICES"``, ``"android.permission.NFC_PREFERRED_PAYMENT_INFO"``, ``"android.permission.NFC_TRANSACTION_EVENT"``, ``"android.permission.NFC"``, ``"android.permission.PERSISTENT_ACTIVITY"``, ``"android.permission.POST_NOTIFICATIONS"``, ``"android.permission.PROCESS_OUTGOING_CALLS"``, ``"android.permission.QUERY_ALL_PACKAGES"``, ``"android.permission.READ_BASIC_PHONE_STATE"``, ``"android.permission.READ_CALENDAR"``, ``"android.permission.READ_CALL_LOG"``, ``"android.permission.READ_CELL_BROADCASTS"``, ``"android.permission.READ_CONTACTS"``, ``"android.permission.READ_EXTERNAL_STORAGE"``, ``"android.permission.READ_INSTALL_SESSIONS"``, ``"android.permission.READ_MEDIA_AUDIO"``, ``"android.permission.READ_MEDIA_IMAGES"``, ``"android.permission.READ_MEDIA_VIDEO"``, ``"android.permission.READ_NEARBY_STREAMING_POLICY"``, ``"android.permission.READ_PHONE_NUMBERS"``, ``"android.permission.READ_PHONE_STATE"``, ``"android.permission.READ_PROFILE"``, ``"android.permission.READ_SMS"``, ``"android.permission.READ_SOCIAL_STREAM"``, ``"android.permission.READ_SYNC_SETTINGS"``, ``"android.permission.READ_SYNC_STATS"``, ``"android.permission.READ_USER_DICTIONARY"``, ``"android.permission.RECEIVE_BOOT_COMPLETED"``, ``"android.permission.RECEIVE_MMS"``, ``"android.permission.RECEIVE_SMS"``, ``"android.permission.RECEIVE_WAP_PUSH"``, ``"android.permission.RECORD_AUDIO"``, ``"android.permission.REORDER_TASKS"``, ``"android.permission.REQUEST_COMPANION_PROFILE_WATCH"``, ``"android.permission.REQUEST_COMPANION_RUN_IN_BACKGROUND"``, ``"android.permission.REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND"``, ``"android.permission.REQUEST_COMPANION_USE_DATA_IN_BACKGROUND"``, ``"android.permission.REQUEST_DELETE_PACKAGES"``, ``"android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"``, ``"android.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE"``, ``"android.permission.REQUEST_PASSWORD_COMPLEXITY"``, ``"android.permission.RESTART_PACKAGES"``, ``"android.permission.SCHEDULE_EXACT_ALARM"``, ``"android.permission.SEND_SMS"``, ``"android.permission.SET_WALLPAPER_HINTS"``, ``"android.permission.SET_WALLPAPER"``, ``"android.permission.SUBSCRIBED_FEEDS_READ"``, ``"android.permission.SUBSCRIBED_FEEDS_WRITE"``, ``"android.permission.TRANSMIT_IR"``, ``"android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION"``, ``"android.permission.USE_BIOMETRIC"``, ``"android.permission.USE_CREDENTIALS"``, ``"android.permission.USE_EXACT_ALARM"``, ``"android.permission.USE_FINGERPRINT"``, ``"android.permission.USE_FULL_SCREEN_INTENT"``, ``"android.permission.USE_SIP"``, ``"android.permission.UWB_RANGING"``, ``"android.permission.VIBRATE"``, ``"android.permission.WAKE_LOCK"``, ``"android.permission.WRITE_CALENDAR"``, ``"android.permission.WRITE_CALL_LOG"``, ``"android.permission.WRITE_CONTACTS"``, ``"android.permission.WRITE_EXTERNAL_STORAGE"``, ``"android.permission.WRITE_PROFILE"``, ``"android.permission.WRITE_SMS"``, ``"android.permission.WRITE_SOCIAL_STREAM"``, ``"android.permission.WRITE_SYNC_SETTINGS"``, ``"android.permission.WRITE_USER_DICTIONARY"``, ``"com.android.alarm.permission.SET_ALARM"``, ``"com.android.browser.permission.READ_HISTORY_BOOKMARKS"``, ``"com.android.browser.permission.WRITE_HISTORY_BOOKMARKS"``, ``"com.android.launcher.permission.INSTALL_SHORTCUT"``, ``"com.android.launcher.permission.UNINSTALL_SHORTCUT"``, ``"com.android.voicemail.permission.ADD_VOICEMAIL"``, ``"com.google.android.gms.dck.permission.DIGITAL_KEY_READ"``, ``"com.google.android.gms.dck.permission.DIGITAL_KEY_WRITE"``, ``"com.google.android.gms.permission.ACTIVITY_RECOGNITION"``, ``"com.google.android.gms.permission.AD_ID_NOTIFICATION"``, ``"com.google.android.gms.permission.AD_ID"``, ``"com.google.android.gms.permission.CAR_FUEL"``, ``"com.google.android.gms.permission.CAR_MILEAGE"``, ``"com.google.android.gms.permission.CAR_SPEED"``, ``"com.google.android.gms.permission.CAR_VENDOR_EXTENSION"``, ``"com.google.android.gms.permission.REQUEST_SCREEN_LOCK_COMPLEXITY"``, ``"com.google.android.gms.permission.TRANSFER_WIFI_CREDENTIAL"``, ``"com.google.android.ims.providers.ACCESS_DATA"``, ``"com.google.android.providers.gsf.permission.READ_GSERVICES"``]
+
+The IDs of known permissions on Android.
+
+#### Defined in
+
+[android.ts:191](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L191)
+
+___
+
+### iosPermissions
+
+• `Const` **iosPermissions**: readonly [``"kTCCServiceLiverpool"``, ``"kTCCServiceUbiquity"``, ``"kTCCServiceCalendar"``, ``"kTCCServiceAddressBook"``, ``"kTCCServiceReminders"``, ``"kTCCServicePhotos"``, ``"kTCCServiceMediaLibrary"``, ``"kTCCServiceBluetoothAlways"``, ``"kTCCServiceMotion"``, ``"kTCCServiceWillow"``, ``"kTCCServiceExposureNotification"``, ``"kTCCServiceCamera"``, ``"kTCCServiceMicrophone"``, ``"kTCCServiceUserTracking"``]
+
+The IDs of known permissions on iOS.
+
+#### Defined in
+
+[ios.ts:208](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L208)
 
 ## Functions
 
@@ -231,4 +286,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:263](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L263)
+[index.ts:280](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L280)

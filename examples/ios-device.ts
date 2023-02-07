@@ -4,7 +4,7 @@ import { join } from 'path';
 import { pause, platformApi } from '../src/index';
 
 // You can pass the following command line arguments:
-// `npx tsm examples/ios-device.ts <ip> <app path>`
+// `npx tsx examples/ios-device.ts <ip> <app path>`
 
 (async () => {
     const ios = platformApi({
@@ -29,7 +29,10 @@ import { pause, platformApi } from '../src/index';
     if (!appId) throw new Error('Invalid app.');
 
     await ios.installApp(appPath);
+    // First, grant all permissions.
     await ios.setAppPermissions(appId);
+    // Then, revoke the camera permission and unset the calendar permission.
+    await ios.setAppPermissions(appId, { kTCCServiceCamera: 'deny', kTCCServiceCalendar: 'unset' });
     await ios.startApp(appId);
 
     // Give the app some time to start.

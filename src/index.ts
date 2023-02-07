@@ -1,5 +1,8 @@
 import type { ExecaChildProcess } from 'execa';
+import type { LiteralUnion } from 'type-fest';
+import type { AndroidPermission } from './android';
 import { androidApi } from './android';
+import type { IosPermission } from './ios';
 import { iosApi } from './ios';
 
 /** A platform that is supported by this library. */
@@ -43,15 +46,29 @@ export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends Su
      */
     uninstallApp: (appId: string) => Promise<void>;
     /**
-     * Set the permissions for the app with the given app ID. This includes dangerous permissions on Android.
+     * Set the permissions for the app with the given app ID. By default, it will grant all known permissions (including
+     * dangerous permissions on Android) and set the location permission on iOS to `always`. You can specify which
+     * permissions to grant/deny using the `permissions` argument.
      *
      * Requires the `ssh` and `frida` capabilities on iOS.
      *
      * @param appId The app ID of the app to set the permissions for.
+     * @param permissions The permissions to set as an object mapping from permission ID to whether to grant it (`allow`
+     *   to grant the permission, `deny` to deny it, `unset` to remove the permission from the permissions table). If
+     *   not specified, all permissions will be set to `allow`.
      *
-     * @todo Allow specifying which permissions to grant.
+     *   On iOS, in addition to the actual permission IDs, you can also use `location` to set the location permission.
+     *   Here, the possible values are `ask` (ask every time), `never`, `always`, and `while-using` (while using the
+     *   app).
      */
-    setAppPermissions: (appId: string) => Promise<void>;
+    setAppPermissions: (
+        appId: string,
+        permissions?: Platform extends 'ios'
+            ? { [p in IosPermission]?: 'unset' | 'allow' | 'deny' } & {
+                  location?: 'ask' | 'never' | 'always' | 'while-using';
+              }
+            : Partial<Record<LiteralUnion<AndroidPermission, string>, 'allow' | 'deny'>>
+    ) => Promise<void>;
     /**
      * Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning
      * bypass if enabled.
@@ -277,4 +294,7 @@ export function platformApi<
     }
 }
 
+export { androidPermissions } from './android';
+export { iosPermissions } from './ios';
 export { pause } from './util';
+export { IosPermission, AndroidPermission };

@@ -22,8 +22,8 @@ send({ name: "get_obj_from_frida_script", payload: dictFromNSDictionary(prefs) }
     setClipboard: (text: string) => `ObjC.classes.UIPasteboard.generalPasteboard().setString_("${text}");`,
     getIdfv: `var idfv = ObjC.classes.UIDevice.currentDevice().identifierForVendor().toString();
 send({ name: "get_obj_from_frida_script", payload: idfv });`,
-    grantLocationPermission: (appId: string) =>
-        `ObjC.classes.CLLocationManager.setAuthorizationStatusByType_forBundleIdentifier_(4, "${appId}");`,
+    grantLocationPermission: (appId: string, value: 0 | 2 | 3 | 4) =>
+        `ObjC.classes.CLLocationManager.setAuthorizationStatusByType_forBundleIdentifier_(${value}, "${appId}");`,
     startApp: (appId: string) =>
         `ObjC.classes.LSApplicationWorkspace.defaultWorkspace().openApplicationWithBundleID_("${appId}");`,
 } as const;
@@ -75,15 +75,11 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     uninstallApp: async (appId) => {
         await execa('ideviceinstaller', ['--uninstall', appId]);
     },
-    setAppPermissions: async (appId: string) => {
+    setAppPermissions: async (appId, _permissions) => {
         if (!options.capabilities.includes('ssh') || !options.capabilities.includes('frida'))
             throw new Error('SSH and Frida are required for setting app permissions.');
 
-        // prettier-ignore
-        const permissionsToGrant = ['kTCCServiceLiverpool', 'kTCCServiceUbiquity', 'kTCCServiceCalendar', 'kTCCServiceAddressBook', 'kTCCServiceReminders', 'kTCCServicePhotos', 'kTCCServiceMediaLibrary', 'kTCCServiceBluetoothAlways', 'kTCCServiceMotion', 'kTCCServiceWillow', 'kTCCServiceExposureNotification'];
-        const permissionsToDeny = ['kTCCServiceCamera', 'kTCCServiceMicrophone', 'kTCCServiceUserTracking'];
-
-        // value === 0 for not granted, value === 2 for granted
+        const permissionValues = { allow: 2, deny: 0 } as const;
         const setPermission = (permission: string, value: 0 | 2) =>
             execa('sshpass', [
                 '-p',
@@ -94,16 +90,41 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
                 '/private/var/mobile/Library/TCC/TCC.db',
                 `'INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) VALUES("${permission}", "${appId}", 0, ${value}, 2, 1);'`,
             ]);
-        const grantLocationPermission = async () => {
+        const unsetPermission = (permission: string) =>
+            execa('sshpass', [
+                '-p',
+                options.targetOptions.rootPw || 'alpine',
+                'ssh',
+                `root@${options.targetOptions.ip}`,
+                'sqlite3',
+                '/private/var/mobile/Library/TCC/TCC.db',
+                `'DELETE FROM access WHERE service="${permission}" AND client="${appId}";'`,
+            ]);
+        const locationPermissionValues = { ask: 0, never: 2, always: 3, 'while-using': 4 } as const;
+        const grantLocationPermission = async (value: 0 | 2 | 3 | 4) => {
             const session = await frida.getUsbDevice().then((f) => f.attach('SpringBoard'));
-            const script = await session.createScript(fridaScripts.grantLocationPermission(appId));
+            const script = await session.createScript(fridaScripts.grantLocationPermission(appId, value));
             await script.load();
             await session.detach();
         };
 
-        for (const permission of permissionsToGrant) await setPermission(permission, 2);
-        for (const permission of permissionsToDeny) await setPermission(permission, 0);
-        await grantLocationPermission();
+        type Permissions = Exclude<typeof _permissions, undefined>;
+        const permissions =
+            _permissions ||
+            iosPermissions.reduce<Permissions>((acc, p) => ({ ...acc, [p]: 'allow' }), { location: 'always' });
+
+        for (const [permission, to] of Object.entries(permissions)) {
+            if (permission === 'location') {
+                if (!(to in locationPermissionValues)) throw new Error(`Invalid location permission value: "${to}"`);
+                const value = locationPermissionValues[to as 'always'];
+                await grantLocationPermission(value);
+                continue;
+            }
+
+            if (to === 'unset') await unsetPermission(permission);
+            else if (to in permissionValues) await setPermission(permission, permissionValues[to as 'allow']);
+            else throw new Error(`Invalid permission value for "${permission}": "${to}"`);
+        }
     },
     startApp: async (appId) => {
         if (options.capabilities.includes('frida')) {
@@ -182,3 +203,23 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     getAppId: async (ipaPath) => (await ipaInfo(ipaPath)).info['CFBundleIdentifier'] as string | undefined,
     getAppVersion: async (ipaPath) => (await ipaInfo(ipaPath)).info['CFBundleShortVersionString'] as string | undefined,
 });
+
+/** The IDs of known permissions on iOS. */
+export const iosPermissions = [
+    'kTCCServiceLiverpool',
+    'kTCCServiceUbiquity',
+    'kTCCServiceCalendar',
+    'kTCCServiceAddressBook',
+    'kTCCServiceReminders',
+    'kTCCServicePhotos',
+    'kTCCServiceMediaLibrary',
+    'kTCCServiceBluetoothAlways',
+    'kTCCServiceMotion',
+    'kTCCServiceWillow',
+    'kTCCServiceExposureNotification',
+    'kTCCServiceCamera',
+    'kTCCServiceMicrophone',
+    'kTCCServiceUserTracking',
+] as const;
+/** An ID of a known permission on iOS. */
+export type IosPermission = (typeof iosPermissions)[number];
