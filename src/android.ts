@@ -90,8 +90,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     },
 
     installApp: async (apkPath) => {
-        // TODO: We shouldn't grant runtime permissions here. Move that to setAppPermissions().
-        await execa('adb', ['install-multiple', '-g', apkPath], { shell: true });
+        await execa('adb', ['install-multiple', apkPath], { shell: true });
     },
     uninstallApp: async (appId) => {
         await execa('adb', ['shell', 'pm', 'uninstall', '--user', '0', appId]).catch((err) => {

@@ -36,7 +36,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:322](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L322)
+[android.ts:321](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L321)
 
 ___
 
@@ -242,7 +242,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:191](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L191)
+[android.ts:190](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L190)
 
 ___
 
