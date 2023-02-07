@@ -4,7 +4,7 @@ import { join } from 'path';
 import { pause, platformApi } from '../src/index';
 
 // You can pass the following command line arguments:
-// `npx tsm examples/android.ts <app ID> <app path>`
+// `npx tsx examples/android-device.ts <app ID> <app path>`
 
 (async () => {
     const android = platformApi({
@@ -29,7 +29,15 @@ import { pause, platformApi } from '../src/index';
     console.log('App:', id, '@', version);
 
     await android.installApp(`${appPath}/${appId}/*.apk`);
+    // First, grant all permissions.
     await android.setAppPermissions(appId);
+    // Then, revoke the camera and location permissions.
+    await android.setAppPermissions(appId, {
+        'android.permission.CAMERA': 'deny',
+        'android.permission.ACCESS_FINE_LOCATION': 'deny',
+        'android.permission.ACCESS_COARSE_LOCATION': 'deny',
+        'android.permission.ACCESS_BACKGROUND_LOCATION': 'deny',
+    });
     await android.startApp(appId);
 
     // Give the app some time to start.

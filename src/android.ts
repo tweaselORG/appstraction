@@ -99,19 +99,29 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             if (!err.stdout.includes('not installed for 0')) throw err;
         });
     },
-    // Basic permissions are granted at install time, we only need to grant dangerous permissions, see:
-    // https://android.stackexchange.com/a/220297.
-    setAppPermissions: async (appId) => {
-        const { stdout: permStr } = await execa('adb', ['shell', 'pm', 'list', 'permissions', '-g', '-d', '-u']);
-        const dangerousPermissions = permStr
-            .split('\n')
-            .filter((l) => l.startsWith('  permission:'))
-            .map((l) => l.replace('  permission:', ''));
+    setAppPermissions: async (appId, _permissions) => {
+        const getAllPermissions = () =>
+            // The `-g` is required to also get the runtime permissions, see https://github.com/tweaselORG/appstraction/issues/15#issuecomment-1420771931.
+            execa('adb', ['shell', 'pm', 'list', 'permissions', '-u', '-g'])
+                .then((r) => r.stdout)
+                .then((stdout) =>
+                    stdout
+                        .split('\n')
+                        .filter((l) => l.startsWith('  permission:'))
+                        .map((l) => l.replace('  permission:', ''))
+                );
 
-        for (const permission of dangerousPermissions) {
+        type Permissions = Exclude<typeof _permissions, undefined>;
+        const permissions =
+            _permissions || (await getAllPermissions()).reduce<Permissions>((acc, p) => ({ ...acc, [p]: 'allow' }), {});
+
+        for (const [permission, value] of Object.entries(permissions)) {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            const command = { allow: 'grant', deny: 'revoke' }[value!];
+
             // We expect this to fail for permissions the app doesn't want.
             // eslint-disable-next-line @typescript-eslint/no-empty-function
-            await execa('adb', ['shell', 'pm', 'grant', appId, permission]).catch(() => {});
+            await execa('adb', ['shell', 'pm', command, appId, permission]).catch(() => {});
         }
     },
     startApp(appId) {
@@ -176,3 +186,137 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     getAppVersion: async (apkPath) =>
         (await execa('aapt', ['dump', 'badging', apkPath], { reject: false })).stdout.match(/versionName='(.+?)'/)?.[1],
 });
+
+/** The IDs of known permissions on Android. */
+export const androidPermissions = [
+    'android.permission.ACCEPT_HANDOVER',
+    'android.permission.ACCESS_BACKGROUND_LOCATION',
+    'android.permission.ACCESS_COARSE_LOCATION',
+    'android.permission.ACCESS_FINE_LOCATION',
+    'android.permission.ACCESS_LOCATION_EXTRA_COMMANDS',
+    'android.permission.ACCESS_MEDIA_LOCATION',
+    'android.permission.ACCESS_NETWORK_STATE',
+    'android.permission.ACCESS_NOTIFICATION_POLICY',
+    'android.permission.ACCESS_WIFI_STATE',
+    'android.permission.ACTIVITY_RECOGNITION',
+    'android.permission.ANSWER_PHONE_CALLS',
+    'android.permission.AUTHENTICATE_ACCOUNTS',
+    'android.permission.BLUETOOTH_ADMIN',
+    'android.permission.BLUETOOTH_ADVERTISE',
+    'android.permission.BLUETOOTH_CONNECT',
+    'android.permission.BLUETOOTH_SCAN',
+    'android.permission.BLUETOOTH',
+    'android.permission.BODY_SENSORS_BACKGROUND',
+    'android.permission.BODY_SENSORS',
+    'android.permission.BROADCAST_STICKY',
+    'android.permission.CALL_COMPANION_APP',
+    'android.permission.CALL_PHONE',
+    'android.permission.CAMERA',
+    'android.permission.CHANGE_NETWORK_STATE',
+    'android.permission.CHANGE_WIFI_MULTICAST_STATE',
+    'android.permission.CHANGE_WIFI_STATE',
+    'android.permission.DELIVER_COMPANION_MESSAGES',
+    'android.permission.DISABLE_KEYGUARD',
+    'android.permission.EXPAND_STATUS_BAR',
+    'android.permission.FLASHLIGHT',
+    'android.permission.FOREGROUND_SERVICE',
+    'android.permission.GET_ACCOUNTS',
+    'android.permission.GET_PACKAGE_SIZE',
+    'android.permission.GET_TASKS',
+    'android.permission.HIDE_OVERLAY_WINDOWS',
+    'android.permission.HIGH_SAMPLING_RATE_SENSORS',
+    'android.permission.INTERNET',
+    'android.permission.KILL_BACKGROUND_PROCESSES',
+    'android.permission.MANAGE_ACCOUNTS',
+    'android.permission.MANAGE_OWN_CALLS',
+    'android.permission.MODIFY_AUDIO_SETTINGS',
+    'android.permission.NEARBY_WIFI_DEVICES',
+    'android.permission.NFC_PREFERRED_PAYMENT_INFO',
+    'android.permission.NFC_TRANSACTION_EVENT',
+    'android.permission.NFC',
+    'android.permission.PERSISTENT_ACTIVITY',
+    'android.permission.POST_NOTIFICATIONS',
+    'android.permission.PROCESS_OUTGOING_CALLS',
+    'android.permission.QUERY_ALL_PACKAGES',
+    'android.permission.READ_BASIC_PHONE_STATE',
+    'android.permission.READ_CALENDAR',
+    'android.permission.READ_CALL_LOG',
+    'android.permission.READ_CELL_BROADCASTS',
+    'android.permission.READ_CONTACTS',
+    'android.permission.READ_EXTERNAL_STORAGE',
+    'android.permission.READ_INSTALL_SESSIONS',
+    'android.permission.READ_MEDIA_AUDIO',
+    'android.permission.READ_MEDIA_IMAGES',
+    'android.permission.READ_MEDIA_VIDEO',
+    'android.permission.READ_NEARBY_STREAMING_POLICY',
+    'android.permission.READ_PHONE_NUMBERS',
+    'android.permission.READ_PHONE_STATE',
+    'android.permission.READ_PROFILE',
+    'android.permission.READ_SMS',
+    'android.permission.READ_SOCIAL_STREAM',
+    'android.permission.READ_SYNC_SETTINGS',
+    'android.permission.READ_SYNC_STATS',
+    'android.permission.READ_USER_DICTIONARY',
+    'android.permission.RECEIVE_BOOT_COMPLETED',
+    'android.permission.RECEIVE_MMS',
+    'android.permission.RECEIVE_SMS',
+    'android.permission.RECEIVE_WAP_PUSH',
+    'android.permission.RECORD_AUDIO',
+    'android.permission.REORDER_TASKS',
+    'android.permission.REQUEST_COMPANION_PROFILE_WATCH',
+    'android.permission.REQUEST_COMPANION_RUN_IN_BACKGROUND',
+    'android.permission.REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND',
+    'android.permission.REQUEST_COMPANION_USE_DATA_IN_BACKGROUND',
+    'android.permission.REQUEST_DELETE_PACKAGES',
+    'android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
+    'android.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE',
+    'android.permission.REQUEST_PASSWORD_COMPLEXITY',
+    'android.permission.RESTART_PACKAGES',
+    'android.permission.SCHEDULE_EXACT_ALARM',
+    'android.permission.SEND_SMS',
+    'android.permission.SET_WALLPAPER_HINTS',
+    'android.permission.SET_WALLPAPER',
+    'android.permission.SUBSCRIBED_FEEDS_READ',
+    'android.permission.SUBSCRIBED_FEEDS_WRITE',
+    'android.permission.TRANSMIT_IR',
+    'android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION',
+    'android.permission.USE_BIOMETRIC',
+    'android.permission.USE_CREDENTIALS',
+    'android.permission.USE_EXACT_ALARM',
+    'android.permission.USE_FINGERPRINT',
+    'android.permission.USE_FULL_SCREEN_INTENT',
+    'android.permission.USE_SIP',
+    'android.permission.UWB_RANGING',
+    'android.permission.VIBRATE',
+    'android.permission.WAKE_LOCK',
+    'android.permission.WRITE_CALENDAR',
+    'android.permission.WRITE_CALL_LOG',
+    'android.permission.WRITE_CONTACTS',
+    'android.permission.WRITE_EXTERNAL_STORAGE',
+    'android.permission.WRITE_PROFILE',
+    'android.permission.WRITE_SMS',
+    'android.permission.WRITE_SOCIAL_STREAM',
+    'android.permission.WRITE_SYNC_SETTINGS',
+    'android.permission.WRITE_USER_DICTIONARY',
+    'com.android.alarm.permission.SET_ALARM',
+    'com.android.browser.permission.READ_HISTORY_BOOKMARKS',
+    'com.android.browser.permission.WRITE_HISTORY_BOOKMARKS',
+    'com.android.launcher.permission.INSTALL_SHORTCUT',
+    'com.android.launcher.permission.UNINSTALL_SHORTCUT',
+    'com.android.voicemail.permission.ADD_VOICEMAIL',
+    'com.google.android.gms.dck.permission.DIGITAL_KEY_READ',
+    'com.google.android.gms.dck.permission.DIGITAL_KEY_WRITE',
+    'com.google.android.gms.permission.ACTIVITY_RECOGNITION',
+    'com.google.android.gms.permission.AD_ID_NOTIFICATION',
+    'com.google.android.gms.permission.AD_ID',
+    'com.google.android.gms.permission.CAR_FUEL',
+    'com.google.android.gms.permission.CAR_MILEAGE',
+    'com.google.android.gms.permission.CAR_SPEED',
+    'com.google.android.gms.permission.CAR_VENDOR_EXTENSION',
+    'com.google.android.gms.permission.REQUEST_SCREEN_LOCK_COMPLEXITY',
+    'com.google.android.gms.permission.TRANSFER_WIFI_CREDENTIAL',
+    'com.google.android.ims.providers.ACCESS_DATA',
+    'com.google.android.providers.gsf.permission.READ_GSERVICES',
+] as const;
+/** An ID of a known permission on Android. */
+export type AndroidPermission = (typeof androidPermissions)[number];
