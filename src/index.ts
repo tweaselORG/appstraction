@@ -18,8 +18,16 @@ export type SupportedRunTarget<Platform extends SupportedPlatform> = Platform ex
 export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends SupportedRunTarget<Platform>> = {
     /** Assert that the selected device is connected and ready to be used with the selected capabilities. */
     ensureDevice: () => Promise<void>;
-    /** Reset the device to the snapshot specified in the `targetOptions.snapshotName` (only available for emulators). */
-    resetDevice: Platform extends 'android' ? (RunTarget extends 'emulator' ? () => Promise<void> : never) : never;
+    /**
+     * Reset the device to the specified snapshot (only available for emulators).
+     *
+     * @param snapshotName The name of the snapshot to reset to.
+     */
+    resetDevice: Platform extends 'android'
+        ? RunTarget extends 'emulator'
+            ? (snapshotName: string) => Promise<void>
+            : never
+        : never;
     /**
      * Clear any potential stuck modals by pressing the back button followed by the home button.
      *
@@ -185,9 +193,15 @@ export type PlatformApiOptions<
      * run.
      */
     capabilities: Capabilities;
-    /** The options for the selected platform/run target combination. */
-    targetOptions: RunTargetOptions<Capabilities>[Platform][RunTarget];
-};
+} & (RunTargetOptions<Capabilities>[Platform][RunTarget] extends object
+    ? {
+          /** The options for the selected platform/run target combination. */
+          targetOptions: RunTargetOptions<Capabilities>[Platform][RunTarget];
+      }
+    : {
+          /** The options for the selected platform/run target combination. */
+          targetOptions?: Record<string, never>;
+      });
 
 /** The options for a specific platform/run target combination. */
 export type RunTargetOptions<
@@ -197,10 +211,7 @@ export type RunTargetOptions<
     /** The options for the Android platform. */
     android: {
         /** The options for the Android emulator run target. */
-        emulator: {
-            /** The name of a snapshot to use for the `resetDevice()` function. */
-            snapshotName?: string;
-        } & ('frida' extends Capability
+        emulator: ('frida' extends Capability
             ? {
                   /** The path to the [`frida-ps`](https://frida.re/docs/frida-ps/) binary. */
                   fridaPsPath: string;

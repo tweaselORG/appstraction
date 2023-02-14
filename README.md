@@ -116,7 +116,7 @@ frida-ps -U | grep frida # should have `frida-server`
 After you have set up the emulator to your liking, you should create a snapshot to later be able to reset the emulator to this state:
 
 ```sh
-adb emu avd snapshot save "<snapshot name>" # Specify this name in `targetOptions.snapshotName`.
+adb emu avd snapshot save "<snapshot name>" # You can later use this name with the `resetDevice` function.
 ```
 
 ### Physical iOS device
@@ -149,21 +149,18 @@ import { platformApi } from 'appstraction';
     const android = platformApi({
         platform: 'android',
         runTarget: 'emulator',
-        capabilities: [],
-        targetOptions: {
-            snapshotName: '<snapshot name>',
-        },
+        capabilities: []
     });
     
     await android.ensureDevice();
-    await android.resetDevice();
+    await android.resetDevice('<snapshot name>');
     await android.installApp('</path/to/app/files/*.apk>');
 })();
 ```
 
 This example didn't need any capabilities. Resetting the emulator and installing apps can both be done in any emulator, without the need for any special preparation.
 
-Other functions do need capabilities, though, which you would pass to the `capabilities` array in the `targetOptions`. For example, reading the `SharedPreferences` requires the `frida` capability (and you need to set up Frida as described above). And for starting an app, you can optionally pass the `certificate-pinning-bypass`, which will use objection to try and bypass any certificate pinning the app may use.
+Other functions do need capabilities, though, which you would pass to the `capabilities` array in the options. For example, reading the `SharedPreferences` requires the `frida` capability (and you need to set up Frida as described above). And for starting an app, you can optionally pass the `certificate-pinning-bypass`, which will use objection to try and bypass any certificate pinning the app may use.
 
 ```ts
 (async () => {
@@ -173,8 +170,7 @@ Other functions do need capabilities, though, which you would pass to the `capab
         capabilities: ['frida', 'certificate-pinning-bypass'],
         targetOptions: {
             fridaPsPath: '</path/to/frida-ps>',
-            objectionPath: '</path/to/objection>',
-            snapshotName: '<snapshot name>',
+            objectionPath: '</path/to/objection>'
         },
     });
 

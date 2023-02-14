@@ -54,9 +54,9 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
             try {
                 const { stdout } = await execa('sshpass', [
                     '-p',
-                    options.targetOptions.rootPw || 'alpine',
+                    options.targetOptions!.rootPw || 'alpine',
                     'ssh',
-                    `root@${options.targetOptions.ip}`,
+                    `root@${options.targetOptions!.ip}`,
                     `uname`,
                 ]);
                 if (stdout !== 'Darwin') throw new Error('Wrong uname output.');
@@ -83,9 +83,9 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         const setPermission = (permission: string, value: 0 | 2) =>
             execa('sshpass', [
                 '-p',
-                options.targetOptions.rootPw || 'alpine',
+                options.targetOptions!.rootPw || 'alpine',
                 'ssh',
-                `root@${options.targetOptions.ip}`,
+                `root@${options.targetOptions!.ip}`,
                 'sqlite3',
                 '/private/var/mobile/Library/TCC/TCC.db',
                 `'INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) VALUES("${permission}", "${appId}", 0, ${value}, 2, 1);'`,
@@ -93,9 +93,9 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         const unsetPermission = (permission: string) =>
             execa('sshpass', [
                 '-p',
-                options.targetOptions.rootPw || 'alpine',
+                options.targetOptions!.rootPw || 'alpine',
                 'ssh',
-                `root@${options.targetOptions.ip}`,
+                `root@${options.targetOptions!.ip}`,
                 'sqlite3',
                 '/private/var/mobile/Library/TCC/TCC.db',
                 `'DELETE FROM access WHERE service="${permission}" AND client="${appId}";'`,
@@ -135,9 +135,9 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         } else if (options.capabilities.includes('ssh')) {
             execa('sshpass', [
                 '-p',
-                options.targetOptions.rootPw || 'alpine',
+                options.targetOptions!.rootPw || 'alpine',
                 'ssh',
-                `root@${options.targetOptions.ip}`,
+                `root@${options.targetOptions!.ip}`,
                 `open ${appId}`,
             ]);
         } else {
@@ -157,7 +157,7 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         if (!options.capabilities.includes('frida'))
             throw new Error('Frida is required for getting the PID for an app ID.');
 
-        const { stdout: psJson } = await execa(options.targetOptions.fridaPsPath, [
+        const { stdout: psJson } = await execa(options.targetOptions!.fridaPsPath, [
             '--usb',
             '--applications',
             '--json',
@@ -177,7 +177,6 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         if (!options.capabilities.includes('frida'))
             throw new Error('Frida is required for getting device attributes.');
 
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const opts = args[0]!;
 
         switch (attribute) {
