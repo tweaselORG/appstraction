@@ -35,7 +35,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         ensureFrida: async () => {
             if (!options.capabilities.includes('frida')) return;
 
-            const fridaCheck = await execa(`${options.targetOptions.fridaPsPath} -U | grep frida-server`, {
+            const fridaCheck = await execa(`${options.targetOptions!.fridaPsPath} -U | grep frida-server`, {
                 shell: true,
                 reject: false,
             });
@@ -53,7 +53,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             let fridaTries = 0;
             while (
                 (
-                    await execa(`${options.targetOptions.fridaPsPath} -U | grep frida-server`, {
+                    await execa(`${options.targetOptions!.fridaPsPath} -U | grep frida-server`, {
                         shell: true,
                         reject: false,
                     })
@@ -66,12 +66,10 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         },
     },
 
-    async resetDevice() {
+    async resetDevice(snapshotName) {
         if (options.runTarget !== 'emulator') throw new Error('Resetting devices is only supported for emulators.');
-        if (!('snapshotName' in options.targetOptions) || !options.targetOptions.snapshotName)
-            throw new Error('Setting `snapshotName` in `targetOptions` is required for resetting the emulator.');
 
-        await execa('adb', ['emu', 'avd', 'snapshot', 'load', options.targetOptions.snapshotName]);
+        await execa('adb', ['emu', 'avd', 'snapshot', 'load', snapshotName]);
         await this._internal.ensureFrida();
     },
     async ensureDevice() {
@@ -115,7 +113,6 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             _permissions || (await getAllPermissions()).reduce<Permissions>((acc, p) => ({ ...acc, [p]: 'allow' }), {});
 
         for (const [permission, value] of Object.entries(permissions)) {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             const command = { allow: 'grant', deny: 'revoke' }[value!];
 
             // We expect this to fail for permissions the app doesn't want.
@@ -126,7 +123,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     startApp(appId) {
         // We deliberately don't await these since objection doesn't exit after the app is started.
         if (options.capabilities.includes('certificate-pinning-bypass')) {
-            const process = execa(options.targetOptions.objectionPath, [
+            const process = execa(options.targetOptions!.objectionPath, [
                 '--gadget',
                 appId,
                 'explore',

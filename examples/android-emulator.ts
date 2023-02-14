@@ -14,7 +14,6 @@ import { pause, platformApi } from '../src/index';
         targetOptions: {
             fridaPsPath: join(homedir(), '.local/bin/frida-ps'),
             objectionPath: join(homedir(), '.local/bin/objection'),
-            snapshotName: process.argv[4] || 'your-snapshot',
         },
     });
 
@@ -22,7 +21,7 @@ import { pause, platformApi } from '../src/index';
     const appPath = process.argv[3] || '/path/to/app-files';
 
     await android.ensureDevice();
-    await android.resetDevice();
+    await android.resetDevice(process.argv[4] || 'your-snapshot');
 
     await android.setClipboard('I copied this.');
 
