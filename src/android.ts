@@ -35,7 +35,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         ensureFrida: async () => {
             if (!options.capabilities.includes('frida')) return;
 
-            const fridaCheck = await execa(`${options.targetOptions!.fridaPsPath} -U | grep frida-server`, {
+            const fridaCheck = await execa(`frida-ps -U | grep frida-server`, {
                 shell: true,
                 reject: false,
             });
@@ -53,7 +53,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             let fridaTries = 0;
             while (
                 (
-                    await execa(`${options.targetOptions!.fridaPsPath} -U | grep frida-server`, {
+                    await execa(`frida-ps -U | grep frida-server`, {
                         shell: true,
                         reject: false,
                     })
@@ -123,7 +123,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     startApp(appId) {
         // We deliberately don't await these since objection doesn't exit after the app is started.
         if (options.capabilities.includes('certificate-pinning-bypass')) {
-            const process = execa(options.targetOptions!.objectionPath, [
+            const process = execa('objection', [
                 '--gadget',
                 appId,
                 'explore',

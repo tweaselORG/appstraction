@@ -204,6 +204,7 @@ export type PlatformApiOptions<
       });
 
 /** The options for a specific platform/run target combination. */
+// Use `unknown` here to mean "no options", and `never` to mean "not supported".
 export type RunTargetOptions<
     Capabilities extends SupportedCapability<'android' | 'ios'>[],
     Capability = Capabilities[number]
@@ -211,51 +212,23 @@ export type RunTargetOptions<
     /** The options for the Android platform. */
     android: {
         /** The options for the Android emulator run target. */
-        emulator: ('frida' extends Capability
-            ? {
-                  /** The path to the [`frida-ps`](https://frida.re/docs/frida-ps/) binary. */
-                  fridaPsPath: string;
-              }
-            : unknown) &
-            ('certificate-pinning-bypass' extends Capability
-                ? {
-                      /** The path to the [`objection`](https://github.com/sensepost/objection/) binary. */
-                      objectionPath: string;
-                  }
-                : unknown);
+        emulator: unknown;
         /** The options for the Android physical device run target. */
-        device: ('frida' extends Capability
-            ? {
-                  /** The path to the [`frida-ps`](https://frida.re/docs/frida-ps/) binary. */
-                  fridaPsPath: string;
-              }
-            : unknown) &
-            ('certificate-pinning-bypass' extends Capability
-                ? {
-                      /** The path to the [`objection`](https://github.com/sensepost/objection/) binary. */
-                      objectionPath: string;
-                  }
-                : unknown);
+        device: unknown;
     };
     /** The options for the iOS platform. */
     ios: {
         /** The options for the iOS emulator run target. */
         emulator: never;
         /** The options for the iOS physical device run target. */
-        device: ('ssh' extends Capability
+        device: 'ssh' extends Capability
             ? {
                   /** The password of the root user on the device, defaults to `alpine` if not set. */
                   rootPw?: string;
                   /** The device's IP address. */
                   ip: string;
               }
-            : unknown) &
-            ('frida' extends Capability
-                ? {
-                      /** The path to the [`frida-ps`](https://frida.re/docs/frida-ps/) binary. */
-                      fridaPsPath: string;
-                  }
-                : unknown);
+            : unknown;
     };
 };
 

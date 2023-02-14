@@ -157,11 +157,7 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         if (!options.capabilities.includes('frida'))
             throw new Error('Frida is required for getting the PID for an app ID.');
 
-        const { stdout: psJson } = await execa(options.targetOptions!.fridaPsPath, [
-            '--usb',
-            '--applications',
-            '--json',
-        ]);
+        const { stdout: psJson } = await execa('frida-ps', ['--usb', '--applications', '--json']);
         const ps: { pid: number; name: string; identifier: string }[] = JSON.parse(psJson);
         return ps.find((p) => p.identifier === appId)?.pid;
     },

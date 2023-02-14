@@ -54,7 +54,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:270](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L270)
+[index.ts:243](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L243)
 
 ___
 
@@ -73,7 +73,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:276](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L276)
+[index.ts:249](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L249)
 
 ___
 
@@ -85,7 +85,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:224](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L224)
+[ios.ts:220](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L220)
 
 ___
 
@@ -164,16 +164,16 @@ The options for a specific platform/run target combination.
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `android` | { `device`: ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` & ``"certificate-pinning-bypass"`` extends `Capability` ? { `objectionPath`: `string`  } : `unknown` ; `emulator`: ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` & ``"certificate-pinning-bypass"`` extends `Capability` ? { `objectionPath`: `string`  } : `unknown`  } | The options for the Android platform. |
-| `android.device` | ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` & ``"certificate-pinning-bypass"`` extends `Capability` ? { `objectionPath`: `string`  } : `unknown` | The options for the Android physical device run target. |
-| `android.emulator` | ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` & ``"certificate-pinning-bypass"`` extends `Capability` ? { `objectionPath`: `string`  } : `unknown` | The options for the Android emulator run target. |
-| `ios` | { `device`: ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` & ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` ; `emulator`: `never`  } | The options for the iOS platform. |
-| `ios.device` | ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` & ``"frida"`` extends `Capability` ? { `fridaPsPath`: `string`  } : `unknown` | The options for the iOS physical device run target. |
+| `android` | { `device`: `unknown` ; `emulator`: `unknown`  } | The options for the Android platform. |
+| `android.device` | `unknown` | The options for the Android physical device run target. |
+| `android.emulator` | `unknown` | The options for the Android emulator run target. |
+| `ios` | { `device`: ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` ; `emulator`: `never`  } | The options for the iOS platform. |
+| `ios.device` | ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` | The options for the iOS physical device run target. |
 | `ios.emulator` | `never` | The options for the iOS emulator run target. |
 
 #### Defined in
 
-[index.ts:207](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L207)
+[index.ts:208](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L208)
 
 ___
 
@@ -191,7 +191,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:263](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L263)
+[index.ts:236](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L236)
 
 ___
 
@@ -245,7 +245,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:207](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L207)
+[ios.ts:203](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L203)
 
 ## Functions
 
@@ -277,4 +277,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:291](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L291)
+[index.ts:264](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L264)
