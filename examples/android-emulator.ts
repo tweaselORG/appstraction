@@ -1,6 +1,4 @@
 /* eslint-disable no-console */
-import { homedir } from 'os';
-import { join } from 'path';
 import { pause, platformApi } from '../src/index';
 
 // You can pass the following command line arguments:
@@ -11,10 +9,6 @@ import { pause, platformApi } from '../src/index';
         platform: 'android',
         runTarget: 'emulator',
         capabilities: ['frida', 'certificate-pinning-bypass'],
-        targetOptions: {
-            fridaPsPath: join(homedir(), '.local/bin/frida-ps'),
-            objectionPath: join(homedir(), '.local/bin/objection'),
-        },
     });
 
     const appId = process.argv[2] || 'de.hafas.android.db';

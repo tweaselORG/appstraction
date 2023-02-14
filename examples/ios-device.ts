@@ -1,6 +1,4 @@
 /* eslint-disable no-console */
-import { homedir } from 'os';
-import { join } from 'path';
 import { pause, platformApi } from '../src/index';
 
 // You can pass the following command line arguments:
@@ -12,7 +10,6 @@ import { pause, platformApi } from '../src/index';
         runTarget: 'device',
         capabilities: ['frida', 'ssh'],
         targetOptions: {
-            fridaPsPath: join(homedir(), '.local/bin/frida-ps'),
             ip: process.argv[2],
         },
     });

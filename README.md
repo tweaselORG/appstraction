@@ -13,7 +13,7 @@ yarn add appstraction
 # or `npm i appstraction`
 ```
 
-Additionally, you will need to [prepare the target device/emulator](#device-preparation) and install a few dependencies on the host machine.
+Additionally, you will need to [prepare the target device/emulator](#device-preparation) and install a few dependencies on the host machine. You need to have those in your `PATH`.
 
 ### Host dependencies for Android
 
@@ -168,10 +168,6 @@ Other functions do need capabilities, though, which you would pass to the `capab
         platform: 'android',
         runTarget: 'emulator',
         capabilities: ['frida', 'certificate-pinning-bypass'],
-        targetOptions: {
-            fridaPsPath: '</path/to/frida-ps>',
-            objectionPath: '</path/to/objection>'
-        },
     });
 
     await android.ensureDevice();
