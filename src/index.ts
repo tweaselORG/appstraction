@@ -167,6 +167,7 @@ export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends Su
     /** @ignore */
     _internal: Platform extends 'android'
         ? {
+              awaitAdb: () => Promise<void>;
               ensureFrida: () => Promise<void>;
 
               objectionProcesses: ExecaChildProcess[];

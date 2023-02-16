@@ -31,7 +31,15 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     _internal: {
         objectionProcesses: [],
 
-        ensureFrida: async () => {
+        awaitAdb: async () => {
+            let adbTries = 0;
+            while ((await execa('adb', ['get-state'], { reject: false })).exitCode !== 0) {
+                if (adbTries > 100) throw new Error('Failed to connect via adb.');
+                await pause(250);
+                adbTries++;
+            }
+        },
+        async ensureFrida() {
             if (!options.capabilities.includes('frida')) return;
 
             const fridaCheck = await execa(`frida-ps -U | grep frida-server`, {
@@ -41,12 +49,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             if (fridaCheck.exitCode === 0) return;
 
             await execa('adb', ['root']);
-            let adbTries = 0;
-            while ((await execa('adb', ['get-state'], { reject: false })).exitCode !== 0) {
-                if (adbTries > 100) throw new Error('Failed to connect via adb.');
-                await pause(250);
-                adbTries++;
-            }
+            await this.awaitAdb();
 
             await execa('adb shell "nohup /data/local/tmp/frida-server >/dev/null 2>&1 &"', { shell: true });
             let fridaTries = 0;
@@ -73,13 +76,15 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         const { stdout } = await execa('adb', ['emu', 'avd', 'snapshot', 'load', snapshotName]);
         if (stdout.includes('KO')) throw new Error(`Failed to load snapshot: ${stdout}.`);
 
-        await this._internal.ensureFrida();
+        await this.ensureDevice();
     },
     async ensureDevice() {
-        if ((await execa('adb', ['get-state'], { reject: false })).exitCode !== 0)
+        await this._internal.awaitAdb().catch((err) => {
             throw new Error(
-                options.runTarget === 'device' ? 'You need to connect your device.' : 'You need to start the emulator.'
+                options.runTarget === 'device' ? 'You need to connect your device.' : 'You need to start the emulator.',
+                { cause: err }
             );
+        });
 
         await this._internal.ensureFrida();
     },
