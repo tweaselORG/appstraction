@@ -29,7 +29,6 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     options: PlatformApiOptions<'android', RunTarget, SupportedCapability<'android'>[]>
 ): PlatformApi<'android', 'device' | 'emulator'> => ({
     _internal: {
-        emuProcess: undefined,
         objectionProcesses: [],
 
         ensureFrida: async () => {

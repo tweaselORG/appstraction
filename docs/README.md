@@ -36,7 +36,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:318](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L318)
+[android.ts:317](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L317)
 
 ___
 
@@ -54,7 +54,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:243](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L243)
+[index.ts:242](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L242)
 
 ___
 
@@ -73,7 +73,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:249](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L249)
+[index.ts:248](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L248)
 
 ___
 
@@ -143,7 +143,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:181](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L181)
+[index.ts:180](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L180)
 
 ___
 
@@ -173,7 +173,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:208](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L208)
+[index.ts:207](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L207)
 
 ___
 
@@ -191,7 +191,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:236](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L236)
+[index.ts:235](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L235)
 
 ___
 
@@ -233,7 +233,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:187](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L187)
+[android.ts:186](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L186)
 
 ___
 
@@ -277,4 +277,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:264](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L264)
+[index.ts:263](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L263)

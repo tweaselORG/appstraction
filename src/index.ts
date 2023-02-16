@@ -169,7 +169,6 @@ export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends Su
         ? {
               ensureFrida: () => Promise<void>;
 
-              emuProcess?: ExecaChildProcess;
               objectionProcesses: ExecaChildProcess[];
           }
         : Platform extends 'ios'
