@@ -68,7 +68,11 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     async resetDevice(snapshotName) {
         if (options.runTarget !== 'emulator') throw new Error('Resetting devices is only supported for emulators.');
 
-        await execa('adb', ['emu', 'avd', 'snapshot', 'load', snapshotName]);
+        // Annoyingly, this command doesn't return a non-zero exit code if it fails (e.g. if the snapshot doesn't
+        // exist). It only prints to stdout (not even stderr -.-).
+        const { stdout } = await execa('adb', ['emu', 'avd', 'snapshot', 'load', snapshotName]);
+        if (stdout.includes('KO')) throw new Error(`Failed to load snapshot: ${stdout}.`);
+
         await this._internal.ensureFrida();
     },
     async ensureDevice() {
