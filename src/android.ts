@@ -123,9 +123,17 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         for (const [permission, value] of Object.entries(permissions)) {
             const command = { allow: 'grant', deny: 'revoke' }[value!];
 
-            // We expect this to fail for permissions the app doesn't want.
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
-            await execa('adb', ['shell', 'pm', command, appId, permission]).catch(() => {});
+            // We expect this to fail for unchangeable permissions and those the app doesn't want.
+            await execa('adb', ['shell', 'pm', command, appId, permission]).catch((err) => {
+                if (
+                    err.exitCode === 255 &&
+                    (err.stderr.includes('not a changeable permission type') ||
+                        err.stderr.includes('has not requested permission'))
+                )
+                    return;
+
+                throw new Error(`Failed to set permission "${permission}".`, { cause: err });
+            });
         }
     },
     startApp(appId) {
