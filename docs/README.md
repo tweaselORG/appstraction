@@ -12,6 +12,7 @@ appstraction
 - [IosPermission](README.md#iospermission)
 - [PlatformApi](README.md#platformapi)
 - [PlatformApiOptions](README.md#platformapioptions)
+- [Proxy](README.md#proxy)
 - [RunTargetOptions](README.md#runtargetoptions)
 - [SupportedCapability](README.md#supportedcapability)
 - [SupportedPlatform](README.md#supportedplatform)
@@ -38,7 +39,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:392](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L392)
+[android.ts:410](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L410)
 
 ___
 
@@ -56,7 +57,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:261](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L261)
+[index.ts:269](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L269)
 
 ___
 
@@ -75,7 +76,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:267](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L267)
+[index.ts:275](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L275)
 
 ___
 
@@ -87,7 +88,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:218](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L218)
+[ios.ts:219](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L219)
 
 ___
 
@@ -120,6 +121,7 @@ Functions that are available for the platforms.
 | `resetDevice` | `Platform` extends ``"android"`` ? `RunTarget` extends ``"emulator"`` ? (`snapshotName`: `string`) => `Promise`<`void`\> : `never` : `never` | Reset the device to the specified snapshot (only available for emulators). **`Param`** The name of the snapshot to reset to. |
 | `setAppPermissions` | (`appId`: `string`, `permissions?`: `Platform` extends ``"ios"`` ? { [p in IosPermission]?: "unset" \| "allow" \| "deny" } & { `location?`: ``"ask"`` \| ``"never"`` \| ``"always"`` \| ``"while-using"``  } : `Partial`<`Record`<`LiteralUnion`<[`AndroidPermission`](README.md#androidpermission), `string`\>, ``"allow"`` \| ``"deny"``\>\>) => `Promise`<`void`\> | Set the permissions for the app with the given app ID. By default, it will grant all known permissions (including dangerous permissions on Android) and set the location permission on iOS to `always`. You can specify which permissions to grant/deny using the `permissions` argument. Requires the `ssh` and `frida` capabilities on iOS. |
 | `setClipboard` | (`text`: `string`) => `Promise`<`void`\> | Set the clipboard to the given text. Requires the `frida` capability on Android and iOS. |
+| `setProxy` | `Platform` extends ``"android"`` ? (`proxy`: [`Proxy`](README.md#proxy) \| ``null``) => `Promise`<`void`\> : `never` | Set or disable the proxy on the device. Currently only supported on Android. **`Param`** The proxy to set, or `null` to disable the proxy. |
 | `startApp` | (`appId`: `string`) => `Promise`<`void`\> | Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning bypass if enabled. Requires the `frida` or `ssh` capability on iOS. On Android, this will start the app with or without a certificate pinning bypass depending on the `certificate-pinning-bypass` capability. |
 | `uninstallApp` | (`appId`: `string`) => `Promise`<`void`\> | Uninstall the app with the given app ID. Will not fail if the app is not installed. This also removes any data stored by the app. |
 
@@ -145,7 +147,26 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:199](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L199)
+[index.ts:207](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L207)
+
+___
+
+### Proxy
+
+Ƭ **Proxy**: `Object`
+
+Connection details for a proxy.
+
+#### Type declaration
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `host` | `string` | The host of the proxy. |
+| `port` | `number` | The port of the proxy. |
+
+#### Defined in
+
+[index.ts:283](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L283)
 
 ___
 
@@ -175,7 +196,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:226](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L226)
+[index.ts:234](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L234)
 
 ___
 
@@ -193,7 +214,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:254](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L254)
+[index.ts:262](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L262)
 
 ___
 
@@ -235,7 +256,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:261](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L261)
+[android.ts:279](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L279)
 
 ___
 
@@ -247,7 +268,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:201](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L201)
+[ios.ts:202](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L202)
 
 ## Functions
 
@@ -327,4 +348,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:282](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L282)
+[index.ts:297](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L297)

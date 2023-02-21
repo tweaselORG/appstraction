@@ -176,6 +176,14 @@ export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends Su
      * @param path The path to the certificate authority to remove.
      */
     removeCertificateAuthority: Platform extends 'android' ? (path: string) => Promise<void> : never;
+    /**
+     * Set or disable the proxy on the device.
+     *
+     * Currently only supported on Android.
+     *
+     * @param proxy The proxy to set, or `null` to disable the proxy.
+     */
+    setProxy: Platform extends 'android' ? (proxy: Proxy | null) => Promise<void> : never;
 
     /** @ignore */
     _internal: Platform extends 'android'
@@ -270,6 +278,13 @@ export type GetDeviceAttributeOptions = {
         /** The app ID of the app to get the `identifierForVendor` for. */
         appId: string;
     };
+};
+/** Connection details for a proxy. */
+export type Proxy = {
+    /** The host of the proxy. */
+    host: string;
+    /** The port of the proxy. */
+    port: number;
 };
 
 /**
