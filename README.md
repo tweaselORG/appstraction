@@ -18,6 +18,7 @@ With appstraction, you can perform the following actions programmatically on And
 * Get various device attributes (like the IDFV on iOS).
 * Set the clipboard content.
 * Get the app ID and version for an app file (`.apk` on Android, `.ipa` on iOS).
+* Install and remove root certificate authorities.
 
 Appstraction is written in TypeScript and provides comprehensive type definitions to make development easy.
 
@@ -41,6 +42,8 @@ For Android, you need the [Android command line tools](https://developer.android
 export ANDROID_HOME="$HOME/Android/Sdk"
 export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/33.0.0:$ANDROID_HOME/cmdline-tools/latest/bin/:$ANDROID_HOME/emulator"
 ```
+
+You also need `openssl`.
 
 For the `frida` capability, you need to install [`frida-tools`](https://frida.re/docs/installation/).
 

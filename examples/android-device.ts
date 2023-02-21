@@ -2,19 +2,25 @@
 import { parseAppMeta, pause, platformApi } from '../src/index';
 
 // You can pass the following command line arguments:
-// `npx tsx examples/android-device.ts <app ID> <app path>`
+// `npx tsx examples/android-device.ts <app ID> <app path> <CA cert path?>`
 
 (async () => {
     const android = platformApi({
         platform: 'android',
         runTarget: 'device',
-        capabilities: ['frida', 'certificate-pinning-bypass'],
+        capabilities: ['root', 'frida', 'certificate-pinning-bypass'],
     });
 
     const appId = process.argv[2] || 'de.hafas.android.db';
     const appPath = process.argv[3] || '/path/to/app-files';
+    const caCertPath = process.argv[4];
 
     await android.ensureDevice();
+
+    if (caCertPath) {
+        await android.removeCertificateAuthority(caCertPath);
+        await android.installCertificateAuthority(caCertPath);
+    }
 
     await android.setClipboard('I copied this.');
 

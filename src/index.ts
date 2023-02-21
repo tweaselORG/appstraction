@@ -147,11 +147,46 @@ export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends Su
      */
     setClipboard: (text: string) => Promise<void>;
 
+    /**
+     * Install the certificate authority with the given path as a trusted CA on the device. This allows you to intercept
+     * and modify traffic from apps on the device.
+     *
+     * On Android, this installs the CA as a system CA. As this is normally not possible on Android 10 and above, it
+     * overlays the `/system/etc/security/cacerts` directory with a tmpfs and installs the CA there. This means that the
+     * changes are not persistent across reboots.
+     *
+     * Currently only supported on Android.
+     *
+     * This requires the `root` capability on Android.
+     *
+     * @param path The path to the certificate authority to install.
+     */
+    installCertificateAuthority: Platform extends 'android' ? (path: string) => Promise<void> : never;
+    /**
+     * Remove the certificate authority with the given path from the trusted CAs on the device.
+     *
+     * On Android, this works for system CAs, including those pre-installed with the OS. As this is normally not
+     * possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and
+     * removes the CA there. This means that the changes are not persistent across reboots.
+     *
+     * Currently only supported on Android.
+     *
+     * This requires the `root` capability on Android.
+     *
+     * @param path The path to the certificate authority to remove.
+     */
+    removeCertificateAuthority: Platform extends 'android' ? (path: string) => Promise<void> : never;
+
     /** @ignore */
     _internal: Platform extends 'android'
         ? {
               awaitAdb: () => Promise<void>;
               ensureFrida: () => Promise<void>;
+              requireRoot: (action: string) => Promise<void>;
+
+              getCertificateSubjectHashOld: (path: string) => Promise<string | undefined>;
+              hasCertificateAuthority: (filename: string) => Promise<boolean>;
+              overlayTmpfs: (directoryPathWithoutLeadingSlash: string) => Promise<void>;
 
               objectionProcesses: ExecaChildProcess[];
           }
@@ -217,7 +252,7 @@ export type RunTargetOptions<
 
 /** A capability for the `platformApi()` function. */
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
-    ? 'frida' | 'certificate-pinning-bypass'
+    ? 'root' | 'frida' | 'certificate-pinning-bypass'
     : Platform extends 'ios'
     ? 'ssh' | 'frida'
     : never;

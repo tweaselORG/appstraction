@@ -48,8 +48,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             });
             if (fridaCheck.exitCode === 0) return;
 
-            await execa('adb', ['root']);
-            await this.awaitAdb();
+            await this.requireRoot('Frida');
 
             await execa('adb shell "nohup /data/local/tmp/frida-server >/dev/null 2>&1 &"', { shell: true });
             let fridaTries = 0;
@@ -65,6 +64,47 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 await pause(250);
                 fridaTries++;
             }
+        },
+        async requireRoot(action) {
+            if (!options.capabilities.includes('root')) throw new Error(`Root access is required for ${action}.`);
+
+            await execa('adb', ['root']);
+            await this.awaitAdb();
+        },
+
+        getCertificateSubjectHashOld: (path: string) =>
+            execa('openssl', ['x509', '-inform', 'PEM', '-subject_hash_old', '-in', path]).then(
+                ({ stdout }) => stdout.split('\n')[0]
+            ),
+        hasCertificateAuthority: (filename) =>
+            execa('adb', ['shell', 'ls', `/system/etc/security/cacerts/${filename}`], { reject: false }).then(
+                ({ exitCode }) => exitCode === 0
+            ),
+        overlayTmpfs: async (directoryPath) => {
+            const isTmpfsAlready = (await execa('adb', ['shell', 'mount'])).stdout
+                .split('\n')
+                .some((line) => line.includes(directoryPath) && line.includes('type tmpfs'));
+            if (isTmpfsAlready) return;
+
+            await execa('adb', ['shell', 'mkdir', '-pm', '600', '/data/local/tmp/appstraction-overlay-tmpfs-tmp']);
+            await execa('adb', [
+                'shell',
+                'cp',
+                '--preserve=all',
+                `${directoryPath}/*`,
+                '/data/local/tmp/appstraction-overlay-tmpfs-tmp',
+            ]);
+
+            await execa('adb', ['shell', 'mount', '-t', 'tmpfs', 'tmpfs', directoryPath]);
+            await execa('adb', [
+                'shell',
+                'cp',
+                '--preserve=all',
+                '/data/local/tmp/appstraction-overlay-tmpfs-tmp/*',
+                directoryPath,
+            ]);
+
+            await execa('adb', ['shell', 'rm', '-r', '/data/local/tmp/appstraction-overlay-tmpfs-tmp']);
         },
     },
 
@@ -187,6 +227,33 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             if (res) return;
         }
         throw new Error('Setting clipboard failed.');
+    },
+
+    async installCertificateAuthority(path) {
+        // Android only loads CAs with a filename of the form `<subject_hash_old>.0`.
+        const certFilename = `${await this._internal.getCertificateSubjectHashOld(path)}.0`;
+
+        if (await this._internal.hasCertificateAuthority(certFilename)) return;
+
+        await this._internal.requireRoot('installCertificateAuthority');
+
+        // Since Android 10, we cannot write to `/system` anymore, even if we are root, see:
+        // https://github.com/tweaselORG/meta/issues/18#issuecomment-1437057934
+        // Thanks to HTTP Toolkit for the idea to use a tmpfs as a workaround:
+        // https://github.com/httptoolkit/httptoolkit-server/blob/9658bef164fb5cfce13b2c4b1bedacc158767f57/src/interceptors/android/adb-commands.ts#L228-L230
+        await this._internal.overlayTmpfs('/system/etc/security/cacerts');
+
+        await execa('adb', ['push', path, `/system/etc/security/cacerts/${certFilename}`]);
+    },
+    async removeCertificateAuthority(path) {
+        const certFilename = `${await this._internal.getCertificateSubjectHashOld(path)}.0`;
+
+        if (!(await this._internal.hasCertificateAuthority(certFilename))) return;
+
+        await this._internal.requireRoot('removeCertificateAuthority');
+
+        await this._internal.overlayTmpfs('/system/etc/security/cacerts');
+        await execa('adb', ['shell', 'rm', `/system/etc/security/cacerts/${certFilename}`]);
     },
 });
 
