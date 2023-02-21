@@ -2,7 +2,7 @@
 
 > An abstraction layer for common instrumentation functions (e.g. installing and starting apps, setting preferences, etc.) on Android and iOS.
 
-Appstraction provides an abstraction layer for common instrumentation functions on mobile platforms, specifically Android and iOS. This includes installing, uninstalling, and starting apps, managing their permissions, but also managing devices, like resetting to snapshots, setting the clipboard content, etc. Appstraction is built primarily for use in mobile privacy research, but can be used for other purposes as well.
+Appstraction provides an abstraction layer for common instrumentation functions on mobile platforms, specifically Android and iOS. This includes installing, uninstalling, and starting apps, managing their permissions, but also managing devices, like resetting to snapshots, setting the clipboard content, configuring the proxy, etc. Appstraction is built primarily for use in mobile privacy research, but can be used for other purposes as well.
 
 ## Features
 
@@ -19,6 +19,7 @@ With appstraction, you can perform the following actions programmatically on And
 * Set the clipboard content.
 * Get the app ID and version for an app file (`.apk` on Android, `.ipa` on iOS).
 * Install and remove root certificate authorities.
+* Configure the proxy settings.
 
 Appstraction is written in TypeScript and provides comprehensive type definitions to make development easy.
 

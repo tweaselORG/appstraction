@@ -195,6 +195,7 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
 
     installCertificateAuthority: asyncUnimplemented('installCertificateAuthority') as never,
     removeCertificateAuthority: asyncUnimplemented('removeCertificateAuthority') as never,
+    setProxy: asyncUnimplemented('setProxy') as never,
 });
 
 /** The IDs of known permissions on iOS. */
