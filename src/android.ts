@@ -255,6 +255,24 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         await this._internal.overlayTmpfs('/system/etc/security/cacerts');
         await execa('adb', ['shell', 'rm', `/system/etc/security/cacerts/${certFilename}`]);
     },
+    setProxy: async (proxy) => {
+        // Regardless of whether we want to set or remove the proxy, we don't want proxy auto-config to interfere.
+        await execa('adb', ['shell', 'settings', 'delete', 'global', 'global_proxy_pac_url']);
+
+        if (proxy === null) {
+            // Just deleting the settings only works after a reboot, this ensures that the proxy is disabled
+            // immediately, see https://github.com/tweaselORG/appstraction/issues/25#issuecomment-1438813160.
+            await execa('adb', ['shell', 'settings', 'put', 'global', 'http_proxy', ':0']);
+            await execa('adb', ['shell', 'settings', 'delete', 'global', 'global_http_proxy_host']);
+            await execa('adb', ['shell', 'settings', 'put', 'global', 'global_http_proxy_port', '0']);
+            return;
+        }
+
+        const proxyString = `${proxy.host}:${proxy.port}`;
+        await execa('adb', ['shell', 'settings', 'put', 'global', 'http_proxy', proxyString]);
+        await execa('adb', ['shell', 'settings', 'put', 'global', 'global_http_proxy_host', proxy.host]);
+        await execa('adb', ['shell', 'settings', 'put', 'global', 'global_http_proxy_port', proxy.port.toString()]);
+    },
 });
 
 /** The IDs of known permissions on Android. */
