@@ -24,6 +24,7 @@ appstraction
 
 ### Functions
 
+- [parseAppMeta](README.md#parseappmeta)
 - [pause](README.md#pause)
 - [platformApi](README.md#platformapi-1)
 
@@ -37,7 +38,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:334](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L334)
+[android.ts:325](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L325)
 
 ___
 
@@ -55,7 +56,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:243](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L243)
+[index.ts:226](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L226)
 
 ___
 
@@ -74,7 +75,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:249](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L249)
+[index.ts:232](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L232)
 
 ___
 
@@ -86,7 +87,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:220](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L220)
+[ios.ts:215](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L215)
 
 ___
 
@@ -109,8 +110,6 @@ Functions that are available for the platforms.
 | :------ | :------ | :------ |
 | `clearStuckModals` | `Platform` extends ``"android"`` ? () => `Promise`<`void`\> : `never` | Clear any potential stuck modals by pressing the back button followed by the home button. This is currently broken on iOS (see https://github.com/tweaselORG/appstraction/issues/12). Requires the `ssh` capability on iOS. |
 | `ensureDevice` | () => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities. |
-| `getAppId` | (`appPath`: `string`) => `Promise`<`string` \| `undefined`\> | Get the app/bundle ID of the app at the given path. |
-| `getAppVersion` | (`appPath`: `string`) => `Promise`<`string` \| `undefined`\> | Get the version of the app at the given path. |
 | `getDeviceAttribute` | <Attribute\>(`attribute`: `Attribute`, ...`options`: `Attribute` extends keyof [`GetDeviceAttributeOptions`](README.md#getdeviceattributeoptions) ? [options: GetDeviceAttributeOptions[Attribute]] : [options?: undefined]) => `Promise`<`string`\> | Get the value of the given attribute of the device. Requires the `frida` capability on iOS. |
 | `getForegroundAppId` | () => `Promise`<`string` \| `undefined`\> | Get the app ID of the running app that is currently in the foreground. Requires the `frida` capability on iOS. |
 | `getPidForAppId` | (`appId`: `string`) => `Promise`<`number` \| `undefined`\> | Get the PID of the app with the given app ID if it is currently running. Requires the `frida` capability on iOS. |
@@ -144,7 +143,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:181](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L181)
+[index.ts:164](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L164)
 
 ___
 
@@ -174,7 +173,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:208](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L208)
+[index.ts:191](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L191)
 
 ___
 
@@ -192,7 +191,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:236](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L236)
+[index.ts:219](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L219)
 
 ___
 
@@ -234,7 +233,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:203](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L203)
+[android.ts:194](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L194)
 
 ___
 
@@ -246,9 +245,35 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:203](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L203)
+[ios.ts:198](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L198)
 
 ## Functions
+
+### parseAppMeta
+
+▸ **parseAppMeta**(`appPath`, `_platform?`): `Promise`<`undefined` \| { `id`: `string` ; `version?`: `string`  }\>
+
+Get metadata (namely app ID and version) about the app at the given path.
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `appPath` | `string` | Path to the app file (`.ipa` on iOS, `.apk` on Android) to get the metadata of. |
+| `_platform?` | [`SupportedPlatform`](README.md#supportedplatform) | - |
+
+#### Returns
+
+`Promise`<`undefined` \| { `id`: `string` ; `version?`: `string`  }\>
+
+The an object with the app ID and version, or `undefined` if the file doesn't exist or is not a valid app
+  for the platform.
+
+#### Defined in
+
+[util.ts:32](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L32)
+
+___
 
 ### pause
 
@@ -268,7 +293,7 @@ Pause for a given duration.
 
 #### Defined in
 
-[util.ts:16](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L16)
+[util.ts:18](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L18)
 
 ___
 
@@ -300,4 +325,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:264](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L264)
+[index.ts:247](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L247)

@@ -147,23 +147,6 @@ export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends Su
      */
     setClipboard: (text: string) => Promise<void>;
 
-    /**
-     * Get the app/bundle ID of the app at the given path.
-     *
-     * @param appPath Path to the app file (`.ipa` on iOS, `.apk` on Android) to get the app ID of.
-     *
-     * @returns The app ID, or `undefined` if the file doesn't exist or is not a valid app for the platform.
-     */
-    getAppId: (appPath: string) => Promise<string | undefined>;
-    /**
-     * Get the version of the app at the given path.
-     *
-     * @param appPath Path to the app file (`.ipa` on iOS, `.apk` on Android) to get the version of.
-     *
-     * @returns The version of the app, or `undefined` if the file doesn't exist or is not a valid app for the platform.
-     */
-    getAppVersion: (appPath: string) => Promise<string | undefined>;
-
     /** @ignore */
     _internal: Platform extends 'android'
         ? {
@@ -173,7 +156,7 @@ export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends Su
               objectionProcesses: ExecaChildProcess[];
           }
         : Platform extends 'ios'
-        ? { getAppId: (appPath: string) => Promise<string | undefined> }
+        ? undefined
         : never;
 };
 
@@ -280,5 +263,5 @@ export function platformApi<
 
 export { androidPermissions } from './android';
 export { iosPermissions } from './ios';
-export { pause } from './util';
+export { parseAppMeta, pause } from './util';
 export { IosPermission, AndroidPermission };

@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { pause, platformApi } from '../src/index';
+import { parseAppMeta, pause, platformApi } from '../src/index';
 
 // You can pass the following command line arguments:
 // `npx tsx examples/ios-device.ts <ip> <app path>`
@@ -20,10 +20,10 @@ import { pause, platformApi } from '../src/index';
 
     await ios.setClipboard('I copied this.');
 
-    const appId = await ios.getAppId(appPath);
-    const version = await ios.getAppVersion(appPath);
-    console.log('App:', appId, '@', version);
-    if (!appId) throw new Error('Invalid app.');
+    const appMeta = await parseAppMeta(appPath);
+    if (!appMeta) throw new Error('Invalid app.');
+    const appId = appMeta.id;
+    console.log('App:', appId, '@', appMeta.version);
 
     await ios.installApp(appPath);
     // First, grant all permissions.

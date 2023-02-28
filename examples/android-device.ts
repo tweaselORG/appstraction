@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { pause, platformApi } from '../src/index';
+import { parseAppMeta, pause, platformApi } from '../src/index';
 
 // You can pass the following command line arguments:
 // `npx tsx examples/android-device.ts <app ID> <app path>`
@@ -18,9 +18,9 @@ import { pause, platformApi } from '../src/index';
 
     await android.setClipboard('I copied this.');
 
-    const id = await android.getAppId(`${appPath}/${appId}/${appId}.apk`);
-    const version = await android.getAppVersion(`${appPath}/${appId}/${appId}.apk`);
-    console.log('App:', id, '@', version);
+    const appMeta = await parseAppMeta(`${appPath}/${appId}/${appId}.apk`);
+    if (!appMeta) throw new Error('Invalid app.');
+    console.log('App:', appMeta.id, '@', appMeta.version);
 
     await android.installApp(`${appPath}/${appId}/*.apk`);
     // First, grant all permissions.
