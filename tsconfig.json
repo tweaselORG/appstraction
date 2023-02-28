@@ -1,6 +1,6 @@
 {
     "extends": "@baltpeter/tsconfig",
-    "include": ["src/**/*", "src/types/ipa-extract-info.d.ts"],
+    "include": ["src/**/*", "examples/**/*", "src/types/ipa-extract-info.d.ts"],
     "compilerOptions": {
         "paths": {
             "*": ["./*", "./src/types/*"]

@@ -1,7 +1,7 @@
 import { execa } from 'execa';
 import frida from 'frida';
 import type { PlatformApi, PlatformApiOptions, SupportedCapability, SupportedRunTarget } from '.';
-import { asyncUnimplemented, getObjFromFridaScript, ipaInfo, isRecord } from './util';
+import { asyncUnimplemented, getObjFromFridaScript, isRecord } from './util';
 
 const fridaScripts = {
     getPrefs: `// Taken from: https://codeshare.frida.re/@dki/ios-app-info/
@@ -31,9 +31,7 @@ send({ name: "get_obj_from_frida_script", payload: idfv });`,
 export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     options: PlatformApiOptions<'ios', RunTarget, SupportedCapability<'ios'>[]>
 ): PlatformApi<'ios', 'device'> => ({
-    _internal: {
-        getAppId: async (ipaPath) => (await ipaInfo(ipaPath)).info['CFBundleIdentifier'] as string | undefined,
-    },
+    _internal: undefined,
 
     resetDevice: asyncUnimplemented('resetDevice') as never,
     ensureDevice: async () => {
@@ -194,9 +192,6 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         await script.load();
         await session.detach();
     },
-
-    getAppId: async (ipaPath) => (await ipaInfo(ipaPath)).info['CFBundleIdentifier'] as string | undefined,
-    getAppVersion: async (ipaPath) => (await ipaInfo(ipaPath)).info['CFBundleShortVersionString'] as string | undefined,
 });
 
 /** The IDs of known permissions on iOS. */

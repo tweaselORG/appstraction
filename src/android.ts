@@ -188,15 +188,6 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         }
         throw new Error('Setting clipboard failed.');
     },
-
-    // These sometimes fail with `AndroidManifest.xml:42: error: ERROR getting 'android:icon' attribute: attribute value
-    // reference does not exist` but still have the correct version in the output.
-    getAppId: async (apkPath) =>
-        (await execa('aapt', ['dump', 'badging', apkPath], { reject: false })).stdout.match(
-            /package: name='(.+?)'/
-        )?.[1],
-    getAppVersion: async (apkPath) =>
-        (await execa('aapt', ['dump', 'badging', apkPath], { reject: false })).stdout.match(/versionName='(.+?)'/)?.[1],
 });
 
 /** The IDs of known permissions on Android. */
