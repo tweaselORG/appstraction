@@ -10,7 +10,7 @@ import { pause, platformApi } from '../src/index';
         runTarget: 'device',
         capabilities: ['frida', 'ssh'],
         targetOptions: {
-            ip: process.argv[2],
+            ip: process.argv[2] || '0.0.0.0',
         },
     });
 
