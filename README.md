@@ -4,6 +4,23 @@
 
 Appstraction provides an abstraction layer for common instrumentation functions on mobile platforms, specifically Android and iOS. This includes installing, uninstalling, and starting apps, managing their permissions, but also managing devices, like resetting to snapshots, setting the clipboard content, etc. Appstraction is built primarily for use in mobile privacy research, but can be used for other purposes as well.
 
+## Features
+
+With appstraction, you can perform the following actions programmatically on Android and iOS (for a full list with additional details, see the API reference for the [`PlatformApi` type](docs/README.md#platformapi)):
+
+* Reset an emulator to a snapshot.
+* Install and uninstall apps.
+* Set an app's permissions, either granting everything or granularly specifying which permissions to grant or deny.
+* Start an app.
+* Find the app ID of the app that is currently in the foreground.
+* Get the PID of an app by its app ID if it is currently running.
+* Fetch an app's preferences (`SharedPreferences` on Android, `NSUserDefaults` on iOS) as JSON.
+* Get various device attributes (like the IDFV on iOS).
+* Set the clipboard content.
+* Get the app ID and version for an app file (`.apk` on Android, `.ipa` on iOS).
+
+Appstraction is written in TypeScript and provides comprehensive type definitions to make development easy.
+
 ## Installation
 
 You can install appstraction using yarn or npm:
