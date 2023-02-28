@@ -51,7 +51,7 @@ Appstraction supports the following targets. Note that it will likely also work 
 
 You can only run one device at a time with the current version.
 
-## Physical Android device
+### Physical Android device
 
 To use appstraction with a physical Android device, you need to enable USB debugging. You can do this by going to Settings -> System -> Developer options -> USB debugging.
 
