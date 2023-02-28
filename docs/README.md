@@ -24,6 +24,7 @@ appstraction
 
 ### Functions
 
+- [pause](README.md#pause)
 - [platformApi](README.md#platformapi-1)
 
 ## Type Aliases
@@ -248,6 +249,28 @@ The IDs of known permissions on iOS.
 [ios.ts:203](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L203)
 
 ## Functions
+
+### pause
+
+▸ **pause**(`durationInMs`): `Promise`<`unknown`\>
+
+Pause for a given duration.
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `durationInMs` | `number` | The duration to pause for, in milliseconds. |
+
+#### Returns
+
+`Promise`<`unknown`\>
+
+#### Defined in
+
+[util.ts:16](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L16)
+
+___
 
 ### platformApi
 
