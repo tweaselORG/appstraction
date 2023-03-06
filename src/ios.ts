@@ -143,6 +143,7 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
             throw new Error('Frida or SSH (with the open package installed) is required for starting apps.');
         }
     },
+    stopApp: asyncUnimplemented('stopApp') as never,
 
     getForegroundAppId: async () => {
         if (!options.capabilities.includes('frida'))

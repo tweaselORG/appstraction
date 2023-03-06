@@ -105,6 +105,12 @@ export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends Su
      * @param appId The app ID of the app to start.
      */
     startApp: (appId: string) => Promise<void>;
+    /**
+     * Force-stop the app with the given app ID.
+     *
+     * @param appId The app ID of the app to stop.
+     */
+    stopApp: Platform extends 'android' ? (appId: string) => Promise<void> : never;
 
     /**
      * Get the app ID of the running app that is currently in the foreground.
