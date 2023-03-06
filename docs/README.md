@@ -39,7 +39,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:431](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L431)
+[android.ts:424](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L424)
 
 ___
 
@@ -258,7 +258,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:300](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L300)
+[android.ts:293](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L293)
 
 ___
 
@@ -296,7 +296,7 @@ The an object with the app ID and version, or `undefined` if the file doesn't ex
 
 #### Defined in
 
-[util.ts:32](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L32)
+[util.ts:49](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L49)
 
 ___
 
@@ -318,7 +318,7 @@ Pause for a given duration.
 
 #### Defined in
 
-[util.ts:18](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L18)
+[util.ts:35](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L35)
 
 ___
 
