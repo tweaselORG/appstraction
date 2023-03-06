@@ -12,7 +12,7 @@ With appstraction, you can perform the following actions programmatically on And
 * Install and uninstall apps.
 * Set an app's permissions, either granting everything or granularly specifying which permissions to grant or deny.
 * Configure an app's battery optimization settings.
-* Start an app.
+* Start and stop apps.
 * Find the app ID of the app that is currently in the foreground.
 * Get the PID of an app by its app ID if it is currently running.
 * Fetch an app's preferences (`SharedPreferences` on Android, `NSUserDefaults` on iOS) as JSON.

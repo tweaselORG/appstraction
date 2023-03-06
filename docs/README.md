@@ -39,7 +39,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:428](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L428)
+[android.ts:431](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L431)
 
 ___
 
@@ -57,7 +57,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:287](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L287)
+[index.ts:293](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L293)
 
 ___
 
@@ -76,7 +76,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:293](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L293)
+[index.ts:299](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L299)
 
 ___
 
@@ -88,7 +88,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:220](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L220)
+[ios.ts:221](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L221)
 
 ___
 
@@ -124,6 +124,7 @@ Functions that are available for the platforms.
 | `setClipboard` | (`text`: `string`) => `Promise`<`void`\> | Set the clipboard to the given text. Requires the `frida` capability on Android and iOS. |
 | `setProxy` | `Platform` extends ``"android"`` ? (`proxy`: [`Proxy`](README.md#proxy) \| ``null``) => `Promise`<`void`\> : `never` | Set or disable the proxy on the device. Currently only supported on Android. **`Param`** The proxy to set, or `null` to disable the proxy. |
 | `startApp` | (`appId`: `string`) => `Promise`<`void`\> | Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning bypass if enabled. Requires the `frida` or `ssh` capability on iOS. On Android, this will start the app with or without a certificate pinning bypass depending on the `certificate-pinning-bypass` capability. |
+| `stopApp` | `Platform` extends ``"android"`` ? (`appId`: `string`) => `Promise`<`void`\> : `never` | Force-stop the app with the given app ID. **`Param`** The app ID of the app to stop. |
 | `uninstallApp` | (`appId`: `string`) => `Promise`<`void`\> | Uninstall the app with the given app ID. Will not fail if the app is not installed. This also removes any data stored by the app. |
 
 #### Defined in
@@ -148,7 +149,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:225](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L225)
+[index.ts:231](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L231)
 
 ___
 
@@ -167,7 +168,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:301](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L301)
+[index.ts:307](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L307)
 
 ___
 
@@ -197,7 +198,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:252](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L252)
+[index.ts:258](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L258)
 
 ___
 
@@ -215,7 +216,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:280](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L280)
+[index.ts:286](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L286)
 
 ___
 
@@ -257,7 +258,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:297](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L297)
+[android.ts:300](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L300)
 
 ___
 
@@ -269,7 +270,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:203](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L203)
+[ios.ts:204](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L204)
 
 ## Functions
 
@@ -349,4 +350,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:315](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L315)
+[index.ts:321](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L321)

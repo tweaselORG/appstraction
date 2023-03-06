@@ -211,6 +211,9 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         execa('adb', ['shell', 'monkey', '-p', appId, '-v', '1', '--dbg-no-events']);
         return Promise.resolve();
     },
+    stopApp: async (appId) => {
+        await execa('adb', ['shell', 'am', 'force-stop', appId]);
+    },
 
     // Adapted after: https://stackoverflow.com/a/28573364
     getForegroundAppId: async () => {
