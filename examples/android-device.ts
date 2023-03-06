@@ -1,26 +1,26 @@
 /* eslint-disable no-console */
+import { readFile } from 'fs/promises';
 import { parseAppMeta, pause, platformApi } from '../src/index';
 
 // You can pass the following command line arguments:
-// `npx tsx examples/android-device.ts <app ID> <app path> <CA cert path?> <proxy host?> <proxy port?>`
+// `npx tsx examples/android-device.ts <app ID> <app path> <CA cert path?> <WireGuard config path?>`
 
 (async () => {
     const android = platformApi({
         platform: 'android',
         runTarget: 'device',
-        capabilities: ['root', 'frida', 'certificate-pinning-bypass'],
+        capabilities: ['root', 'frida', 'wireguard', 'certificate-pinning-bypass'],
     });
 
     const appId = process.argv[2] || 'de.hafas.android.db';
     const appPath = process.argv[3] || '/path/to/app-files';
     const caCertPath = process.argv[4];
-    const proxyHost = process.argv[5];
-    const proxyPort = process.argv[6];
+    const wireguardConfigPath = process.argv[5];
 
     await android.ensureDevice();
 
     if (caCertPath) await android.installCertificateAuthority(caCertPath);
-    if (proxyHost && proxyPort) await android.setProxy({ host: proxyHost, port: +proxyPort });
+    if (wireguardConfigPath) await android.setProxy(await readFile(wireguardConfigPath, 'utf8'));
 
     await android.setClipboard('I copied this.');
 
@@ -51,6 +51,6 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
     await android.uninstallApp(appId);
 
     if (caCertPath) await android.removeCertificateAuthority(caCertPath);
-    if (proxyHost && proxyPort) await android.setProxy(null);
+    if (wireguardConfigPath) await android.setProxy(null);
 })();
 /* eslint-enable no-console */

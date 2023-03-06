@@ -20,7 +20,7 @@ With appstraction, you can perform the following actions programmatically on And
 * Set the clipboard content.
 * Get the app ID and version for an app file (`.apk` on Android, `.ipa` on iOS).
 * Install and remove root certificate authorities.
-* Configure the proxy settings.
+* Configure the proxy settings, optionally using WireGuard instead of a regular proxy.
 
 Appstraction is written in TypeScript and provides comprehensive type definitions to make development easy.
 
@@ -98,6 +98,8 @@ adb shell "/data/local/tmp/frida-server"
 frida-ps -U | grep frida # should have `frida-server`
 ```
 
+If you want to use WireGuard as the proxy, you need to install the [WireGuard app](https://www.wireguard.com/install/#android-play-store-f-droid) and enable "Allow remote control apps" under "Advanced" in the app's settings. 
+
 ### Android emulator
 
 Some of the functions in appstraction work without any special preparation in an emulator. You can create the emulator using Android Studio or the command line tools, e.g. like this to create an emulator with Google APIs running Android 13 (API level 33)—we recommend using x86_64 as the architecture (you can still [run ARM apps if you use Android 11 or newer](https://android-developers.googleblog.com/2020/03/run-arm-apps-on-android-emulator.html)):
@@ -140,6 +142,8 @@ After you have set up the emulator to your liking, you should create a snapshot 
 ```sh
 adb emu avd snapshot save "<snapshot name>" # You can later use this name with the `resetDevice` function.
 ```
+
+If you want to use WireGuard as the proxy, you need to install the [WireGuard app](https://www.wireguard.com/install/#android-play-store-f-droid) and enable "Allow remote control apps" under "Advanced" in the app's settings. 
 
 ### Physical iOS device
 
