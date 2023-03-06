@@ -139,6 +139,10 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         await execa('adb', ['shell', 'input', 'keyevent', '3']);
     },
 
+    isAppInstalled: async (appId) => {
+        const { stdout } = await execa('adb', ['shell', 'cmd', 'package', 'list', 'packages', appId]);
+        return stdout.includes(`package:${appId}`);
+    },
     installApp: async (apkPath) => {
         await execa('adb', ['install-multiple', apkPath], { shell: true });
     },

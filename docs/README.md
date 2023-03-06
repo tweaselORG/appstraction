@@ -58,7 +58,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:309](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L309)
+[index.ts:319](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L319)
 
 ___
 
@@ -77,7 +77,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:315](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L315)
+[index.ts:325](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L325)
 
 ___
 
@@ -89,7 +89,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:221](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L221)
+[ios.ts:222](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L222)
 
 ___
 
@@ -120,6 +120,7 @@ Functions that are available for the platforms.
 | `getPrefs` | (`appId`: `string`) => `Promise`<`Record`<`string`, `unknown`\> \| `undefined`\> | Get the preferences (`SharedPreferences` on Android, `NSUserDefaults` on iOS) of the app with the given app ID. Requires the `frida` capability on Android and iOS. |
 | `installApp` | (`appPath`: `string`) => `Promise`<`void`\> | Install the app at the given path. **`Todo`** How to handle split APKs on Android (#4)? |
 | `installCertificateAuthority` | `Platform` extends ``"android"`` ? (`path`: `string`) => `Promise`<`void`\> : `never` | Install the certificate authority with the given path as a trusted CA on the device. This allows you to intercept and modify traffic from apps on the device. On Android, this installs the CA as a system CA. As this is normally not possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and installs the CA there. This means that the changes are not persistent across reboots. Currently only supported on Android. This requires the `root` capability on Android. **`Param`** The path to the certificate authority to install. |
+| `isAppInstalled` | `Platform` extends ``"android"`` ? (`appId`: `string`) => `Promise`<`boolean`\> : `never` | Check whether the app with the given app ID is installed. Currently only supported on Android. **`Param`** The app ID of the app to check. |
 | `removeCertificateAuthority` | `Platform` extends ``"android"`` ? (`path`: `string`) => `Promise`<`void`\> : `never` | Remove the certificate authority with the given path from the trusted CAs on the device. On Android, this works for system CAs, including those pre-installed with the OS. As this is normally not possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and removes the CA there. This means that the changes are not persistent across reboots. Currently only supported on Android. This requires the `root` capability on Android. **`Param`** The path to the certificate authority to remove. |
 | `resetDevice` | `Platform` extends ``"android"`` ? `RunTarget` extends ``"emulator"`` ? (`snapshotName`: `string`) => `Promise`<`void`\> : `never` : `never` | Reset the device to the specified snapshot (only available for emulators). **`Param`** The name of the snapshot to reset to. |
 | `setAppBackgroundBatteryUsage` | `Platform` extends ``"android"`` ? (`appId`: `string`, `state`: ``"unrestricted"`` \| ``"optimized"`` \| ``"restricted"``) => `Promise`<`void`\> : `never` | Configure whether the app's background battery usage should be restricted. Currently only supported on Android. **`Param`** The app ID of the app to configure the background battery usage settings for. **`Param`** The state to set the background battery usage to. On Android, the possible values are: - `unrestricted`: "Allow battery usage in background without restrictions. May use more battery." - `optimized`: "Optimize based on your usage. Recommended for most apps." (default after installation) - `restricted`: "Restrict battery usage while in background. Apps may not work as expected. Notifications may be delayed." |
@@ -152,7 +153,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:247](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L247)
+[index.ts:257](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L257)
 
 ___
 
@@ -171,7 +172,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:323](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L323)
+[index.ts:333](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L333)
 
 ___
 
@@ -201,7 +202,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:274](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L274)
+[index.ts:284](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L284)
 
 ___
 
@@ -219,7 +220,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:302](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L302)
+[index.ts:312](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L312)
 
 ___
 
@@ -261,7 +262,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:330](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L330)
+[index.ts:340](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L340)
 
 ## Variables
 
@@ -285,7 +286,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:204](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L204)
+[ios.ts:205](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L205)
 
 ## Functions
 
@@ -365,4 +366,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:339](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L339)
+[index.ts:349](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L349)
