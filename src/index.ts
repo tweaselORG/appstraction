@@ -15,7 +15,12 @@ export type SupportedRunTarget<Platform extends SupportedPlatform> = Platform ex
     : never;
 
 /** Functions that are available for the platforms. */
-export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends SupportedRunTarget<Platform>> = {
+export type PlatformApi<
+    Platform extends SupportedPlatform,
+    RunTarget extends SupportedRunTarget<Platform>,
+    Capabilities extends SupportedCapability<'android' | 'ios'>[],
+    Capability = Capabilities[number]
+> = {
     /** Assert that the selected device is connected and ready to be used with the selected capabilities. */
     ensureDevice: () => Promise<void>;
     /**
@@ -201,13 +206,22 @@ export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends Su
      */
     removeCertificateAuthority: Platform extends 'android' ? (path: string) => Promise<void> : never;
     /**
-     * Set or disable the proxy on the device.
+     * Set or disable the proxy on the device. If you have enabled the `wireguard` capability, this will start or stop a
+     * WireGuard tunnel. Otherwise, it will set the global proxy on the device.
      *
      * Currently only supported on Android.
      *
-     * @param proxy The proxy to set, or `null` to disable the proxy.
+     * Enabling a WireGuard tunnel requires the `root` capability on Android.
+     *
+     * @remarks
+     * The WireGuard integration will create a new tunnel in the app called `appstraction` and delete it when the proxy
+     * is stopped. If you have an existing tunnel with the same name, it will be overridden.
+     * @param proxy The proxy to set, or `null` to disable the proxy. If you have enabled the `wireguard` capability,
+     *   this is a string of the full WireGuard configuration to use.
      */
-    setProxy: Platform extends 'android' ? (proxy: Proxy | null) => Promise<void> : never;
+    setProxy: Platform extends 'android'
+        ? (proxy: ('wireguard' extends Capability ? WireGuardConfig : Proxy) | null) => Promise<void>
+        : never;
 
     /** @ignore */
     _internal: Platform extends 'android'
@@ -219,6 +233,8 @@ export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends Su
               getCertificateSubjectHashOld: (path: string) => Promise<string | undefined>;
               hasCertificateAuthority: (filename: string) => Promise<boolean>;
               overlayTmpfs: (directoryPathWithoutLeadingSlash: string) => Promise<void>;
+
+              isVpnEnabled: () => Promise<boolean>;
 
               objectionProcesses: ExecaChildProcess[];
           }
@@ -284,7 +300,7 @@ export type RunTargetOptions<
 
 /** A capability for the `platformApi()` function. */
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
-    ? 'root' | 'frida' | 'certificate-pinning-bypass'
+    ? 'wireguard' | 'root' | 'frida' | 'certificate-pinning-bypass'
     : Platform extends 'ios'
     ? 'ssh' | 'frida'
     : never;
@@ -310,6 +326,8 @@ export type Proxy = {
     /** The port of the proxy. */
     port: number;
 };
+/** Configuration string for WireGuard. */
+export type WireGuardConfig = string;
 
 /**
  * Get the API object with the functions for the given platform and run target.
@@ -322,14 +340,14 @@ export function platformApi<
     Platform extends SupportedPlatform,
     RunTarget extends SupportedRunTarget<Platform>,
     Capabilities extends SupportedCapability<Platform>[]
->(options: PlatformApiOptions<Platform, RunTarget, Capabilities>): PlatformApi<Platform, RunTarget> {
+>(options: PlatformApiOptions<Platform, RunTarget, Capabilities>): PlatformApi<Platform, RunTarget, Capabilities> {
     switch (options.platform) {
         case 'android':
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return androidApi(options as any) as PlatformApi<Platform, RunTarget>;
+            return androidApi(options as any) as any;
         case 'ios':
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return iosApi(options as any) as PlatformApi<Platform, RunTarget>;
+            return iosApi(options as any) as any;
         default:
             throw new Error(`Unsupported platform: ${options.platform}`);
     }
