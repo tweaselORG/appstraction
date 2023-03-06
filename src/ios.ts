@@ -30,7 +30,7 @@ send({ name: "get_obj_from_frida_script", payload: idfv });`,
 
 export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     options: PlatformApiOptions<'ios', RunTarget, SupportedCapability<'ios'>[]>
-): PlatformApi<'ios', 'device'> => ({
+): PlatformApi<'ios', 'device', SupportedCapability<'ios'>[]> => ({
     _internal: undefined,
 
     resetDevice: asyncUnimplemented('resetDevice') as never,

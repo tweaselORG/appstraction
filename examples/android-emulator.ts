@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import { readFile } from 'fs/promises';
 import { parseAppMeta, pause, platformApi } from '../src/index';
 
 // You can pass the following command line arguments:
@@ -8,15 +9,14 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
     const android = platformApi({
         platform: 'android',
         runTarget: 'emulator',
-        capabilities: ['root', 'frida', 'certificate-pinning-bypass'],
+        capabilities: ['root', 'frida', 'wireguard', 'certificate-pinning-bypass'],
     });
 
     const appId = process.argv[2] || 'de.hafas.android.db';
     const appPath = process.argv[3] || '/path/to/app-files';
     const snapshotName = process.argv[4] || 'your-snapshot';
     const caCertPath = process.argv[5];
-    const proxyHost = process.argv[6];
-    const proxyPort = process.argv[7];
+    const wireguardConfigPath = process.argv[5];
 
     await android.ensureDevice();
     await android.resetDevice(snapshotName);
@@ -25,7 +25,7 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
         await android.removeCertificateAuthority(caCertPath);
         await android.installCertificateAuthority(caCertPath);
     }
-    if (proxyHost && proxyPort) await android.setProxy({ host: proxyHost, port: +proxyPort });
+    if (wireguardConfigPath) await android.setProxy(await readFile(wireguardConfigPath, 'utf8'));
 
     await android.setClipboard('I copied this.');
 
@@ -55,6 +55,6 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
     await android.clearStuckModals();
     await android.uninstallApp(appId);
 
-    if (proxyHost && proxyPort) await android.setProxy(null);
+    if (wireguardConfigPath) await android.setProxy(null);
 })();
 /* eslint-enable no-console */

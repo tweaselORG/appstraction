@@ -17,6 +17,7 @@ appstraction
 - [SupportedCapability](README.md#supportedcapability)
 - [SupportedPlatform](README.md#supportedplatform)
 - [SupportedRunTarget](README.md#supportedruntarget)
+- [WireGuardConfig](README.md#wireguardconfig)
 
 ### Variables
 
@@ -39,7 +40,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:424](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L424)
+[android.ts:524](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L524)
 
 ___
 
@@ -57,7 +58,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:293](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L293)
+[index.ts:309](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L309)
 
 ___
 
@@ -76,7 +77,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:299](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L299)
+[index.ts:315](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L315)
 
 ___
 
@@ -94,7 +95,7 @@ ___
 
 ### PlatformApi
 
-Ƭ **PlatformApi**<`Platform`, `RunTarget`\>: `Object`
+Ƭ **PlatformApi**<`Platform`, `RunTarget`, `Capabilities`, `Capability`\>: `Object`
 
 Functions that are available for the platforms.
 
@@ -104,6 +105,8 @@ Functions that are available for the platforms.
 | :------ | :------ |
 | `Platform` | extends [`SupportedPlatform`](README.md#supportedplatform) |
 | `RunTarget` | extends [`SupportedRunTarget`](README.md#supportedruntarget)<`Platform`\> |
+| `Capabilities` | extends [`SupportedCapability`](README.md#supportedcapability)<``"android"`` \| ``"ios"``\>[] |
+| `Capability` | `Capabilities`[`number`] |
 
 #### Type declaration
 
@@ -122,7 +125,7 @@ Functions that are available for the platforms.
 | `setAppBackgroundBatteryUsage` | `Platform` extends ``"android"`` ? (`appId`: `string`, `state`: ``"unrestricted"`` \| ``"optimized"`` \| ``"restricted"``) => `Promise`<`void`\> : `never` | Configure whether the app's background battery usage should be restricted. Currently only supported on Android. **`Param`** The app ID of the app to configure the background battery usage settings for. **`Param`** The state to set the background battery usage to. On Android, the possible values are: - `unrestricted`: "Allow battery usage in background without restrictions. May use more battery." - `optimized`: "Optimize based on your usage. Recommended for most apps." (default after installation) - `restricted`: "Restrict battery usage while in background. Apps may not work as expected. Notifications may be delayed." |
 | `setAppPermissions` | (`appId`: `string`, `permissions?`: `Platform` extends ``"ios"`` ? { [p in IosPermission]?: "unset" \| "allow" \| "deny" } & { `location?`: ``"ask"`` \| ``"never"`` \| ``"always"`` \| ``"while-using"``  } : `Partial`<`Record`<`LiteralUnion`<[`AndroidPermission`](README.md#androidpermission), `string`\>, ``"allow"`` \| ``"deny"``\>\>) => `Promise`<`void`\> | Set the permissions for the app with the given app ID. By default, it will grant all known permissions (including dangerous permissions on Android) and set the location permission on iOS to `always`. You can specify which permissions to grant/deny using the `permissions` argument. Requires the `ssh` and `frida` capabilities on iOS. |
 | `setClipboard` | (`text`: `string`) => `Promise`<`void`\> | Set the clipboard to the given text. Requires the `frida` capability on Android and iOS. |
-| `setProxy` | `Platform` extends ``"android"`` ? (`proxy`: [`Proxy`](README.md#proxy) \| ``null``) => `Promise`<`void`\> : `never` | Set or disable the proxy on the device. Currently only supported on Android. **`Param`** The proxy to set, or `null` to disable the proxy. |
+| `setProxy` | `Platform` extends ``"android"`` ? (`proxy`: ``"wireguard"`` extends `Capability` ? [`WireGuardConfig`](README.md#wireguardconfig) : [`Proxy`](README.md#proxy) \| ``null``) => `Promise`<`void`\> : `never` | Set or disable the proxy on the device. If you have enabled the `wireguard` capability, this will start or stop a WireGuard tunnel. Otherwise, it will set the global proxy on the device. Currently only supported on Android. Enabling a WireGuard tunnel requires the `root` capability on Android. **`Remarks`** The WireGuard integration will create a new tunnel in the app called `appstraction` and delete it when the proxy is stopped. If you have an existing tunnel with the same name, it will be overridden. **`Param`** The proxy to set, or `null` to disable the proxy. If you have enabled the `wireguard` capability, this is a string of the full WireGuard configuration to use. |
 | `startApp` | (`appId`: `string`) => `Promise`<`void`\> | Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning bypass if enabled. Requires the `frida` or `ssh` capability on iOS. On Android, this will start the app with or without a certificate pinning bypass depending on the `certificate-pinning-bypass` capability. |
 | `stopApp` | `Platform` extends ``"android"`` ? (`appId`: `string`) => `Promise`<`void`\> : `never` | Force-stop the app with the given app ID. **`Param`** The app ID of the app to stop. |
 | `uninstallApp` | (`appId`: `string`) => `Promise`<`void`\> | Uninstall the app with the given app ID. Will not fail if the app is not installed. This also removes any data stored by the app. |
@@ -149,7 +152,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:231](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L231)
+[index.ts:247](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L247)
 
 ___
 
@@ -168,7 +171,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:307](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L307)
+[index.ts:323](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L323)
 
 ___
 
@@ -198,13 +201,13 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:258](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L258)
+[index.ts:274](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L274)
 
 ___
 
 ### SupportedCapability
 
-Ƭ **SupportedCapability**<`Platform`\>: `Platform` extends ``"android"`` ? ``"root"`` \| ``"frida"`` \| ``"certificate-pinning-bypass"`` : `Platform` extends ``"ios"`` ? ``"ssh"`` \| ``"frida"`` : `never`
+Ƭ **SupportedCapability**<`Platform`\>: `Platform` extends ``"android"`` ? ``"wireguard"`` \| ``"root"`` \| ``"frida"`` \| ``"certificate-pinning-bypass"`` : `Platform` extends ``"ios"`` ? ``"ssh"`` \| ``"frida"`` : `never`
 
 A capability for the `platformApi()` function.
 
@@ -216,7 +219,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:286](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L286)
+[index.ts:302](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L302)
 
 ___
 
@@ -248,6 +251,18 @@ A run target that is supported by this library for the given platform.
 
 [index.ts:11](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L11)
 
+___
+
+### WireGuardConfig
+
+Ƭ **WireGuardConfig**: `string`
+
+Configuration string for WireGuard.
+
+#### Defined in
+
+[index.ts:330](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L330)
+
 ## Variables
 
 ### androidPermissions
@@ -258,7 +273,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:293](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L293)
+[android.ts:393](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L393)
 
 ___
 
@@ -324,7 +339,7 @@ ___
 
 ### platformApi
 
-▸ **platformApi**<`Platform`, `RunTarget`, `Capabilities`\>(`options`): [`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`\>
+▸ **platformApi**<`Platform`, `RunTarget`, `Capabilities`\>(`options`): [`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`, `Capabilities`\>
 
 Get the API object with the functions for the given platform and run target.
 
@@ -344,10 +359,10 @@ Get the API object with the functions for the given platform and run target.
 
 #### Returns
 
-[`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`\>
+[`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`, `Capabilities`\>
 
 The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:321](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L321)
+[index.ts:339](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L339)

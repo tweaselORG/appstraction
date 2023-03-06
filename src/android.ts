@@ -1,6 +1,13 @@
 import { execa } from 'execa';
 import frida from 'frida';
-import type { PlatformApi, PlatformApiOptions, SupportedCapability, SupportedRunTarget } from '.';
+import type {
+    PlatformApi,
+    PlatformApiOptions,
+    Proxy,
+    SupportedCapability,
+    SupportedRunTarget,
+    WireGuardConfig,
+} from '.';
 import { asyncUnimplemented, getObjFromFridaScript, isRecord, retryCondition } from './util';
 
 const fridaScripts = {
@@ -27,7 +34,7 @@ send({ name: "get_obj_from_frida_script", payload: true });`,
 
 export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     options: PlatformApiOptions<'android', RunTarget, SupportedCapability<'android'>[]>
-): PlatformApi<'android', 'device' | 'emulator'> => ({
+): PlatformApi<'android', 'device' | 'emulator', SupportedCapability<'android'>[]> => ({
     _internal: {
         objectionProcesses: [],
 
@@ -99,6 +106,10 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
             await execa('adb', ['shell', 'rm', '-r', '/data/local/tmp/appstraction-overlay-tmpfs-tmp']);
         },
+
+        // Note that this is only a fairly crude check, cf.
+        // https://github.com/tweaselORG/meta/issues/19#issuecomment-1446285561.
+        isVpnEnabled: async () => (await execa('adb', ['shell', 'ifconfig', 'tun0'], { reject: false })).exitCode === 0,
     },
 
     async resetDevice(snapshotName) {
@@ -269,7 +280,96 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         await this._internal.overlayTmpfs('/system/etc/security/cacerts');
         await execa('adb', ['shell', 'rm', `/system/etc/security/cacerts/${certFilename}`]);
     },
-    setProxy: async (proxy) => {
+    async setProxy(_proxy) {
+        // We are dealing with a WireGuard tunnel.
+        if (options.capabilities.includes('wireguard')) {
+            const tunnelName = 'appstraction';
+
+            // Since we're communicating with the WireGuard app through intents, we need to disable battery
+            // optimizations. Otherwise, our intents may not actually be delivered to the app.
+            await this.setAppBackgroundBatteryUsage('com.wireguard.android', 'unrestricted');
+
+            const config = _proxy as WireGuardConfig | null;
+
+            const deleteConfig = async () => {
+                await execa('adb', ['shell', 'rm', '-f', `/data/data/com.wireguard.android/files/${tunnelName}.conf`], {
+                    reject: false,
+                });
+                // We need to restart the WireGuard app, otherwise it will still show the deleted config.
+                await this.stopApp('com.wireguard.android');
+            };
+
+            if (config === null) {
+                await execa('adb', [
+                    'shell',
+                    'am',
+                    'broadcast',
+                    '-a',
+                    'com.wireguard.android.action.SET_TUNNEL_DOWN',
+                    '-n',
+                    // The quotes are necessary, otherwise `adb shell` interprets `$IntentReceiver` as a variable.
+                    "'com.wireguard.android/.model.TunnelManager$IntentReceiver'",
+                    '-e',
+                    'tunnel',
+                    tunnelName,
+                ]);
+
+                const vpnIsDisabled = await retryCondition(async () => !(await this._internal.isVpnEnabled()));
+                if (!vpnIsDisabled) throw new Error('Failed to disable WireGuard tunnel.');
+
+                // This requires root, but I don't think we should require root for disabling a tunnel. It's not really
+                // a problem if the config file is left behind.
+                await deleteConfig();
+
+                return;
+            }
+
+            await this._internal.requireRoot('enabling a WireGuard tunnel');
+
+            const { stdout: appUser } = await execa('adb', [
+                'shell',
+                'stat',
+                '-c',
+                '%U',
+                '/data/data/com.wireguard.android',
+            ]);
+            await execa('adb', [
+                'shell',
+                'su',
+                appUser,
+                '-c',
+                `"echo -n '${config}' > /data/data/com.wireguard.android/files/${tunnelName}.conf"`,
+            ]);
+
+            // We need to restart the WireGuard app for it to recognize our new tunnel config.
+            await this.stopApp('com.wireguard.android');
+
+            await execa('adb', [
+                'shell',
+                'am',
+                'broadcast',
+                '-a',
+                'com.wireguard.android.action.SET_TUNNEL_UP',
+                '-n',
+                // The quotes are necessary, otherwise `adb shell` interprets `$IntentReceiver` as a variable.
+                "'com.wireguard.android/.model.TunnelManager$IntentReceiver'",
+                '-e',
+                'tunnel',
+                tunnelName,
+            ]);
+
+            const vpnIsStarted = await retryCondition(() => this._internal.isVpnEnabled());
+            if (!vpnIsStarted) {
+                await deleteConfig();
+                throw new Error('Failed to enable WireGuard tunnel.');
+            }
+
+            return;
+        }
+
+        // We are dealing with a regular global proxy.
+        const proxy = _proxy as Proxy | null;
+
         // Regardless of whether we want to set or remove the proxy, we don't want proxy auto-config to interfere.
         await execa('adb', ['shell', 'settings', 'delete', 'global', 'global_proxy_pac_url']);
 
