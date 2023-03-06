@@ -10,6 +10,23 @@ export const asyncUnimplemented = (action: string) => async () => {
     throw new Error('Unimplemented on this platform: ' + action);
 };
 
+export const retryCondition = async (
+    condition: () => boolean | Promise<boolean>,
+    maxTries = 50,
+    pauseBetweenTries = 250
+) => {
+    let tries = 0;
+
+    while (!(await condition())) {
+        if (tries > maxTries) return false;
+
+        await pause(pauseBetweenTries);
+        tries++;
+    }
+
+    return true;
+};
+
 /**
  * Pause for a given duration.
  *

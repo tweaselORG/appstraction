@@ -1,7 +1,7 @@
 import { execa } from 'execa';
 import frida from 'frida';
 import type { PlatformApi, PlatformApiOptions, SupportedCapability, SupportedRunTarget } from '.';
-import { asyncUnimplemented, getObjFromFridaScript, isRecord, pause } from './util';
+import { asyncUnimplemented, getObjFromFridaScript, isRecord, retryCondition } from './util';
 
 const fridaScripts = {
     getPrefs: `var app_ctx = Java.use('android.app.ActivityThread').currentApplication().getApplicationContext();
@@ -32,12 +32,11 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         objectionProcesses: [],
 
         awaitAdb: async () => {
-            let adbTries = 0;
-            while ((await execa('adb', ['get-state'], { reject: false })).exitCode !== 0) {
-                if (adbTries > 100) throw new Error('Failed to connect via adb.');
-                await pause(250);
-                adbTries++;
-            }
+            const adbIsStarted = await retryCondition(
+                async () => (await execa('adb', ['get-state'], { reject: false })).exitCode === 0,
+                100
+            );
+            if (!adbIsStarted) throw new Error('Failed to connect via adb.');
         },
         async ensureFrida() {
             if (!options.capabilities.includes('frida')) return;
@@ -51,19 +50,13 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             await this.requireRoot('Frida');
 
             await execa('adb shell "nohup /data/local/tmp/frida-server >/dev/null 2>&1 &"', { shell: true });
-            let fridaTries = 0;
-            while (
-                (
-                    await execa(`frida-ps -U | grep frida-server`, {
-                        shell: true,
-                        reject: false,
-                    })
-                ).exitCode !== 0
-            ) {
-                if (fridaTries > 100) throw new Error('Failed to start Frida.');
-                await pause(250);
-                fridaTries++;
-            }
+
+            const fridaIsStarted = await retryCondition(
+                async () =>
+                    (await execa(`frida-ps -U | grep frida-server`, { shell: true, reject: false })).exitCode === 0,
+                100
+            );
+            if (!fridaIsStarted) throw new Error('Failed to start Frida.');
         },
         async requireRoot(action) {
             if (!options.capabilities.includes('root')) throw new Error(`Root access is required for ${action}.`);
