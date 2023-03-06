@@ -43,6 +43,16 @@ export type PlatformApi<
     clearStuckModals: Platform extends 'android' ? () => Promise<void> : never;
 
     /**
+     * Check whether the app with the given app ID is installed.
+     *
+     * Currently only supported on Android.
+     *
+     * @param appId The app ID of the app to check.
+     *
+     * @returns Whether the app is installed.
+     */
+    isAppInstalled: Platform extends 'android' ? (appId: string) => Promise<boolean> : never;
+    /**
      * Install the app at the given path.
      *
      * @param appPath Path to the app file (`.ipa` on iOS, `.apk` on Android) to install. Currently, this can also be a

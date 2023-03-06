@@ -10,6 +10,7 @@ With appstraction, you can perform the following actions programmatically on And
 
 * Reset an emulator to a snapshot.
 * Install and uninstall apps.
+* Check whether an app is installed.
 * Set an app's permissions, either granting everything or granularly specifying which permissions to grant or deny.
 * Configure an app's battery optimization settings.
 * Start and stop apps.
