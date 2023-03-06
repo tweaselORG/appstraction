@@ -29,6 +29,7 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
     console.log('App:', appMeta.id, '@', appMeta.version);
 
     await android.installApp(`${appPath}/${appId}/*.apk`);
+    await android.setAppBackgroundBatteryUsage(appId, 'unrestricted');
     // First, grant all permissions.
     await android.setAppPermissions(appId);
     // Then, revoke the camera and location permissions.
