@@ -78,6 +78,24 @@ export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends Su
             : Partial<Record<LiteralUnion<AndroidPermission, string>, 'allow' | 'deny'>>
     ) => Promise<void>;
     /**
+     * Configure whether the app's background battery usage should be restricted.
+     *
+     * Currently only supported on Android.
+     *
+     * @param appId The app ID of the app to configure the background battery usage settings for.
+     * @param state The state to set the background battery usage to.
+     *
+     *   On Android, the possible values are:
+     *
+     *   - `unrestricted`: "Allow battery usage in background without restrictions. May use more battery."
+     *   - `optimized`: "Optimize based on your usage. Recommended for most apps." (default after installation)
+     *   - `restricted`: "Restrict battery usage while in background. Apps may not work as expected. Notifications may be
+     *       delayed."
+     */
+    setAppBackgroundBatteryUsage: Platform extends 'android'
+        ? (appId: string, state: 'unrestricted' | 'optimized' | 'restricted') => Promise<void>
+        : never;
+    /**
      * Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning
      * bypass if enabled.
      *

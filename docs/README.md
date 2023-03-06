@@ -39,7 +39,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:410](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L410)
+[android.ts:428](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L428)
 
 ___
 
@@ -57,7 +57,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:269](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L269)
+[index.ts:287](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L287)
 
 ___
 
@@ -76,7 +76,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:275](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L275)
+[index.ts:293](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L293)
 
 ___
 
@@ -88,7 +88,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:219](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L219)
+[ios.ts:220](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L220)
 
 ___
 
@@ -119,6 +119,7 @@ Functions that are available for the platforms.
 | `installCertificateAuthority` | `Platform` extends ``"android"`` ? (`path`: `string`) => `Promise`<`void`\> : `never` | Install the certificate authority with the given path as a trusted CA on the device. This allows you to intercept and modify traffic from apps on the device. On Android, this installs the CA as a system CA. As this is normally not possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and installs the CA there. This means that the changes are not persistent across reboots. Currently only supported on Android. This requires the `root` capability on Android. **`Param`** The path to the certificate authority to install. |
 | `removeCertificateAuthority` | `Platform` extends ``"android"`` ? (`path`: `string`) => `Promise`<`void`\> : `never` | Remove the certificate authority with the given path from the trusted CAs on the device. On Android, this works for system CAs, including those pre-installed with the OS. As this is normally not possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and removes the CA there. This means that the changes are not persistent across reboots. Currently only supported on Android. This requires the `root` capability on Android. **`Param`** The path to the certificate authority to remove. |
 | `resetDevice` | `Platform` extends ``"android"`` ? `RunTarget` extends ``"emulator"`` ? (`snapshotName`: `string`) => `Promise`<`void`\> : `never` : `never` | Reset the device to the specified snapshot (only available for emulators). **`Param`** The name of the snapshot to reset to. |
+| `setAppBackgroundBatteryUsage` | `Platform` extends ``"android"`` ? (`appId`: `string`, `state`: ``"unrestricted"`` \| ``"optimized"`` \| ``"restricted"``) => `Promise`<`void`\> : `never` | Configure whether the app's background battery usage should be restricted. Currently only supported on Android. **`Param`** The app ID of the app to configure the background battery usage settings for. **`Param`** The state to set the background battery usage to. On Android, the possible values are: - `unrestricted`: "Allow battery usage in background without restrictions. May use more battery." - `optimized`: "Optimize based on your usage. Recommended for most apps." (default after installation) - `restricted`: "Restrict battery usage while in background. Apps may not work as expected. Notifications may be delayed." |
 | `setAppPermissions` | (`appId`: `string`, `permissions?`: `Platform` extends ``"ios"`` ? { [p in IosPermission]?: "unset" \| "allow" \| "deny" } & { `location?`: ``"ask"`` \| ``"never"`` \| ``"always"`` \| ``"while-using"``  } : `Partial`<`Record`<`LiteralUnion`<[`AndroidPermission`](README.md#androidpermission), `string`\>, ``"allow"`` \| ``"deny"``\>\>) => `Promise`<`void`\> | Set the permissions for the app with the given app ID. By default, it will grant all known permissions (including dangerous permissions on Android) and set the location permission on iOS to `always`. You can specify which permissions to grant/deny using the `permissions` argument. Requires the `ssh` and `frida` capabilities on iOS. |
 | `setClipboard` | (`text`: `string`) => `Promise`<`void`\> | Set the clipboard to the given text. Requires the `frida` capability on Android and iOS. |
 | `setProxy` | `Platform` extends ``"android"`` ? (`proxy`: [`Proxy`](README.md#proxy) \| ``null``) => `Promise`<`void`\> : `never` | Set or disable the proxy on the device. Currently only supported on Android. **`Param`** The proxy to set, or `null` to disable the proxy. |
@@ -147,7 +148,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:207](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L207)
+[index.ts:225](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L225)
 
 ___
 
@@ -166,7 +167,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:283](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L283)
+[index.ts:301](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L301)
 
 ___
 
@@ -196,7 +197,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:234](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L234)
+[index.ts:252](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L252)
 
 ___
 
@@ -214,7 +215,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:262](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L262)
+[index.ts:280](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L280)
 
 ___
 
@@ -256,7 +257,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:279](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L279)
+[android.ts:297](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L297)
 
 ___
 
@@ -268,7 +269,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:202](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L202)
+[ios.ts:203](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L203)
 
 ## Functions
 
@@ -348,4 +349,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:297](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L297)
+[index.ts:315](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L315)
