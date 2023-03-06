@@ -11,6 +11,7 @@ With appstraction, you can perform the following actions programmatically on And
 * Reset an emulator to a snapshot.
 * Install and uninstall apps.
 * Set an app's permissions, either granting everything or granularly specifying which permissions to grant or deny.
+* Configure an app's battery optimization settings.
 * Start an app.
 * Find the app ID of the app that is currently in the foreground.
 * Get the PID of an app by its app ID if it is currently running.

@@ -176,6 +176,24 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             });
         }
     },
+    setAppBackgroundBatteryUsage: async (appId, state) => {
+        switch (state) {
+            case 'unrestricted':
+                await execa('adb', ['shell', 'cmd', 'appops', 'set', appId, 'RUN_ANY_IN_BACKGROUND', 'allow']);
+                await execa('adb', ['shell', 'dumpsys', 'deviceidle', 'whitelist', `+${appId}`]);
+                return;
+            case 'optimized':
+                await execa('adb', ['shell', 'cmd', 'appops', 'set', appId, 'RUN_ANY_IN_BACKGROUND', 'allow']);
+                await execa('adb', ['shell', 'dumpsys', 'deviceidle', 'whitelist', `-${appId}`]);
+                return;
+            case 'restricted':
+                await execa('adb', ['shell', 'cmd', 'appops', 'set', appId, 'RUN_ANY_IN_BACKGROUND', 'ignore']);
+                await execa('adb', ['shell', 'dumpsys', 'deviceidle', 'whitelist', `-${appId}`]);
+                return;
+            default:
+                throw new Error(`Invalid battery optimization state: ${state}`);
+        }
+    },
     startApp(appId) {
         // We deliberately don't await these since objection doesn't exit after the app is started.
         if (options.capabilities.includes('certificate-pinning-bypass')) {

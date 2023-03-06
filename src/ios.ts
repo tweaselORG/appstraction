@@ -124,6 +124,7 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
             else throw new Error(`Invalid permission value for "${permission}": "${to}"`);
         }
     },
+    setAppBackgroundBatteryUsage: asyncUnimplemented('setAppBatteryOptimization') as never,
     startApp: async (appId) => {
         if (options.capabilities.includes('frida')) {
             const session = await frida.getUsbDevice().then((f) => f.attach('SpringBoard'));
