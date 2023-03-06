@@ -65,6 +65,7 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     },
     clearStuckModals: asyncUnimplemented('clearStuckModals') as never,
 
+    isAppInstalled: asyncUnimplemented('isAppInstalled') as never,
     // We're using `libimobiledevice` instead of `cfgutil` because the latter doesn't wait for the app to be fully
     // installed before exiting.
     installApp: async (ipaPath) => {
