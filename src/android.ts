@@ -1,5 +1,8 @@
+import fetch from 'cross-fetch';
 import { execa } from 'execa';
 import frida from 'frida';
+import { rm, writeFile } from 'fs/promises';
+import { temporaryFile } from 'tempy';
 import type {
     PlatformApi,
     PlatformApiOptions,
@@ -131,6 +134,89 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         });
 
         await this._internal.ensureFrida();
+
+        if (options.capabilities.includes('wireguard')) {
+            // Install app if necessary.
+            if (!(await this.isAppInstalled('com.wireguard.android'))) {
+                try {
+                    const fdroidMeta = await fetch('https://f-droid.org/api/v1/packages/com.wireguard.android').then(
+                        (res) => res.json()
+                    );
+                    const apkUrl = `https://f-droid.org/repo/com.wireguard.android_${fdroidMeta.suggestedVersionCode}.apk`;
+
+                    // `adb` complains if we try to install a file with the wrong extension.
+                    const apkTmpPath = temporaryFile({ extension: 'apk' });
+                    const apk = await fetch(apkUrl).then((res) => res.arrayBuffer());
+                    await writeFile(apkTmpPath, Buffer.from(apk));
+
+                    await this.installApp(apkTmpPath);
+
+                    // It doesn't matter if this fails, the OS will clean up the file eventually.
+                    // eslint-disable-next-line @typescript-eslint/no-empty-function
+                    await rm(apkTmpPath).catch(() => {});
+                } catch (err) {
+                    throw new Error(
+                        'Failed to automatically install WireGuard app. Try again or install it manually.',
+                        { cause: err }
+                    );
+                }
+            }
+
+            // Enable remote control in config if necessary.
+            const remoteControlEnabled = async () => {
+                const { stdout: config } = await execa(
+                    'adb',
+                    ['shell', 'cat /data/data/com.wireguard.android/files/datastore/settings.preferences_pb'],
+                    { reject: false }
+                );
+                return config.includes('allow_remote_control_intents\u0012\u0002\b\u0001');
+            };
+
+            if (!(await remoteControlEnabled())) {
+                try {
+                    this._internal.requireRoot('configuring WireGuard in ensureDevice()');
+
+                    // This is the default config of version v1.0.20220516, but with remote control enabled.
+                    const config =
+                        '\n\u0015\n\u000frestore_on_boot\u0012\u0002\b\u0000\n\u0010\n\ndark_theme\u0012\u0002\b\u0000\n\u0016\n\u0010multiple_tunnels\u0012\u0002\b\u0000\n"\n\u001callow_remote_control_intents\u0012\u0002\b\u0001';
+                    const configAsBase64 = Buffer.from(config).toString('base64');
+
+                    const { stdout: appUser } = await execa('adb', [
+                        'shell',
+                        'stat',
+                        '-c',
+                        '%U',
+                        '/data/data/com.wireguard.android',
+                    ]);
+                    await execa('adb', [
+                        'shell',
+                        'su',
+                        appUser,
+                        '/bin/sh',
+                        '-c',
+                        '"mkdir -p /data/data/com.wireguard.android/files/datastore"',
+                    ]);
+                    await execa('adb', [
+                        'shell',
+                        'su',
+                        appUser,
+                        '/bin/sh',
+                        '-c',
+                        `"echo -n '${configAsBase64}' | base64 -d > /data/data/com.wireguard.android/files/datastore/settings.preferences_pb"`,
+                    ]);
+
+                    if (!(await remoteControlEnabled()))
+                        throw new Error('Remote control not enabled after writing config.');
+                } catch (err) {
+                    throw new Error(
+                        'Failed to automatically configure the WireGuard app. Try again or manually enable "Allow remote control apps" under "Advanced" in the app\'s settings.',
+                        { cause: err }
+                    );
+                }
+            }
+
+            await execa('adb', ['shell', 'cmd', 'appops', 'set', 'com.wireguard.android', 'ACTIVATE_VPN', 'allow']);
+        }
     },
     clearStuckModals: async () => {
         // Press back button.
@@ -341,6 +427,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 'shell',
                 'su',
                 appUser,
+                '/bin/sh',
                 '-c',
                 `"echo -n '${config}' > /data/data/com.wireguard.android/files/${tunnelName}.conf"`,
             ]);
