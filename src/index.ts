@@ -21,7 +21,10 @@ export type PlatformApi<
     Capabilities extends SupportedCapability<'android' | 'ios'>[],
     Capability = Capabilities[number]
 > = {
-    /** Assert that the selected device is connected and ready to be used with the selected capabilities. */
+    /**
+     * Assert that the selected device is connected and ready to be used with the selected capabilities, performing
+     * necessary setup steps. This should always be the first function you call.
+     */
     ensureDevice: () => Promise<void>;
     /**
      * Reset the device to the specified snapshot (only available for emulators).
