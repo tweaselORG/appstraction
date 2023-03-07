@@ -40,7 +40,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:524](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L524)
+[android.ts:615](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L615)
 
 ___
 
@@ -58,7 +58,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:319](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L319)
+[index.ts:324](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L324)
 
 ___
 
@@ -77,7 +77,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:325](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L325)
+[index.ts:330](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L330)
 
 ___
 
@@ -113,7 +113,7 @@ Functions that are available for the platforms.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `clearStuckModals` | `Platform` extends ``"android"`` ? () => `Promise`<`void`\> : `never` | Clear any potential stuck modals by pressing the back button followed by the home button. This is currently broken on iOS (see https://github.com/tweaselORG/appstraction/issues/12). Requires the `ssh` capability on iOS. |
-| `ensureDevice` | () => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities. |
+| `ensureDevice` | () => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities, performing necessary setup steps. This should always be the first function you call. Note that depending on the capabilities you set, the setup steps may make permanent changes to your device. |
 | `getDeviceAttribute` | <Attribute\>(`attribute`: `Attribute`, ...`options`: `Attribute` extends keyof [`GetDeviceAttributeOptions`](README.md#getdeviceattributeoptions) ? [options: GetDeviceAttributeOptions[Attribute]] : [options?: undefined]) => `Promise`<`string`\> | Get the value of the given attribute of the device. Requires the `frida` capability on iOS. |
 | `getForegroundAppId` | () => `Promise`<`string` \| `undefined`\> | Get the app ID of the running app that is currently in the foreground. Requires the `frida` capability on iOS. |
 | `getPidForAppId` | (`appId`: `string`) => `Promise`<`number` \| `undefined`\> | Get the PID of the app with the given app ID if it is currently running. Requires the `frida` capability on iOS. |
@@ -153,7 +153,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:257](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L257)
+[index.ts:262](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L262)
 
 ___
 
@@ -172,7 +172,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:333](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L333)
+[index.ts:338](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L338)
 
 ___
 
@@ -202,7 +202,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:284](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L284)
+[index.ts:289](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L289)
 
 ___
 
@@ -220,7 +220,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:312](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L312)
+[index.ts:317](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L317)
 
 ___
 
@@ -262,7 +262,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:340](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L340)
+[index.ts:345](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L345)
 
 ## Variables
 
@@ -274,7 +274,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:393](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L393)
+[android.ts:484](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L484)
 
 ___
 
@@ -366,4 +366,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:349](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L349)
+[index.ts:354](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L354)
