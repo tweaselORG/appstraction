@@ -15,8 +15,16 @@ export type SupportedRunTarget<Platform extends SupportedPlatform> = Platform ex
     : never;
 
 /** Functions that are available for the platforms. */
-export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends SupportedRunTarget<Platform>> = {
-    /** Assert that the selected device is connected and ready to be used with the selected capabilities. */
+export type PlatformApi<
+    Platform extends SupportedPlatform,
+    RunTarget extends SupportedRunTarget<Platform>,
+    Capabilities extends SupportedCapability<'android' | 'ios'>[],
+    Capability = Capabilities[number]
+> = {
+    /**
+     * Assert that the selected device is connected and ready to be used with the selected capabilities, performing
+     * necessary setup steps. This should always be the first function you call.
+     */
     ensureDevice: () => Promise<void>;
     /**
      * Reset the device to the specified snapshot (only available for emulators).
@@ -37,6 +45,16 @@ export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends Su
      */
     clearStuckModals: Platform extends 'android' ? () => Promise<void> : never;
 
+    /**
+     * Check whether the app with the given app ID is installed.
+     *
+     * Currently only supported on Android.
+     *
+     * @param appId The app ID of the app to check.
+     *
+     * @returns Whether the app is installed.
+     */
+    isAppInstalled: Platform extends 'android' ? (appId: string) => Promise<boolean> : never;
     /**
      * Install the app at the given path.
      *
@@ -78,6 +96,24 @@ export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends Su
             : Partial<Record<LiteralUnion<AndroidPermission, string>, 'allow' | 'deny'>>
     ) => Promise<void>;
     /**
+     * Configure whether the app's background battery usage should be restricted.
+     *
+     * Currently only supported on Android.
+     *
+     * @param appId The app ID of the app to configure the background battery usage settings for.
+     * @param state The state to set the background battery usage to.
+     *
+     *   On Android, the possible values are:
+     *
+     *   - `unrestricted`: "Allow battery usage in background without restrictions. May use more battery."
+     *   - `optimized`: "Optimize based on your usage. Recommend for most apps." (default after installation)
+     *   - `restricted`: "Restrict battery usage while in background. Apps may not work as expected. Notifications may be
+     *       delayed."
+     */
+    setAppBackgroundBatteryUsage: Platform extends 'android'
+        ? (appId: string, state: 'unrestricted' | 'optimized' | 'restricted') => Promise<void>
+        : never;
+    /**
      * Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning
      * bypass if enabled.
      *
@@ -87,6 +123,12 @@ export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends Su
      * @param appId The app ID of the app to start.
      */
     startApp: (appId: string) => Promise<void>;
+    /**
+     * Force-stop the app with the given app ID.
+     *
+     * @param appId The app ID of the app to stop.
+     */
+    stopApp: Platform extends 'android' ? (appId: string) => Promise<void> : never;
 
     /**
      * Get the app ID of the running app that is currently in the foreground.
@@ -147,11 +189,65 @@ export type PlatformApi<Platform extends SupportedPlatform, RunTarget extends Su
      */
     setClipboard: (text: string) => Promise<void>;
 
+    /**
+     * Install the certificate authority with the given path as a trusted CA on the device. This allows you to intercept
+     * and modify traffic from apps on the device.
+     *
+     * On Android, this installs the CA as a system CA. As this is normally not possible on Android 10 and above, it
+     * overlays the `/system/etc/security/cacerts` directory with a tmpfs and installs the CA there. This means that the
+     * changes are not persistent across reboots.
+     *
+     * Currently only supported on Android.
+     *
+     * This requires the `root` capability on Android.
+     *
+     * @param path The path to the certificate authority to install.
+     */
+    installCertificateAuthority: Platform extends 'android' ? (path: string) => Promise<void> : never;
+    /**
+     * Remove the certificate authority with the given path from the trusted CAs on the device.
+     *
+     * On Android, this works for system CAs, including those pre-installed with the OS. As this is normally not
+     * possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and
+     * removes the CA there. This means that the changes are not persistent across reboots.
+     *
+     * Currently only supported on Android.
+     *
+     * This requires the `root` capability on Android.
+     *
+     * @param path The path to the certificate authority to remove.
+     */
+    removeCertificateAuthority: Platform extends 'android' ? (path: string) => Promise<void> : never;
+    /**
+     * Set or disable the proxy on the device. If you have enabled the `wireguard` capability, this will start or stop a
+     * WireGuard tunnel. Otherwise, it will set the global proxy on the device.
+     *
+     * Currently only supported on Android.
+     *
+     * Enabling a WireGuard tunnel requires the `root` capability on Android.
+     *
+     * @remarks
+     * The WireGuard integration will create a new tunnel in the app called `appstraction` and delete it when the proxy
+     * is stopped. If you have an existing tunnel with the same name, it will be overridden.
+     * @param proxy The proxy to set, or `null` to disable the proxy. If you have enabled the `wireguard` capability,
+     *   this is a string of the full WireGuard configuration to use.
+     */
+    setProxy: Platform extends 'android'
+        ? (proxy: ('wireguard' extends Capability ? WireGuardConfig : Proxy) | null) => Promise<void>
+        : never;
+
     /** @ignore */
     _internal: Platform extends 'android'
         ? {
               awaitAdb: () => Promise<void>;
               ensureFrida: () => Promise<void>;
+              requireRoot: (action: string) => Promise<void>;
+
+              getCertificateSubjectHashOld: (path: string) => Promise<string | undefined>;
+              hasCertificateAuthority: (filename: string) => Promise<boolean>;
+              overlayTmpfs: (directoryPathWithoutLeadingSlash: string) => Promise<void>;
+
+              isVpnEnabled: () => Promise<boolean>;
 
               objectionProcesses: ExecaChildProcess[];
           }
@@ -217,7 +313,7 @@ export type RunTargetOptions<
 
 /** A capability for the `platformApi()` function. */
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
-    ? 'frida' | 'certificate-pinning-bypass'
+    ? 'wireguard' | 'root' | 'frida' | 'certificate-pinning-bypass'
     : Platform extends 'ios'
     ? 'ssh' | 'frida'
     : never;
@@ -236,6 +332,15 @@ export type GetDeviceAttributeOptions = {
         appId: string;
     };
 };
+/** Connection details for a proxy. */
+export type Proxy = {
+    /** The host of the proxy. */
+    host: string;
+    /** The port of the proxy. */
+    port: number;
+};
+/** Configuration string for WireGuard. */
+export type WireGuardConfig = string;
 
 /**
  * Get the API object with the functions for the given platform and run target.
@@ -248,14 +353,14 @@ export function platformApi<
     Platform extends SupportedPlatform,
     RunTarget extends SupportedRunTarget<Platform>,
     Capabilities extends SupportedCapability<Platform>[]
->(options: PlatformApiOptions<Platform, RunTarget, Capabilities>): PlatformApi<Platform, RunTarget> {
+>(options: PlatformApiOptions<Platform, RunTarget, Capabilities>): PlatformApi<Platform, RunTarget, Capabilities> {
     switch (options.platform) {
         case 'android':
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return androidApi(options as any) as PlatformApi<Platform, RunTarget>;
+            return androidApi(options as any) as any;
         case 'ios':
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return iosApi(options as any) as PlatformApi<Platform, RunTarget>;
+            return iosApi(options as any) as any;
         default:
             throw new Error(`Unsupported platform: ${options.platform}`);
     }

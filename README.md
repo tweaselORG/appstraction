@@ -2,7 +2,7 @@
 
 > An abstraction layer for common instrumentation functions (e.g. installing and starting apps, setting preferences, etc.) on Android and iOS.
 
-Appstraction provides an abstraction layer for common instrumentation functions on mobile platforms, specifically Android and iOS. This includes installing, uninstalling, and starting apps, managing their permissions, but also managing devices, like resetting to snapshots, setting the clipboard content, etc. Appstraction is built primarily for use in mobile privacy research, but can be used for other purposes as well.
+Appstraction provides an abstraction layer for common instrumentation functions on mobile platforms, specifically Android and iOS. This includes installing, uninstalling, and starting apps, managing their permissions, but also managing devices, like resetting to snapshots, setting the clipboard content, configuring the proxy, etc. Appstraction is built primarily for use in mobile privacy research, but can be used for other purposes as well.
 
 ## Features
 
@@ -10,14 +10,18 @@ With appstraction, you can perform the following actions programmatically on And
 
 * Reset an emulator to a snapshot.
 * Install and uninstall apps.
+* Check whether an app is installed.
 * Set an app's permissions, either granting everything or granularly specifying which permissions to grant or deny.
-* Start an app.
+* Configure an app's battery optimization settings.
+* Start and stop apps.
 * Find the app ID of the app that is currently in the foreground.
 * Get the PID of an app by its app ID if it is currently running.
 * Fetch an app's preferences (`SharedPreferences` on Android, `NSUserDefaults` on iOS) as JSON.
 * Get various device attributes (like the IDFV on iOS).
 * Set the clipboard content.
 * Get the app ID and version for an app file (`.apk` on Android, `.ipa` on iOS).
+* Install and remove root certificate authorities.
+* Configure the proxy settings, optionally using WireGuard instead of a regular proxy. WireGuard is automatically installed and configured on the device if enabled.
 
 Appstraction is written in TypeScript and provides comprehensive type definitions to make development easy.
 
@@ -41,6 +45,8 @@ For Android, you need the [Android command line tools](https://developer.android
 export ANDROID_HOME="$HOME/Android/Sdk"
 export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/33.0.0:$ANDROID_HOME/cmdline-tools/latest/bin/:$ANDROID_HOME/emulator"
 ```
+
+You also need `openssl`.
 
 For the `frida` capability, you need to install [`frida-tools`](https://frida.re/docs/installation/).
 
@@ -174,6 +180,8 @@ import { platformApi } from 'appstraction';
     await android.installApp('</path/to/app/files/*.apk>');
 })();
 ```
+
+Note how the first function we call after constructing the API object is `ensureDevice()`. This is important. This function will assert that the device is connected and ready to be used with the selected capabilities. It will also automatically perform various necessary setup steps for you.
 
 This example didn't need any capabilities. Resetting the emulator and installing apps can both be done in any emulator, without the need for any special preparation.
 

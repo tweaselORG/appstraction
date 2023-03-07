@@ -2,19 +2,28 @@
 import { parseAppMeta, pause, platformApi } from '../src/index';
 
 // You can pass the following command line arguments:
-// `npx tsx examples/android-device.ts <app ID> <app path>`
+// `npx tsx examples/android-device.ts <app ID> <app path> <CA cert path?> <proxy host?> <proxy port?>`
 
 (async () => {
     const android = platformApi({
         platform: 'android',
         runTarget: 'device',
-        capabilities: ['frida', 'certificate-pinning-bypass'],
+        capabilities: ['root', 'frida', 'certificate-pinning-bypass'],
     });
 
     const appId = process.argv[2] || 'de.hafas.android.db';
     const appPath = process.argv[3] || '/path/to/app-files';
+    const caCertPath = process.argv[4];
+    const proxyHost = process.argv[5];
+    const proxyPort = process.argv[6];
 
     await android.ensureDevice();
+
+    if (caCertPath) {
+        await android.removeCertificateAuthority(caCertPath);
+        await android.installCertificateAuthority(caCertPath);
+    }
+    if (proxyHost && proxyPort) await android.setProxy({ host: proxyHost, port: +proxyPort });
 
     await android.setClipboard('I copied this.');
 
@@ -22,7 +31,10 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
     if (!appMeta) throw new Error('Invalid app.');
     console.log('App:', appMeta.id, '@', appMeta.version);
 
+    console.log('Installed already?', await android.isAppInstalled(appId));
+
     await android.installApp(`${appPath}/${appId}/*.apk`);
+    await android.setAppBackgroundBatteryUsage(appId, 'unrestricted');
     // First, grant all permissions.
     await android.setAppPermissions(appId);
     // Then, revoke the camera and location permissions.
@@ -42,5 +54,7 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
 
     await android.clearStuckModals();
     await android.uninstallApp(appId);
+
+    if (proxyHost && proxyPort) await android.setProxy(null);
 })();
 /* eslint-enable no-console */

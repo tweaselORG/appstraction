@@ -10,6 +10,23 @@ export const asyncUnimplemented = (action: string) => async () => {
     throw new Error('Unimplemented on this platform: ' + action);
 };
 
+export const timeoutCondition = async (
+    condition: () => boolean | Promise<boolean>,
+    timeoutInMs = 10000,
+    step = 250
+) => {
+    let elapsedMs = 0;
+
+    while (!(await condition())) {
+        if (elapsedMs > timeoutInMs) return false;
+
+        await pause(step);
+        elapsedMs += step;
+    }
+
+    return true;
+};
+
 /**
  * Pause for a given duration.
  *

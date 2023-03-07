@@ -30,7 +30,7 @@ send({ name: "get_obj_from_frida_script", payload: idfv });`,
 
 export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     options: PlatformApiOptions<'ios', RunTarget, SupportedCapability<'ios'>[]>
-): PlatformApi<'ios', 'device'> => ({
+): PlatformApi<'ios', 'device', SupportedCapability<'ios'>[]> => ({
     _internal: undefined,
 
     resetDevice: asyncUnimplemented('resetDevice') as never,
@@ -65,6 +65,7 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     },
     clearStuckModals: asyncUnimplemented('clearStuckModals') as never,
 
+    isAppInstalled: asyncUnimplemented('isAppInstalled') as never,
     // We're using `libimobiledevice` instead of `cfgutil` because the latter doesn't wait for the app to be fully
     // installed before exiting.
     installApp: async (ipaPath) => {
@@ -124,6 +125,7 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
             else throw new Error(`Invalid permission value for "${permission}": "${to}"`);
         }
     },
+    setAppBackgroundBatteryUsage: asyncUnimplemented('setAppBatteryOptimization') as never,
     startApp: async (appId) => {
         if (options.capabilities.includes('frida')) {
             const session = await frida.getUsbDevice().then((f) => f.attach('SpringBoard'));
@@ -142,6 +144,7 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
             throw new Error('Frida or SSH (with the open package installed) is required for starting apps.');
         }
     },
+    stopApp: asyncUnimplemented('stopApp') as never,
 
     getForegroundAppId: async () => {
         if (!options.capabilities.includes('frida'))
@@ -192,6 +195,10 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         await script.load();
         await session.detach();
     },
+
+    installCertificateAuthority: asyncUnimplemented('installCertificateAuthority') as never,
+    removeCertificateAuthority: asyncUnimplemented('removeCertificateAuthority') as never,
+    setProxy: asyncUnimplemented('setProxy') as never,
 });
 
 /** The IDs of known permissions on iOS. */
