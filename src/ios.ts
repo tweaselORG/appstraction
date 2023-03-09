@@ -1,6 +1,6 @@
 import { execa } from 'execa';
 import frida from 'frida';
-import type { PlatformApi, PlatformApiOptions, SupportedCapability, SupportedRunTarget } from '.';
+import type { PlatformApi, PlatformApiOptions, Proxy, SupportedCapability, SupportedRunTarget } from '.';
 import { asyncUnimplemented, getObjFromFridaScript, isRecord } from './util';
 
 const fridaScripts = {
@@ -26,6 +26,57 @@ send({ name: "get_obj_from_frida_script", payload: idfv });`,
         `ObjC.classes.CLLocationManager.setAuthorizationStatusByType_forBundleIdentifier_(${value}, "${appId}");`,
     startApp: (appId: string) =>
         `ObjC.classes.LSApplicationWorkspace.defaultWorkspace().openApplicationWithBundleID_("${appId}");`,
+    /**
+     * @param options If `options` is falsy, the proxy will be disabled. Otherwise, it will be set according to the
+     *   properties and enabled. If both `options.username` and `options.password` are provided, the proxy will be
+     *   configured to use authentication.
+     */
+    setProxy: (options: Proxy | null) => `function setProxySettingsForCurrentWifiNetwork(options) {
+    var NSString = ObjC.classes.NSString;
+    var NSNumber = ObjC.classes.NSNumber;
+
+    var authenticated = options && options.username && options.password;
+
+    var defaultProxySettings = ObjC.classes.WFSettingsProxy.defaultProxyConfiguration();
+
+    // Sometimes, currentNetwork() returns null, so we have to try a few times.
+    // See: https://github.com/tweaselORG/appstraction/issues/25#issuecomment-1447996021
+    var ssid;
+    for (let i = 0; i < 100; i++) {
+        var currentNetwork = ObjC.classes.WFClient.sharedInstance().interface().currentNetwork();
+        if (currentNetwork) {
+            ssid = currentNetwork.ssid();
+            break;
+        }
+    }
+
+    var newSettingsDict = ObjC.classes.NSMutableDictionary.alloc().initWithDictionary_(defaultProxySettings);
+    if (options) {
+        newSettingsDict.setObject_forKey_(NSNumber.numberWithInt_(1), NSString.stringWithString_('HTTPEnable'));
+        newSettingsDict.setObject_forKey_(NSNumber.numberWithInt_(options.port), NSString.stringWithString_('HTTPPort'));
+        newSettingsDict.setObject_forKey_(NSString.stringWithString_(options.host), NSString.stringWithString_('HTTPProxy'));
+        newSettingsDict.setObject_forKey_(NSNumber.numberWithInt_(1), NSString.stringWithString_('HTTPSEnable'));
+        newSettingsDict.setObject_forKey_(NSNumber.numberWithInt_(options.port), NSString.stringWithString_('HTTPSPort'));
+        newSettingsDict.setObject_forKey_(NSString.stringWithString_(options.host), NSString.stringWithString_('HTTPSProxy'));
+
+        if (authenticated) {
+            newSettingsDict.setObject_forKey_(NSNumber.numberWithInt_(1), NSString.stringWithString_('HTTPProxyAuthenticated'));
+            newSettingsDict.setObject_forKey_(NSString.stringWithString_(options.username), NSString.stringWithString_('HTTPProxyUsername'));
+        }
+    }
+
+    var newSettings = ObjC.classes.WFSettingsProxy.alloc().initWithDictionary_(newSettingsDict);
+    if (authenticated) newSettings.setPassword_(options.password);
+
+    var arrayWithNewSettings = ObjC.classes.NSMutableArray.alloc().init();
+    arrayWithNewSettings.addObject_(newSettings);
+
+    var saveSettingsOperation = ObjC.classes.WFSaveSettingsOperation.alloc().initWithSSID_settings_(ssid, arrayWithNewSettings);
+    saveSettingsOperation.setCurrentNetwork_(1);
+    saveSettingsOperation.start();
+}
+
+setProxySettingsForCurrentWifiNetwork(${JSON.stringify(options)});`,
 } as const;
 
 export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
@@ -198,7 +249,14 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
 
     installCertificateAuthority: asyncUnimplemented('installCertificateAuthority') as never,
     removeCertificateAuthority: asyncUnimplemented('removeCertificateAuthority') as never,
-    setProxy: asyncUnimplemented('setProxy') as never,
+    setProxy: async (proxy) => {
+        if (!options.capabilities.includes('frida')) throw new Error('Frida is required for configuring a proxy.');
+
+        const session = await frida.getUsbDevice().then((f) => f.attach('SpringBoard'));
+        const script = await session.createScript(fridaScripts.setProxy(proxy));
+        await script.load();
+        await session.detach();
+    },
 });
 
 /** The IDs of known permissions on iOS. */
