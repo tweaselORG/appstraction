@@ -1,4 +1,5 @@
 import { execa } from 'execa';
+import type { TargetProcess } from 'frida';
 import frida from 'frida';
 import fs from 'fs-extra';
 import _ipaInfo from 'ipa-extract-info';
@@ -78,10 +79,10 @@ export const ipaInfo = async (ipaPath: string) => {
     return await _ipaInfo(fd);
 };
 
-export const getObjFromFridaScript = async (pid: number | undefined, script: string) => {
-    if (!pid) throw new Error('Must provide pid.');
+export const getObjFromFridaScript = async (targetProcess: TargetProcess | undefined, script: string) => {
+    if (!targetProcess) throw new Error('Must provide targetProcess.');
     const fridaDevice = await frida.getUsbDevice();
-    const fridaSession = await fridaDevice.attach(pid);
+    const fridaSession = await fridaDevice.attach(targetProcess);
     const fridaScript = await fridaSession.createScript(script);
     const resultPromise = new Promise<unknown>((res, rej) => {
         fridaScript.message.connect((message) => {

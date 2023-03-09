@@ -2,7 +2,7 @@
 import { parseAppMeta, pause, platformApi } from '../src/index';
 
 // You can pass the following command line arguments:
-// `npx tsx examples/ios-device.ts <ip> <app path>`
+// `npx tsx examples/ios-device.ts <ip> <app path> <proxy host?> <proxy port?>`
 
 (async () => {
     const ios = platformApi({
@@ -15,8 +15,12 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
     });
 
     const appPath = process.argv[3] || '/path/to/app-files';
+    const proxyHost = process.argv[4];
+    const proxyPort = process.argv[5];
 
     await ios.ensureDevice();
+
+    if (proxyHost && proxyPort) await ios.setProxy({ host: proxyHost, port: +proxyPort });
 
     await ios.setClipboard('I copied this.');
 
@@ -44,5 +48,7 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
     // `clearStuckModals()` is currently broken on iOS (see https://github.com/tweaselORG/appstraction/issues/12).
     // await ios.clearStuckModals();
     await ios.uninstallApp(appId);
+
+    if (proxyHost && proxyPort) await ios.setProxy(null);
 })();
 /* eslint-enable no-console */
