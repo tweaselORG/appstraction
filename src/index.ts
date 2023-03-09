@@ -224,9 +224,10 @@ export type PlatformApi<
      * Set or disable the proxy on the device. If you have enabled the `wireguard` capability, this will start or stop a
      * WireGuard tunnel. Otherwise, it will set the global proxy on the device.
      *
-     * Currently only supported on Android.
+     * On iOS, the proxy is set for the current WiFi network. It won't apply for other networks or for cellular data
+     * connections.
      *
-     * Enabling a WireGuard tunnel requires the `root` capability on Android.
+     * WireGuard is currently only supported on Android. Enabling a WireGuard tunnel requires the `root` capability.
      *
      * @remarks
      * The WireGuard integration will create a new tunnel in the app called `appstraction` and delete it when the proxy
@@ -236,6 +237,8 @@ export type PlatformApi<
      */
     setProxy: Platform extends 'android'
         ? (proxy: ('wireguard' extends Capability ? WireGuardConfig : Proxy) | null) => Promise<void>
+        : Platform extends 'ios'
+        ? (proxy: Proxy | null) => Promise<void>
         : never;
 
     /** @ignore */
