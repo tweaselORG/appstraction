@@ -50,13 +50,11 @@ export type PlatformApi<
     /**
      * Check whether the app with the given app ID is installed.
      *
-     * Currently only supported on Android.
-     *
      * @param appId The app ID of the app to check.
      *
      * @returns Whether the app is installed.
      */
-    isAppInstalled: Platform extends 'android' ? (appId: string) => Promise<boolean> : never;
+    isAppInstalled: (appId: string) => Promise<boolean>;
     /**
      * Install the app at the given path.
      *
