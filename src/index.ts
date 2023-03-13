@@ -130,7 +130,7 @@ export type PlatformApi<
      *
      * @param appId The app ID of the app to stop.
      */
-    stopApp: Platform extends 'android' ? (appId: string) => Promise<void> : never;
+    stopApp: (appId: string) => Promise<void>;
 
     /**
      * Get the app ID of the running app that is currently in the foreground.
