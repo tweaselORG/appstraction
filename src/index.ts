@@ -199,13 +199,17 @@ export type PlatformApi<
      * overlays the `/system/etc/security/cacerts` directory with a tmpfs and installs the CA there. This means that the
      * changes are not persistent across reboots.
      *
-     * Currently only supported on Android.
+     * On iOS, the CA is installed permanently as a root certificate in the Certificate Trust Store. It persists across
+     * reboots.\
+     * **Currently, you need to manually trust any CA at least once on the device, CAs can be added but not
+     * automatically marked as trusted (see:
+     * https://github.com/tweaselORG/appstraction/issues/44#issuecomment-1466151197).**
      *
-     * This requires the `root` capability on Android.
+     * Requires the `root` capability on Android, and the `ssh` capability on iOS.
      *
-     * @param path The path to the certificate authority to install.
+     * @param path The path to the certificate authority to install. The certificate must be in PEM format.
      */
-    installCertificateAuthority: Platform extends 'android' ? (path: string) => Promise<void> : never;
+    installCertificateAuthority: (path: string) => Promise<void>;
     /**
      * Remove the certificate authority with the given path from the trusted CAs on the device.
      *
@@ -213,13 +217,14 @@ export type PlatformApi<
      * possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and
      * removes the CA there. This means that the changes are not persistent across reboots.
      *
-     * Currently only supported on Android.
+     * On iOS, this only works for CAs in the Certificate Trust Store. It does not work for pre-installed OS CAs. The
+     * changes are persistent across reboots.
      *
-     * This requires the `root` capability on Android.
+     * Requires the `root` capability on Android, and the `ssh` capability on iOS.
      *
-     * @param path The path to the certificate authority to remove.
+     * @param path The path to the certificate authority to remove. The certificate must be in PEM format.
      */
-    removeCertificateAuthority: Platform extends 'android' ? (path: string) => Promise<void> : never;
+    removeCertificateAuthority: (path: string) => Promise<void>;
     /**
      * Set or disable the proxy on the device. If you have enabled the `wireguard` capability, this will start or stop a
      * WireGuard tunnel. Otherwise, it will set the global proxy on the device.

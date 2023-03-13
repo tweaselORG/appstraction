@@ -2,7 +2,7 @@
 import { parseAppMeta, pause, platformApi } from '../src/index';
 
 // You can pass the following command line arguments:
-// `npx tsx examples/ios-device.ts <ip> <app path> <proxy host?> <proxy port?>`
+// `npx tsx examples/ios-device.ts <ip> <app path> <CA cert path?> <proxy host?> <proxy port?>`
 
 (async () => {
     const ios = platformApi({
@@ -15,11 +15,18 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
     });
 
     const appPath = process.argv[3] || '/path/to/app-files';
-    const proxyHost = process.argv[4];
-    const proxyPort = process.argv[5];
+    const caCertPath = process.argv[4];
+    const proxyHost = process.argv[5];
+    const proxyPort = process.argv[6];
 
     await ios.ensureDevice();
 
+    if (caCertPath) {
+        await ios.installCertificateAuthority(caCertPath);
+        console.log(
+            'Installed CA. Note that it will currently not be automatically trusted unless you have manually trusted any user CA at least once before.'
+        );
+    }
     if (proxyHost && proxyPort) await ios.setProxy({ host: proxyHost, port: +proxyPort });
 
     await ios.setClipboard('I copied this.');
@@ -50,5 +57,6 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
     await ios.uninstallApp(appId);
 
     if (proxyHost && proxyPort) await ios.setProxy(null);
+    if (caCertPath) await ios.removeCertificateAuthority(caCertPath);
 })();
 /* eslint-enable no-console */
