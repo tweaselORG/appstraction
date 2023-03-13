@@ -1,5 +1,8 @@
+import { createHash } from 'crypto';
 import { execa } from 'execa';
 import frida from 'frida';
+import { readFile } from 'fs/promises';
+import { Certificate } from 'pkijs';
 import type { PlatformApi, PlatformApiOptions, Proxy, SupportedCapability, SupportedRunTarget } from '.';
 import { asyncUnimplemented, getObjFromFridaScript, isRecord } from './util';
 
@@ -282,9 +285,59 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         await session.detach();
     },
 
-    installCertificateAuthority: asyncUnimplemented('installCertificateAuthority') as never,
-    removeCertificateAuthority: asyncUnimplemented('removeCertificateAuthority') as never,
-    async setProxy(proxy) {
+    installCertificateAuthority: async (path) => {
+        if (!options.capabilities.includes('ssh'))
+            throw new Error('SSH is required for installing a certificate authority.');
+
+        const certPem = await readFile(path, 'utf8');
+
+        // A PEM certificate is just a base64-encoded DER certificate with a header and footer.
+        const certBase64 = certPem.replace(/(-----(BEGIN|END) CERTIFICATE-----|[\r\n])/g, '');
+        const certDer = Buffer.from(certBase64, 'base64');
+
+        const c = Certificate.fromBER(certDer);
+
+        const sha256 = createHash('sha256').update(certDer).digest('hex');
+        const subj = Buffer.from(c.subject.toSchema().valueBlock.toBER()).toString('hex');
+        const tset = Buffer.from(
+            `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<array/>
+</plist>`
+        ).toString('hex');
+        const data = certDer.toString('hex');
+
+        await execa('sshpass', [
+            '-p',
+            options.targetOptions!.rootPw || 'alpine',
+            'ssh',
+            `root@${options.targetOptions!.ip}`,
+            'sqlite3',
+            '/private/var/protected/trustd/private/TrustStore.sqlite3',
+            `"INSERT OR REPLACE INTO tsettings (sha256, subj, tset, data) VALUES(x'${sha256}', x'${subj}', x'${tset}', x'${data}');"`,
+        ]);
+    },
+    removeCertificateAuthority: async (path) => {
+        if (!options.capabilities.includes('ssh'))
+            throw new Error('SSH is required for removing a certificate authority.');
+
+        const certPem = await readFile(path, 'utf8');
+        const certBase64 = certPem.replace(/(-----(BEGIN|END) CERTIFICATE-----|[\r\n])/g, '');
+        const certDer = Buffer.from(certBase64, 'base64');
+        const sha256 = createHash('sha256').update(certDer).digest('hex');
+
+        await execa('sshpass', [
+            '-p',
+            options.targetOptions!.rootPw || 'alpine',
+            'ssh',
+            `root@${options.targetOptions!.ip}`,
+            'sqlite3',
+            '/private/var/protected/trustd/private/TrustStore.sqlite3',
+            `"DELETE FROM tsettings WHERE sha256=x'${sha256}';"`,
+        ]);
+    },
+    setProxy: async (proxy) => {
         if (!options.capabilities.includes('frida')) throw new Error('Frida is required for configuring a proxy.');
 
         // Set proxy settings.
