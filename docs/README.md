@@ -12,10 +12,12 @@ appstraction
 - [IosPermission](README.md#iospermission)
 - [PlatformApi](README.md#platformapi)
 - [PlatformApiOptions](README.md#platformapioptions)
+- [Proxy](README.md#proxy)
 - [RunTargetOptions](README.md#runtargetoptions)
 - [SupportedCapability](README.md#supportedcapability)
 - [SupportedPlatform](README.md#supportedplatform)
 - [SupportedRunTarget](README.md#supportedruntarget)
+- [WireGuardConfig](README.md#wireguardconfig)
 
 ### Variables
 
@@ -38,7 +40,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:325](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L325)
+[android.ts:612](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L612)
 
 ___
 
@@ -56,7 +58,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:226](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L226)
+[index.ts:325](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L325)
 
 ___
 
@@ -75,7 +77,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:232](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L232)
+[index.ts:331](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L331)
 
 ___
 
@@ -87,13 +89,13 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:215](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L215)
+[ios.ts:349](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L349)
 
 ___
 
 ### PlatformApi
 
-Ƭ **PlatformApi**<`Platform`, `RunTarget`\>: `Object`
+Ƭ **PlatformApi**<`Platform`, `RunTarget`, `Capabilities`, `Capability`\>: `Object`
 
 Functions that are available for the platforms.
 
@@ -103,22 +105,30 @@ Functions that are available for the platforms.
 | :------ | :------ |
 | `Platform` | extends [`SupportedPlatform`](README.md#supportedplatform) |
 | `RunTarget` | extends [`SupportedRunTarget`](README.md#supportedruntarget)<`Platform`\> |
+| `Capabilities` | extends [`SupportedCapability`](README.md#supportedcapability)<``"android"`` \| ``"ios"``\>[] |
+| `Capability` | `Capabilities`[`number`] |
 
 #### Type declaration
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `clearStuckModals` | `Platform` extends ``"android"`` ? () => `Promise`<`void`\> : `never` | Clear any potential stuck modals by pressing the back button followed by the home button. This is currently broken on iOS (see https://github.com/tweaselORG/appstraction/issues/12). Requires the `ssh` capability on iOS. |
-| `ensureDevice` | () => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities. |
+| `ensureDevice` | () => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities, performing necessary setup steps. This should always be the first function you call. |
 | `getDeviceAttribute` | <Attribute\>(`attribute`: `Attribute`, ...`options`: `Attribute` extends keyof [`GetDeviceAttributeOptions`](README.md#getdeviceattributeoptions) ? [options: GetDeviceAttributeOptions[Attribute]] : [options?: undefined]) => `Promise`<`string`\> | Get the value of the given attribute of the device. Requires the `frida` capability on iOS. |
 | `getForegroundAppId` | () => `Promise`<`string` \| `undefined`\> | Get the app ID of the running app that is currently in the foreground. Requires the `frida` capability on iOS. |
 | `getPidForAppId` | (`appId`: `string`) => `Promise`<`number` \| `undefined`\> | Get the PID of the app with the given app ID if it is currently running. Requires the `frida` capability on iOS. |
 | `getPrefs` | (`appId`: `string`) => `Promise`<`Record`<`string`, `unknown`\> \| `undefined`\> | Get the preferences (`SharedPreferences` on Android, `NSUserDefaults` on iOS) of the app with the given app ID. Requires the `frida` capability on Android and iOS. |
 | `installApp` | (`appPath`: `string`) => `Promise`<`void`\> | Install the app at the given path. **`Todo`** How to handle split APKs on Android (#4)? |
+| `installCertificateAuthority` | (`path`: `string`) => `Promise`<`void`\> | Install the certificate authority with the given path as a trusted CA on the device. This allows you to intercept and modify traffic from apps on the device. On Android, this installs the CA as a system CA. As this is normally not possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and installs the CA there. This means that the changes are not persistent across reboots. On iOS, the CA is installed permanently as a root certificate in the Certificate Trust Store. It persists across reboots.\ **Currently, you need to manually trust any CA at least once on the device, CAs can be added but not automatically marked as trusted (see: https://github.com/tweaselORG/appstraction/issues/44#issuecomment-1466151197).** Requires the `root` capability on Android, and the `ssh` capability on iOS. |
+| `isAppInstalled` | (`appId`: `string`) => `Promise`<`boolean`\> | Check whether the app with the given app ID is installed. |
+| `removeCertificateAuthority` | (`path`: `string`) => `Promise`<`void`\> | Remove the certificate authority with the given path from the trusted CAs on the device. On Android, this works for system CAs, including those pre-installed with the OS. As this is normally not possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and removes the CA there. This means that the changes are not persistent across reboots. On iOS, this only works for CAs in the Certificate Trust Store. It does not work for pre-installed OS CAs. The changes are persistent across reboots. Requires the `root` capability on Android, and the `ssh` capability on iOS. |
 | `resetDevice` | `Platform` extends ``"android"`` ? `RunTarget` extends ``"emulator"`` ? (`snapshotName`: `string`) => `Promise`<`void`\> : `never` : `never` | Reset the device to the specified snapshot (only available for emulators). **`Param`** The name of the snapshot to reset to. |
+| `setAppBackgroundBatteryUsage` | `Platform` extends ``"android"`` ? (`appId`: `string`, `state`: ``"unrestricted"`` \| ``"optimized"`` \| ``"restricted"``) => `Promise`<`void`\> : `never` | Configure whether the app's background battery usage should be restricted. Currently only supported on Android. **`Param`** The app ID of the app to configure the background battery usage settings for. **`Param`** The state to set the background battery usage to. On Android, the possible values are: - `unrestricted`: "Allow battery usage in background without restrictions. May use more battery." - `optimized`: "Optimize based on your usage. Recommend for most apps." (default after installation) - `restricted`: "Restrict battery usage while in background. Apps may not work as expected. Notifications may be delayed." |
 | `setAppPermissions` | (`appId`: `string`, `permissions?`: `Platform` extends ``"ios"`` ? { [p in IosPermission]?: "unset" \| "allow" \| "deny" } & { `location?`: ``"ask"`` \| ``"never"`` \| ``"always"`` \| ``"while-using"``  } : `Partial`<`Record`<`LiteralUnion`<[`AndroidPermission`](README.md#androidpermission), `string`\>, ``"allow"`` \| ``"deny"``\>\>) => `Promise`<`void`\> | Set the permissions for the app with the given app ID. By default, it will grant all known permissions (including dangerous permissions on Android) and set the location permission on iOS to `always`. You can specify which permissions to grant/deny using the `permissions` argument. Requires the `ssh` and `frida` capabilities on iOS. |
 | `setClipboard` | (`text`: `string`) => `Promise`<`void`\> | Set the clipboard to the given text. Requires the `frida` capability on Android and iOS. |
+| `setProxy` | `Platform` extends ``"android"`` ? (`proxy`: ``"wireguard"`` extends `Capability` ? [`WireGuardConfig`](README.md#wireguardconfig) : [`Proxy`](README.md#proxy) \| ``null``) => `Promise`<`void`\> : `Platform` extends ``"ios"`` ? (`proxy`: [`Proxy`](README.md#proxy) \| ``null``) => `Promise`<`void`\> : `never` | Set or disable the proxy on the device. If you have enabled the `wireguard` capability, this will start or stop a WireGuard tunnel. Otherwise, it will set the global proxy on the device. WireGuard is currently only supported on Android. Enabling a WireGuard tunnel requires the `root` capability. **`Remarks`** The WireGuard integration will create a new tunnel in the app called `appstraction` and delete it when the proxy is stopped. If you have an existing tunnel with the same name, it will be overridden. **`Param`** The proxy to set, or `null` to disable the proxy. If you have enabled the `wireguard` capability, this is a string of the full WireGuard configuration to use. |
 | `startApp` | (`appId`: `string`) => `Promise`<`void`\> | Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning bypass if enabled. Requires the `frida` or `ssh` capability on iOS. On Android, this will start the app with or without a certificate pinning bypass depending on the `certificate-pinning-bypass` capability. |
+| `stopApp` | (`appId`: `string`) => `Promise`<`void`\> | Force-stop the app with the given app ID. |
 | `uninstallApp` | (`appId`: `string`) => `Promise`<`void`\> | Uninstall the app with the given app ID. Will not fail if the app is not installed. This also removes any data stored by the app. |
 
 #### Defined in
@@ -143,7 +153,26 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:164](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L164)
+[index.ts:263](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L263)
+
+___
+
+### Proxy
+
+Ƭ **Proxy**: `Object`
+
+Connection details for a proxy.
+
+#### Type declaration
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `host` | `string` | The host of the proxy. |
+| `port` | `number` | The port of the proxy. |
+
+#### Defined in
+
+[index.ts:339](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L339)
 
 ___
 
@@ -173,13 +202,13 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:191](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L191)
+[index.ts:290](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L290)
 
 ___
 
 ### SupportedCapability
 
-Ƭ **SupportedCapability**<`Platform`\>: `Platform` extends ``"android"`` ? ``"frida"`` \| ``"certificate-pinning-bypass"`` : `Platform` extends ``"ios"`` ? ``"ssh"`` \| ``"frida"`` : `never`
+Ƭ **SupportedCapability**<`Platform`\>: `Platform` extends ``"android"`` ? ``"wireguard"`` \| ``"root"`` \| ``"frida"`` \| ``"certificate-pinning-bypass"`` : `Platform` extends ``"ios"`` ? ``"ssh"`` \| ``"frida"`` : `never`
 
 A capability for the `platformApi()` function.
 
@@ -191,7 +220,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:219](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L219)
+[index.ts:318](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L318)
 
 ___
 
@@ -223,6 +252,18 @@ A run target that is supported by this library for the given platform.
 
 [index.ts:11](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L11)
 
+___
+
+### WireGuardConfig
+
+Ƭ **WireGuardConfig**: `string`
+
+Configuration string for WireGuard.
+
+#### Defined in
+
+[index.ts:346](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L346)
+
 ## Variables
 
 ### androidPermissions
@@ -233,7 +274,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:194](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L194)
+[android.ts:481](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L481)
 
 ___
 
@@ -245,7 +286,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:198](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L198)
+[ios.ts:332](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L332)
 
 ## Functions
 
@@ -271,7 +312,7 @@ The an object with the app ID and version, or `undefined` if the file doesn't ex
 
 #### Defined in
 
-[util.ts:32](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L32)
+[util.ts:49](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L49)
 
 ___
 
@@ -293,13 +334,13 @@ Pause for a given duration.
 
 #### Defined in
 
-[util.ts:18](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L18)
+[util.ts:35](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L35)
 
 ___
 
 ### platformApi
 
-▸ **platformApi**<`Platform`, `RunTarget`, `Capabilities`\>(`options`): [`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`\>
+▸ **platformApi**<`Platform`, `RunTarget`, `Capabilities`\>(`options`): [`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`, `Capabilities`\>
 
 Get the API object with the functions for the given platform and run target.
 
@@ -319,10 +360,10 @@ Get the API object with the functions for the given platform and run target.
 
 #### Returns
 
-[`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`\>
+[`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`, `Capabilities`\>
 
 The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:247](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L247)
+[index.ts:355](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L355)

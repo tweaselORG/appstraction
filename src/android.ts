@@ -1,7 +1,17 @@
+import fetch from 'cross-fetch';
 import { execa } from 'execa';
 import frida from 'frida';
-import type { PlatformApi, PlatformApiOptions, SupportedCapability, SupportedRunTarget } from '.';
-import { asyncUnimplemented, getObjFromFridaScript, isRecord, pause } from './util';
+import { rm, writeFile } from 'fs/promises';
+import { temporaryFile } from 'tempy';
+import type {
+    PlatformApi,
+    PlatformApiOptions,
+    Proxy,
+    SupportedCapability,
+    SupportedRunTarget,
+    WireGuardConfig,
+} from '.';
+import { asyncUnimplemented, getObjFromFridaScript, isRecord, timeoutCondition } from './util';
 
 const fridaScripts = {
     getPrefs: `var app_ctx = Java.use('android.app.ActivityThread').currentApplication().getApplicationContext();
@@ -27,17 +37,16 @@ send({ name: "get_obj_from_frida_script", payload: true });`,
 
 export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     options: PlatformApiOptions<'android', RunTarget, SupportedCapability<'android'>[]>
-): PlatformApi<'android', 'device' | 'emulator'> => ({
+): PlatformApi<'android', 'device' | 'emulator', SupportedCapability<'android'>[]> => ({
     _internal: {
         objectionProcesses: [],
 
         awaitAdb: async () => {
-            let adbTries = 0;
-            while ((await execa('adb', ['get-state'], { reject: false })).exitCode !== 0) {
-                if (adbTries > 100) throw new Error('Failed to connect via adb.');
-                await pause(250);
-                adbTries++;
-            }
+            const adbIsStarted = await timeoutCondition(
+                async () => (await execa('adb', ['get-state'], { reject: false })).exitCode === 0,
+                25000
+            );
+            if (!adbIsStarted) throw new Error('Failed to connect via adb.');
         },
         async ensureFrida() {
             if (!options.capabilities.includes('frida')) return;
@@ -48,24 +57,62 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             });
             if (fridaCheck.exitCode === 0) return;
 
-            await execa('adb', ['root']);
-            await this.awaitAdb();
+            await this.requireRoot('Frida');
 
             await execa('adb shell "nohup /data/local/tmp/frida-server >/dev/null 2>&1 &"', { shell: true });
-            let fridaTries = 0;
-            while (
-                (
-                    await execa(`frida-ps -U | grep frida-server`, {
-                        shell: true,
-                        reject: false,
-                    })
-                ).exitCode !== 0
-            ) {
-                if (fridaTries > 100) throw new Error('Failed to start Frida.');
-                await pause(250);
-                fridaTries++;
-            }
+
+            const fridaIsStarted = await timeoutCondition(
+                async () =>
+                    (await execa(`frida-ps -U | grep frida-server`, { shell: true, reject: false })).exitCode === 0,
+                25000
+            );
+            if (!fridaIsStarted) throw new Error('Failed to start Frida.');
         },
+        async requireRoot(action) {
+            if (!options.capabilities.includes('root')) throw new Error(`Root access is required for ${action}.`);
+
+            await execa('adb', ['root']);
+            await this.awaitAdb();
+        },
+
+        getCertificateSubjectHashOld: (path: string) =>
+            execa('openssl', ['x509', '-inform', 'PEM', '-subject_hash_old', '-in', path]).then(
+                ({ stdout }) => stdout.split('\n')[0]
+            ),
+        hasCertificateAuthority: (filename) =>
+            execa('adb', ['shell', 'ls', `/system/etc/security/cacerts/${filename}`], { reject: false }).then(
+                ({ exitCode }) => exitCode === 0
+            ),
+        overlayTmpfs: async (directoryPath) => {
+            const isTmpfsAlready = (await execa('adb', ['shell', 'mount'])).stdout
+                .split('\n')
+                .some((line) => line.includes(directoryPath) && line.includes('type tmpfs'));
+            if (isTmpfsAlready) return;
+
+            await execa('adb', ['shell', 'mkdir', '-pm', '600', '/data/local/tmp/appstraction-overlay-tmpfs-tmp']);
+            await execa('adb', [
+                'shell',
+                'cp',
+                '--preserve=all',
+                `${directoryPath}/*`,
+                '/data/local/tmp/appstraction-overlay-tmpfs-tmp',
+            ]);
+
+            await execa('adb', ['shell', 'mount', '-t', 'tmpfs', 'tmpfs', directoryPath]);
+            await execa('adb', [
+                'shell',
+                'cp',
+                '--preserve=all',
+                '/data/local/tmp/appstraction-overlay-tmpfs-tmp/*',
+                directoryPath,
+            ]);
+
+            await execa('adb', ['shell', 'rm', '-r', '/data/local/tmp/appstraction-overlay-tmpfs-tmp']);
+        },
+
+        // Note that this is only a fairly crude check, cf.
+        // https://github.com/tweaselORG/meta/issues/19#issuecomment-1446285561.
+        isVpnEnabled: async () => (await execa('adb', ['shell', 'ifconfig', 'tun0'], { reject: false })).exitCode === 0,
     },
 
     async resetDevice(snapshotName) {
@@ -87,6 +134,87 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         });
 
         await this._internal.ensureFrida();
+
+        if (options.capabilities.includes('wireguard')) {
+            // Install app if necessary.
+            if (!(await this.isAppInstalled('com.wireguard.android'))) {
+                try {
+                    const fdroidMeta = await fetch('https://f-droid.org/api/v1/packages/com.wireguard.android').then(
+                        (res) => res.json()
+                    );
+                    const apkUrl = `https://f-droid.org/repo/com.wireguard.android_${fdroidMeta.suggestedVersionCode}.apk`;
+
+                    // `adb` complains if we try to install a file with the wrong extension.
+                    const apkTmpPath = temporaryFile({ extension: 'apk' });
+                    const apk = await fetch(apkUrl).then((res) => res.arrayBuffer());
+                    await writeFile(apkTmpPath, Buffer.from(apk));
+
+                    await this.installApp(apkTmpPath);
+
+                    // It doesn't matter if this fails, the OS will clean up the file eventually.
+                    // eslint-disable-next-line @typescript-eslint/no-empty-function
+                    await rm(apkTmpPath).catch(() => {});
+                } catch (err) {
+                    throw new Error(
+                        'Failed to automatically install WireGuard app. Try again or install it manually.',
+                        { cause: err }
+                    );
+                }
+            }
+
+            // Enable remote control in config if necessary.
+            const remoteControlEnabled = async () => {
+                const { stdout: config } = await execa(
+                    'adb',
+                    ['shell', 'cat /data/data/com.wireguard.android/files/datastore/settings.preferences_pb'],
+                    { reject: false }
+                );
+                return config.includes('allow_remote_control_intents\u0012\u0002\b\u0001');
+            };
+
+            if (!(await remoteControlEnabled())) {
+                try {
+                    this._internal.requireRoot('configuring WireGuard in ensureDevice()');
+
+                    // This is the default config of version v1.0.20220516, but with remote control enabled.
+                    const config =
+                        '\n\u0015\n\u000frestore_on_boot\u0012\u0002\b\u0000\n\u0010\n\ndark_theme\u0012\u0002\b\u0000\n\u0016\n\u0010multiple_tunnels\u0012\u0002\b\u0000\n"\n\u001callow_remote_control_intents\u0012\u0002\b\u0001';
+                    const configAsBase64 = Buffer.from(config).toString('base64');
+
+                    const { stdout: appUser } = await execa('adb', [
+                        'shell',
+                        'stat',
+                        '-c',
+                        '%U',
+                        '/data/data/com.wireguard.android',
+                    ]);
+                    await execa('adb', [
+                        'shell',
+                        'su',
+                        appUser,
+                        '-c',
+                        '"mkdir -p /data/data/com.wireguard.android/files/datastore"',
+                    ]);
+                    await execa('adb', [
+                        'shell',
+                        'su',
+                        appUser,
+                        '-c',
+                        `"echo -n '${configAsBase64}' | base64 -d > /data/data/com.wireguard.android/files/datastore/settings.preferences_pb"`,
+                    ]);
+
+                    if (!(await remoteControlEnabled()))
+                        throw new Error('Remote control not enabled after writing config.');
+                } catch (err) {
+                    throw new Error(
+                        'Failed to automatically configure the WireGuard app. Try again or manually enable "Allow remote control apps" under "Advanced" in the app\'s settings.',
+                        { cause: err }
+                    );
+                }
+            }
+
+            await execa('adb', ['shell', 'cmd', 'appops', 'set', 'com.wireguard.android', 'ACTIVATE_VPN', 'allow']);
+        }
     },
     clearStuckModals: async () => {
         // Press back button.
@@ -95,6 +223,10 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         await execa('adb', ['shell', 'input', 'keyevent', '3']);
     },
 
+    isAppInstalled: async (appId) => {
+        const { stdout } = await execa('adb', ['shell', 'cmd', 'package', 'list', 'packages', appId]);
+        return stdout.includes(`package:${appId}`);
+    },
     installApp: async (apkPath) => {
         await execa('adb', ['install-multiple', apkPath], { shell: true });
     },
@@ -136,6 +268,24 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             });
         }
     },
+    setAppBackgroundBatteryUsage: async (appId, state) => {
+        switch (state) {
+            case 'unrestricted':
+                await execa('adb', ['shell', 'cmd', 'appops', 'set', appId, 'RUN_ANY_IN_BACKGROUND', 'allow']);
+                await execa('adb', ['shell', 'dumpsys', 'deviceidle', 'whitelist', `+${appId}`]);
+                return;
+            case 'optimized':
+                await execa('adb', ['shell', 'cmd', 'appops', 'set', appId, 'RUN_ANY_IN_BACKGROUND', 'allow']);
+                await execa('adb', ['shell', 'dumpsys', 'deviceidle', 'whitelist', `-${appId}`]);
+                return;
+            case 'restricted':
+                await execa('adb', ['shell', 'cmd', 'appops', 'set', appId, 'RUN_ANY_IN_BACKGROUND', 'ignore']);
+                await execa('adb', ['shell', 'dumpsys', 'deviceidle', 'whitelist', `-${appId}`]);
+                return;
+            default:
+                throw new Error(`Invalid battery optimization state: ${state}`);
+        }
+    },
     startApp(appId) {
         // We deliberately don't await these since objection doesn't exit after the app is started.
         if (options.capabilities.includes('certificate-pinning-bypass')) {
@@ -152,6 +302,9 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
         execa('adb', ['shell', 'monkey', '-p', appId, '-v', '1', '--dbg-no-events']);
         return Promise.resolve();
+    },
+    stopApp: async (appId) => {
+        await execa('adb', ['shell', 'am', 'force-stop', appId]);
     },
 
     // Adapted after: https://stackoverflow.com/a/28573364
@@ -187,6 +340,140 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             if (res) return;
         }
         throw new Error('Setting clipboard failed.');
+    },
+
+    async installCertificateAuthority(path) {
+        // Android only loads CAs with a filename of the form `<subject_hash_old>.0`.
+        const certFilename = `${await this._internal.getCertificateSubjectHashOld(path)}.0`;
+
+        if (await this._internal.hasCertificateAuthority(certFilename)) return;
+
+        await this._internal.requireRoot('installCertificateAuthority');
+
+        // Since Android 10, we cannot write to `/system` anymore, even if we are root, see:
+        // https://github.com/tweaselORG/meta/issues/18#issuecomment-1437057934
+        // Thanks to HTTP Toolkit for the idea to use a tmpfs as a workaround:
+        // https://github.com/httptoolkit/httptoolkit-server/blob/9658bef164fb5cfce13b2c4b1bedacc158767f57/src/interceptors/android/adb-commands.ts#L228-L230
+        await this._internal.overlayTmpfs('/system/etc/security/cacerts');
+
+        await execa('adb', ['push', path, `/system/etc/security/cacerts/${certFilename}`]);
+    },
+    async removeCertificateAuthority(path) {
+        const certFilename = `${await this._internal.getCertificateSubjectHashOld(path)}.0`;
+
+        if (!(await this._internal.hasCertificateAuthority(certFilename))) return;
+
+        await this._internal.requireRoot('removeCertificateAuthority');
+
+        await this._internal.overlayTmpfs('/system/etc/security/cacerts');
+        await execa('adb', ['shell', 'rm', `/system/etc/security/cacerts/${certFilename}`]);
+    },
+    async setProxy(_proxy) {
+        // We are dealing with a WireGuard tunnel.
+        if (options.capabilities.includes('wireguard')) {
+            const tunnelName = 'appstraction';
+
+            // Since we're communicating with the WireGuard app through intents, we need to disable battery
+            // optimizations. Otherwise, our intents may not actually be delivered to the app.
+            await this.setAppBackgroundBatteryUsage('com.wireguard.android', 'unrestricted');
+
+            const config = _proxy as WireGuardConfig | null;
+
+            const deleteConfig = async () => {
+                await execa('adb', ['shell', 'rm', '-f', `/data/data/com.wireguard.android/files/${tunnelName}.conf`], {
+                    reject: false,
+                });
+                // We need to restart the WireGuard app, otherwise it will still show the deleted config.
+                await this.stopApp('com.wireguard.android');
+            };
+
+            if (config === null) {
+                await execa('adb', [
+                    'shell',
+                    'am',
+                    'broadcast',
+                    '-a',
+                    'com.wireguard.android.action.SET_TUNNEL_DOWN',
+                    '-n',
+                    // The quotes are necessary, otherwise `adb shell` interprets `$IntentReceiver` as a variable.
+                    "'com.wireguard.android/.model.TunnelManager$IntentReceiver'",
+                    '-e',
+                    'tunnel',
+                    tunnelName,
+                ]);
+
+                const vpnIsDisabled = await timeoutCondition(async () => !(await this._internal.isVpnEnabled()), 10000);
+                if (!vpnIsDisabled) throw new Error('Failed to disable WireGuard tunnel.');
+
+                // This requires root, but I don't think we should require root for disabling a tunnel. It's not really
+                // a problem if the config file is left behind.
+                await deleteConfig();
+
+                return;
+            }
+
+            await this._internal.requireRoot('enabling a WireGuard tunnel');
+
+            const { stdout: appUser } = await execa('adb', [
+                'shell',
+                'stat',
+                '-c',
+                '%U',
+                '/data/data/com.wireguard.android',
+            ]);
+            await execa('adb', [
+                'shell',
+                'su',
+                appUser,
+                '-c',
+                `"echo -n '${config}' > /data/data/com.wireguard.android/files/${tunnelName}.conf"`,
+            ]);
+
+            // We need to restart the WireGuard app for it to recognize our new tunnel config.
+            await this.stopApp('com.wireguard.android');
+
+            await execa('adb', [
+                'shell',
+                'am',
+                'broadcast',
+                '-a',
+                'com.wireguard.android.action.SET_TUNNEL_UP',
+                '-n',
+                // The quotes are necessary, otherwise `adb shell` interprets `$IntentReceiver` as a variable.
+                "'com.wireguard.android/.model.TunnelManager$IntentReceiver'",
+                '-e',
+                'tunnel',
+                tunnelName,
+            ]);
+
+            const vpnIsStarted = await timeoutCondition(() => this._internal.isVpnEnabled(), 10000);
+            if (!vpnIsStarted) {
+                await deleteConfig();
+                throw new Error('Failed to enable WireGuard tunnel.');
+            }
+
+            return;
+        }
+
+        // We are dealing with a regular global proxy.
+        const proxy = _proxy as Proxy | null;
+
+        // Regardless of whether we want to set or remove the proxy, we don't want proxy auto-config to interfere.
+        await execa('adb', ['shell', 'settings', 'delete', 'global', 'global_proxy_pac_url']);
+
+        if (proxy === null) {
+            // Just deleting the settings only works after a reboot, this ensures that the proxy is disabled
+            // immediately, see https://github.com/tweaselORG/appstraction/issues/25#issuecomment-1438813160.
+            await execa('adb', ['shell', 'settings', 'put', 'global', 'http_proxy', ':0']);
+            await execa('adb', ['shell', 'settings', 'delete', 'global', 'global_http_proxy_host']);
+            await execa('adb', ['shell', 'settings', 'put', 'global', 'global_http_proxy_port', '0']);
+            return;
+        }
+
+        const proxyString = `${proxy.host}:${proxy.port}`;
+        await execa('adb', ['shell', 'settings', 'put', 'global', 'http_proxy', proxyString]);
+        await execa('adb', ['shell', 'settings', 'put', 'global', 'global_http_proxy_host', proxy.host]);
+        await execa('adb', ['shell', 'settings', 'put', 'global', 'global_http_proxy_port', proxy.port.toString()]);
     },
 });
 
