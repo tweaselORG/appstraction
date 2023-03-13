@@ -36,6 +36,8 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
     const appId = appMeta.id;
     console.log('App:', appId, '@', appMeta.version);
 
+    console.log('Installed already?', await ios.isAppInstalled(appId));
+
     await ios.installApp(appPath);
     // First, grant all permissions.
     await ios.setAppPermissions(appId);
