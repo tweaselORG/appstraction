@@ -46,6 +46,8 @@ export ANDROID_HOME="$HOME/Android/Sdk"
 export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/33.0.0:$ANDROID_HOME/cmdline-tools/latest/bin/:$ANDROID_HOME/emulator"
 ```
 
+If you want to work with physical devices, [additional setup steps may be necessary depending on your system](https://developer.android.com/studio/run/device#setting-up). On Ubuntu, you need to be a member of the `plugdev` group (`sudo usermod -aG plugdev <username>`) and have `udev` rules for your device (`sudo apt install android-sdk-platform-tools-common`). For other distributions, see [android-udev-rules](https://github.com/M0Rf30/android-udev-rules).
+
 You also need `openssl`.
 
 For the `frida` capability, you need to install [`frida-tools`](https://frida.re/docs/installation/).
