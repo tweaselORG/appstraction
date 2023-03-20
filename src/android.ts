@@ -2,6 +2,7 @@ import fetch from 'cross-fetch';
 import { execa } from 'execa';
 import frida from 'frida';
 import { rm, writeFile } from 'fs/promises';
+import pRetry from 'p-retry';
 import { temporaryFile } from 'tempy';
 import type {
     PlatformApi,
@@ -59,7 +60,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
             await this.requireRoot('Frida');
 
-            await execa('adb shell "nohup /data/local/tmp/frida-server >/dev/null 2>&1 &"', { shell: true });
+            await execa('adb', ['shell', '-x', '/data/local/tmp/frida-server', '--daemonize']);
 
             const fridaIsStarted = await retryCondition(
                 async () =>
@@ -133,7 +134,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             );
         });
 
-        await this._internal.ensureFrida();
+        await pRetry(() => this._internal.ensureFrida());
 
         if (options.capabilities.includes('wireguard')) {
             // Install app if necessary.
