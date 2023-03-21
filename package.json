@@ -51,6 +51,7 @@
     },
     "prettier": "@baltpeter/prettier-config",
     "dependencies": {
+        "@napi-rs/lzma": "^1.1.2",
         "cross-fetch": "^3.1.5",
         "execa": "^6.1.0",
         "frida": "^16.0.8",
@@ -58,6 +59,7 @@
         "ipa-extract-info": "^1.2.6",
         "p-retry": "^5.1.2",
         "pkijs": "^3.0.14",
+        "semver": "^7.3.8",
         "tempy": "^3.0.0",
         "ts-node": "^10.9.1"
     },
@@ -71,6 +73,7 @@
         "@types/node": "^18.11.18",
         "@types/plist": "^3.0.2",
         "@types/promise-timeout": "^1.3.0",
+        "@types/semver": "^7.3.13",
         "@typescript-eslint/eslint-plugin": "5.48.0",
         "eslint": "8.31.0",
         "eslint-plugin-eslint-comments": "3.2.0",
