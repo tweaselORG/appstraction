@@ -82,28 +82,9 @@ To use appstraction with a physical Android device, you need to enable USB debug
 
 Some functions require the device to be rooted. The steps to do this vary depending on the device. We recommend using [Magisk](https://topjohnwu.github.io/Magisk/). After you have rooted the device, you need to enable rooted debugging via Settings -> System -> Developer options -> Rooted debugging.
 
-Some functions require Frida. If you want to use them, you need to [set up Frida](https://frida.re/docs/android/) on the emulator (make sure that the version you're installing matches the version of the Frida tools you're using):
-
-```sh
-adb root
-
-# Find out the architecture of the device.
-adb shell getprop ro.product.cpu.abi
-# Download the correct frida-server, e.g. for ARM64:
-wget https://github.com/frida/frida/releases/download/16.0.8/frida-server-16.0.8-android-arm64.xz
-unxz frida-server-16.0.8-android-arm64.xz
-
-adb push frida-server-16.0.8-android-arm64 /data/local/tmp/frida-server
-adb shell chmod 777 /data/local/tmp/frida-server
-
-# Test that Frida is working. You don't need to start Frida manually in later runs, appstraction will do that for you.
-adb shell "/data/local/tmp/frida-server"
-frida-ps -U | grep frida # should have `frida-server`
-```
-
 ### Android emulator
 
-Some of the functions in appstraction work without any special preparation in an emulator. You can create the emulator using Android Studio or the command line tools, e.g. like this to create an emulator with Google APIs running Android 13 (API level 33)—we recommend using x86_64 as the architecture (you can still [run ARM apps if you use Android 11 or newer](https://android-developers.googleblog.com/2020/03/run-arm-apps-on-android-emulator.html)):
+Appstraction doesn't require any special preparation in an emulator. You can create the emulator using Android Studio or the command line tools, e.g. like this to create an emulator with Google APIs running Android 13 (API level 33)—we recommend using x86_64 as the architecture (you can still [run ARM apps if you use Android 11 or newer](https://android-developers.googleblog.com/2020/03/run-arm-apps-on-android-emulator.html)):
 
 ```sh
 # Fetch the system image.
@@ -119,23 +100,6 @@ On subsequent runs, don't include the `-partition-size 8192 -wipe-data` flags, i
 
 ```sh
 emulator -avd "<emulator name>"
-```
-
-Some functions require Frida. If you want to use them, you need to [set up Frida](https://frida.re/docs/android/) on the emulator (make sure that the version you're installing matches the version of the Frida tools you're using):
-
-```sh
-adb root
-
-adb shell getprop ro.product.cpu.abi # should be x86_64
-wget https://github.com/frida/frida/releases/download/16.0.8/frida-server-16.0.8-android-x86_64.xz 
-unxz frida-server-16.0.8-android-x86_64.xz
-
-adb push frida-server-16.0.8-android-x86_64 /data/local/tmp/frida-server
-adb shell chmod 777 /data/local/tmp/frida-server
-
-# Test that Frida is working. You don't need to start Frida manually in later runs, appstraction will do that for you.
-adb shell "/data/local/tmp/frida-server"
-frida-ps -U | grep frida # should have `frida-server`
 ```
 
 After you have set up the emulator to your liking, you should create a snapshot to later be able to reset the emulator to this state:
@@ -188,7 +152,7 @@ Note how the first function we call after constructing the API object is `ensure
 
 This example didn't need any capabilities. Resetting the emulator and installing apps can both be done in any emulator, without the need for any special preparation.
 
-Other functions do need capabilities, though, which you would pass to the `capabilities` array in the options. For example, reading the `SharedPreferences` requires the `frida` capability (and you need to set up Frida as described above). And for starting an app, you can optionally pass the `certificate-pinning-bypass`, which will use objection to try and bypass any certificate pinning the app may use.
+Other functions do need capabilities, though, which you would pass to the `capabilities` array in the options. For example, reading the `SharedPreferences` requires the `frida` capability. And for starting an app, you can optionally pass the `certificate-pinning-bypass`, which will use objection to try and bypass any certificate pinning the app may use.
 
 ```ts
 (async () => {

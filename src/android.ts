@@ -1,8 +1,10 @@
+import { decompress as decompressXz } from '@napi-rs/lzma/xz';
 import fetch from 'cross-fetch';
 import { execa } from 'execa';
 import frida from 'frida';
 import { rm, writeFile } from 'fs/promises';
 import pRetry from 'p-retry';
+import { major as semverMajor, minVersion as semverMinVersion } from 'semver';
 import { temporaryFile } from 'tempy';
 import type {
     PlatformApi,
@@ -12,6 +14,7 @@ import type {
     SupportedRunTarget,
     WireGuardConfig,
 } from '.';
+import { dependencies } from '../package.json';
 import { asyncUnimplemented, getObjFromFridaScript, isRecord, retryCondition } from './util';
 
 const fridaScripts = {
@@ -52,6 +55,76 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         async ensureFrida() {
             if (!options.capabilities.includes('frida')) return;
 
+            // Ensure that the correct version of `frida-tools` is installed for our Frida JS bindings.
+            if (!dependencies.frida) throw new Error('Frida dependency not found. This should never happen.');
+            const { stdout: fridaToolsVersion } = await execa('frida', ['--version']);
+            const fridaToolsMajorVersion = semverMajor(fridaToolsVersion);
+            // `dependencies.frida` is not a specific version but a range, so we get the minimum possible version.
+            const fridaJsMajorVersion = semverMinVersion(dependencies.frida)?.major;
+            if (fridaToolsMajorVersion !== fridaJsMajorVersion)
+                throw new Error(
+                    `frida-tools major version (${fridaToolsMajorVersion}) does not match version of the Frida JS bindings (${fridaJsMajorVersion}). You need to install version ${fridaJsMajorVersion} of frida-tools.`
+                );
+
+            // Check whether `frida-server` is already installed on the device and has the correct major version.
+            const { stdout: fridaServerVersion } = await execa(
+                'adb',
+                ['shell', '/data/local/tmp/frida-server --version'],
+                { reject: false }
+            );
+            const fridaServerMajorVersion = fridaServerVersion && semverMajor(fridaServerVersion);
+
+            // Download and install `frida-server` if necessary.
+            if (fridaServerMajorVersion !== fridaJsMajorVersion) {
+                const releaseMeta = await fetch(
+                    `https://api.github.com/repos/frida/frida/releases/tags/${fridaToolsVersion}`
+                ).then((r) => r.json());
+                if (releaseMeta.message === 'Not Found')
+                    throw new Error(
+                        `No frida-server found for version ${fridaToolsVersion}. Please install frida-server manually.`
+                    );
+
+                const { stdout: androidArch } = await execa('adb', ['shell', 'getprop', 'ro.product.cpu.abi']);
+                const archMap = {
+                    'arm64-v8a': 'arm64',
+                    'armeabi-v7a': 'arm',
+                    armeabi: 'arm',
+                    // eslint-disable-next-line camelcase
+                    x86_64: 'x86_64',
+                    x86: 'x86',
+                };
+                const fridaArch = archMap[androidArch as keyof typeof archMap];
+                if (!fridaArch)
+                    throw new Error(
+                        `Unsupported architecture: "${androidArch}". Please install frida-server manually.`
+                    );
+
+                const asset = (releaseMeta.assets as { name: string; browser_download_url: string }[]).find((a) =>
+                    a.name.match(new RegExp(`frida-server-.+-android-${fridaArch}\\.xz`))
+                );
+                if (!asset)
+                    throw new Error(
+                        `No frida-server found for architecture "${fridaArch}". Please install frida-server manually.`
+                    );
+
+                const fridaServerTmpPath = temporaryFile();
+                const fridaServerXz = await fetch(asset.browser_download_url).then((res) => res.arrayBuffer());
+                const fridaServerBinary = await decompressXz(Buffer.from(fridaServerXz));
+                await writeFile(fridaServerTmpPath, Buffer.from(fridaServerBinary));
+
+                await execa('adb', ['push', fridaServerTmpPath, '/data/local/tmp/frida-server']);
+                await execa('adb', ['shell', 'chmod', '755', '/data/local/tmp/frida-server']);
+
+                const { stdout: installedFridaServerVersion } = await execa(
+                    'adb',
+                    ['shell', '/data/local/tmp/frida-server --version'],
+                    { reject: false }
+                );
+                if (installedFridaServerVersion !== fridaToolsVersion)
+                    throw new Error(`Failed to install frida-server. Please install frida-server manually.`);
+            }
+
+            // Start `frida-server` if it's not already running.
             const fridaCheck = await execa(`frida-ps -U | grep frida-server`, {
                 shell: true,
                 reject: false,
@@ -60,6 +133,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
             await this.requireRoot('Frida');
 
+            await execa('adb', ['shell', 'chmod', '755', '/data/local/tmp/frida-server']);
             await execa('adb', ['shell', '-x', '/data/local/tmp/frida-server', '--daemonize']);
 
             const fridaIsStarted = await retryCondition(
