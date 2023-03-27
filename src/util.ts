@@ -58,10 +58,10 @@ export const parseAppMeta = async (
         // value reference does not exist` but still has the correct version in the output.
         const { stdout } = await execa('aapt', ['dump', 'badging', appPath], { reject: false });
 
-        const id = stdout.match(/package: name='(.+?)'/)?.[1];
+        const id = stdout.match(/package: name='(.*?)'/)?.[1];
         if (!id) return undefined;
 
-        return { id, version: stdout.match(/versionName='(.+?)'/)?.[1] };
+        return { id, version: stdout.match(/versionName='([^']+?)'/)?.[1] };
     } else if (platform === 'ios') {
         const meta = await ipaInfo(appPath);
 
