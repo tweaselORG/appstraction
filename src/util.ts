@@ -39,18 +39,34 @@ export const pause = (durationInMs: number) =>
     });
 
 /**
- * Get metadata (namely app ID and version) about the app at the given path.
+ * Get metadata about the app at the given path. This includes the following properties:
+ *
+ * - `id`: The app's ID.
+ * - `name`: The app's display name.
+ * - `version`: The app's human-readable version.
+ * - `versionCode`: The app's version code.
+ * - `architectures`: The architectures the device needs to support to run the app. On Android, this will be empty for
+ *   apps that don't have native code.
  *
  * @param appPath Path to the app file (`.ipa` on iOS, `.apk` on Android) to get the metadata of.
  * @param platform The platform the app file is for. If not provided, it will be inferred from the file extension.
  *
- * @returns The an object with the app ID and version, or `undefined` if the file doesn't exist or is not a valid app
+ * @returns An object with the properties listed above, or `undefined` if the file doesn't exist or is not a valid app
  *   for the platform.
  */
 export const parseAppMeta = async (
     appPath: string,
     _platform?: SupportedPlatform
-): Promise<{ id: string; version?: string } | undefined> => {
+): Promise<
+    | {
+          id: string;
+          name?: string;
+          version?: string;
+          versionCode?: string;
+          architectures: ('arm64' | 'arm' | 'x86' | 'x86_64' | 'mips' | 'mips64')[];
+      }
+    | undefined
+> => {
     const platform = _platform ?? (appPath.endsWith('.ipa') ? 'ios' : 'android');
 
     if (platform === 'android') {
@@ -61,14 +77,56 @@ export const parseAppMeta = async (
         const id = stdout.match(/package: name='(.*?)'/)?.[1];
         if (!id) return undefined;
 
-        return { id, version: stdout.match(/versionName='([^']+?)'/)?.[1] };
+        const nativeCode =
+            stdout
+                .match(/native-code: (.+)/)?.[1]
+                ?.split(' ')
+                .map((s) => s.replace(/'/g, ''))
+                .filter(Boolean) ?? [];
+        // See: https://github.com/tweaselORG/appstraction/issues/4#issuecomment-1485068617 and
+        // https://android.stackexchange.com/a/168320
+        const architectureNativeCodeMap = {
+            arm: 'armeabi-v7a',
+            arm64: 'arm64-v8a',
+            x86: 'x86',
+            // eslint-disable-next-line camelcase
+            x86_64: 'x86_64',
+            mips: 'mips',
+            mips64: 'mips64',
+        } as const;
+
+        return {
+            id,
+            name: stdout.match(/application-label:'(.*?)'/)?.[1],
+            version: stdout.match(/versionName='([^']+?)'/)?.[1],
+            versionCode: stdout.match(/versionCode='([^']+?)'/)?.[1],
+            architectures: (
+                Object.keys(architectureNativeCodeMap) as (keyof typeof architectureNativeCodeMap)[]
+            ).filter((a) => nativeCode.includes(architectureNativeCodeMap[a])),
+        };
     } else if (platform === 'ios') {
         const meta = await ipaInfo(appPath);
 
         const id = meta.info['CFBundleIdentifier'] as string | undefined;
         if (!id) return undefined;
 
-        return { id, version: meta.info['CFBundleShortVersionString'] as string | undefined };
+        // As per: https://developer.apple.com/documentation/bundleresources/information_property_list/uirequireddevicecapabilities
+        const architectureCapabilityMap = {
+            arm: 'armv7',
+            arm64: 'arm64',
+        } as const;
+        const architectures = (
+            Object.keys(architectureCapabilityMap) as (keyof typeof architectureCapabilityMap)[]
+        ).filter((a) => (meta.info['UIRequiredDeviceCapabilities'] as string[]).includes(architectureCapabilityMap[a]));
+
+        return {
+            id,
+            // See https://stackoverflow.com/a/15423880 for why we use `CFBundleDisplayName` instead of `CFBundleName`.
+            name: meta.info['CFBundleDisplayName'] as string | undefined,
+            version: meta.info['CFBundleShortVersionString'] as string | undefined,
+            versionCode: meta.info['CFBundleVersion'] as string | undefined,
+            architectures,
+        };
     }
 
     throw new Error(`Unsupported platform "${platform}".`);

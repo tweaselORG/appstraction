@@ -292,9 +292,16 @@ The IDs of known permissions on iOS.
 
 ### parseAppMeta
 
-▸ **parseAppMeta**(`appPath`, `_platform?`): `Promise`<`undefined` \| { `id`: `string` ; `version?`: `string`  }\>
+▸ **parseAppMeta**(`appPath`, `_platform?`): `Promise`<`undefined` \| { `architectures`: (``"arm64"`` \| ``"arm"`` \| ``"x86"`` \| ``"x86_64"`` \| ``"mips"`` \| ``"mips64"``)[] ; `id`: `string` ; `name?`: `string` ; `version?`: `string` ; `versionCode?`: `string`  }\>
 
-Get metadata (namely app ID and version) about the app at the given path.
+Get metadata about the app at the given path. This includes the following properties:
+
+- `id`: The app's ID.
+- `name`: The app's display name.
+- `version`: The app's human-readable version.
+- `versionCode`: The app's version code.
+- `architectures`: The architectures the device needs to support to run the app. On Android, this will be empty for
+  apps that don't have native code.
 
 #### Parameters
 
@@ -305,14 +312,14 @@ Get metadata (namely app ID and version) about the app at the given path.
 
 #### Returns
 
-`Promise`<`undefined` \| { `id`: `string` ; `version?`: `string`  }\>
+`Promise`<`undefined` \| { `architectures`: (``"arm64"`` \| ``"arm"`` \| ``"x86"`` \| ``"x86_64"`` \| ``"mips"`` \| ``"mips64"``)[] ; `id`: `string` ; `name?`: `string` ; `version?`: `string` ; `versionCode?`: `string`  }\>
 
-The an object with the app ID and version, or `undefined` if the file doesn't exist or is not a valid app
+An object with the properties listed above, or `undefined` if the file doesn't exist or is not a valid app
   for the platform.
 
 #### Defined in
 
-[util.ts:50](https://github.com/tweaselORG/platform-apis/blob/main/src/util.ts#L50)
+[util.ts:57](https://github.com/tweaselORG/platform-apis/blob/main/src/util.ts#L57)
 
 ___
 
