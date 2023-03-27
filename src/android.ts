@@ -46,10 +46,14 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         objectionProcesses: [],
 
         awaitAdb: async () => {
-            const adbIsStarted = await retryCondition(
-                async () => (await execa('adb', ['get-state'], { reject: false })).exitCode === 0,
-                100
-            );
+            const adbIsStarted = await retryCondition(async () => {
+                const { exitCode, stdout } = await execa(
+                    'adb',
+                    ['wait-for-device', 'shell', 'getprop', 'dev.bootcomplete'],
+                    { reject: false }
+                );
+                return exitCode === 0 && stdout.includes('1');
+            }, 100);
             if (!adbIsStarted) throw new Error('Failed to connect via adb.');
         },
         async ensureFrida() {
