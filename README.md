@@ -19,7 +19,7 @@ With appstraction, you can perform the following actions programmatically on And
 * Fetch an app's preferences (`SharedPreferences` on Android, `NSUserDefaults` on iOS) as JSON.
 * Get various device attributes (like the IDFV on iOS).
 * Set the clipboard content.
-* Get the app ID and version for an app file (`.apk` on Android, `.ipa` on iOS).
+* Get metadata (app ID, display name, version, architectures) for an app file (`.apk` on Android, `.ipa` on iOS).
 * Install and remove root certificate authorities.
 * Configure the proxy settings, optionally using WireGuard instead of a regular proxy. WireGuard is automatically installed and configured on the device if enabled.
 
