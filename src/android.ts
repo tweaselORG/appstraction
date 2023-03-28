@@ -15,7 +15,7 @@ import type {
     WireGuardConfig,
 } from '.';
 import { dependencies } from '../package.json';
-import { asyncUnimplemented, getObjFromFridaScript, isRecord, retryCondition } from './util';
+import { asyncUnimplemented, getObjFromFridaScript, isRecord, parseAppMeta, retryCondition } from './util';
 
 const fridaScripts = {
     getPrefs: `var app_ctx = Java.use('android.app.ActivityThread').currentApplication().getApplicationContext();
@@ -321,7 +321,46 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         return stdout.includes(`package:${appId}`);
     },
     installApp: async (apkPath) => {
-        await execa('adb', ['install-multiple', apkPath], { shell: true });
+        const apks = typeof apkPath === 'string' ? [apkPath] : apkPath;
+
+        const apkMeta = await Promise.all(
+            apks.map((path) =>
+                parseAppMeta(path).then((m) => {
+                    if (!m) throw new Error(`Failed to install app: "${path}" is not a valid APK.`);
+                    return { path, ...m };
+                })
+            )
+        );
+
+        const appIds = new Set(apkMeta.map((m) => m.id));
+        if (appIds.size > 1) throw new Error('Failed to install app: Split APKs for different apps provided.');
+
+        const androidArches = await execa('adb', ['shell', 'getprop', 'ro.product.cpu.abilist']).then((r) =>
+            r.stdout.split(',')
+        );
+        const androidArchMap = {
+            'armeabi-v7a': 'arm',
+            armeabi: 'arm',
+            'arm64-v8a': 'arm64',
+            x86: 'x86',
+            // eslint-disable-next-line camelcase
+            x86_64: 'x86_64',
+            mips: 'mips',
+            mips64: 'mips64',
+        } as const;
+        const arches = androidArches.map((a) => androidArchMap[a as keyof typeof androidArchMap]);
+
+        const apksForArches = apkMeta
+            .filter(
+                (m) =>
+                    !m.architectures || m.architectures.length === 0 || m.architectures.some((a) => arches.includes(a))
+            )
+            .map((m) => m.path);
+
+        if (apksForArches.length === 0)
+            throw new Error(`Failed to install app: App doesn't support device's architectures (${androidArches}).`);
+
+        await execa('adb', ['install-multiple', ...apksForArches]);
     },
     uninstallApp: async (appId) => {
         await execa('adb', ['shell', 'pm', 'uninstall', '--user', '0', appId]).catch((err) => {

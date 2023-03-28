@@ -58,11 +58,12 @@ export type PlatformApi<
     /**
      * Install the app at the given path.
      *
-     * @param appPath Path to the app file (`.ipa` on iOS, `.apk` on Android) to install. Currently, this can also be a
-     *   glob for split APKs on Android, but this may change in the future.
-     * @todo How to handle split APKs on Android (#4)?
+     * @param appPath Path to the app file (`.ipa` on iOS, `.apk` on Android) to install. On Android, this can also be
+     *   an array of the paths of the split APKs of a single app.
      */
-    installApp: (appPath: string) => Promise<void>;
+    installApp: Platform extends 'android'
+        ? (apkPath: string | string[]) => Promise<void>
+        : (ipaPath: string) => Promise<void>;
     /**
      * Uninstall the app with the given app ID. Will not fail if the app is not installed.
      *
