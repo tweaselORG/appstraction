@@ -118,7 +118,7 @@ Depending on the capabilities and features you want to use, you need to install 
 
 * [OpenSSH](sileo://package/openssh) (for the `ssh` capability)
 * [SQLite 3.x](sileo://package/sqlite3) (if you want to set app permissions)
-* [Frida](sileo://package/re.frida.server) (for the `frida` capability), you will need to [add the Frida repository to Cydia/Sileo](https://frida.re/docs/ios/#with-jailbreak): `https://build.frida.re`
+* [Frida](sileo://package/re.frida.server) version 16.0.11 or greater (for the `frida` capability), you will need to [add the Frida repository to Cydia/Sileo](https://frida.re/docs/ios/#with-jailbreak): `https://build.frida.re`
 * [Open](http://cydia.saurik.com/package/com.conradkramer.open/) (if you want to launch apps without the `frida` capability), you will need to add a legacy Cydia repository if you are using Sileo: `https://apt.thebigboss.org/repofiles/cydia/`
 * [SSL Kill Switch 2](https://julioverne.github.io/description.html?id=com.julioverne.sslkillswitch2) (if you want to bypass certificate pinning)
 
