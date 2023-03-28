@@ -56,7 +56,7 @@ For the `certificate-pinning-bypass` capability, you need to install [`objection
 
 ### Host dependencies for iOS
 
-For iOS, you need [`libimobiledevice`](https://libimobiledevice.org/). The distribution packages are fine, you don't need to build from source.
+For iOS, you need [`libimobiledevice`](https://libimobiledevice.org/) and `ideviceinstaller`. The distribution packages are fine, if available.
 
 For the `frida` capability, you need to install [`frida-tools`](https://frida.re/docs/installation/).
 
