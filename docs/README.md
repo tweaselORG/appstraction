@@ -40,7 +40,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:769](https://github.com/tweaselORG/platform-apis/blob/main/src/android.ts#L769)
+[android.ts:769](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L769)
 
 ___
 
@@ -58,7 +58,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:331](https://github.com/tweaselORG/platform-apis/blob/main/src/index.ts#L331)
+[index.ts:329](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L329)
 
 ___
 
@@ -77,7 +77,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:337](https://github.com/tweaselORG/platform-apis/blob/main/src/index.ts#L337)
+[index.ts:335](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L335)
 
 ___
 
@@ -89,7 +89,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:398](https://github.com/tweaselORG/platform-apis/blob/main/src/ios.ts#L398)
+[ios.ts:398](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L398)
 
 ___
 
@@ -118,7 +118,7 @@ Functions that are available for the platforms.
 | `getForegroundAppId` | () => `Promise`<`string` \| `undefined`\> | Get the app ID of the running app that is currently in the foreground. Requires the `frida` capability on iOS. |
 | `getPidForAppId` | (`appId`: `string`) => `Promise`<`number` \| `undefined`\> | Get the PID of the app with the given app ID if it is currently running. Requires the `frida` capability on iOS. |
 | `getPrefs` | (`appId`: `string`) => `Promise`<`Record`<`string`, `unknown`\> \| `undefined`\> | Get the preferences (`SharedPreferences` on Android, `NSUserDefaults` on iOS) of the app with the given app ID. Requires the `frida` capability on Android and iOS. |
-| `installApp` | `Platform` extends ``"android"`` ? (`apkPath`: `string` \| `string`[]) => `Promise`<`void`\> : (`ipaPath`: `string`) => `Promise`<`void`\> | Install the app at the given path. **`Param`** Path to the app file (`.ipa` on iOS, `.apk` on Android) to install. On Android, this can also be an array of the paths of the split APKs of a single app. |
+| `installApp` | (`appPath`: `Platform` extends ``"android"`` ? `string` \| `string`[] : `string`) => `Promise`<`void`\> | Install the app at the given path. |
 | `installCertificateAuthority` | (`path`: `string`) => `Promise`<`void`\> | Install the certificate authority with the given path as a trusted CA on the device. This allows you to intercept and modify traffic from apps on the device. On Android, this installs the CA as a system CA. As this is normally not possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and installs the CA there. This means that the changes are not persistent across reboots. On iOS, the CA is installed permanently as a root certificate in the Certificate Trust Store. It persists across reboots.\ **Currently, you need to manually trust any CA at least once on the device, CAs can be added but not automatically marked as trusted (see: https://github.com/tweaselORG/appstraction/issues/44#issuecomment-1466151197).** Requires the `root` capability on Android, and the `ssh` capability on iOS. |
 | `isAppInstalled` | (`appId`: `string`) => `Promise`<`boolean`\> | Check whether the app with the given app ID is installed. |
 | `removeCertificateAuthority` | (`path`: `string`) => `Promise`<`void`\> | Remove the certificate authority with the given path from the trusted CAs on the device. On Android, this works for system CAs, including those pre-installed with the OS. As this is normally not possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and removes the CA there. This means that the changes are not persistent across reboots. On iOS, this only works for CAs in the Certificate Trust Store. It does not work for pre-installed OS CAs. The changes are persistent across reboots. Requires the `root` capability on Android, and the `ssh` capability on iOS. |
@@ -133,7 +133,7 @@ Functions that are available for the platforms.
 
 #### Defined in
 
-[index.ts:18](https://github.com/tweaselORG/platform-apis/blob/main/src/index.ts#L18)
+[index.ts:18](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L18)
 
 ___
 
@@ -153,7 +153,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:269](https://github.com/tweaselORG/platform-apis/blob/main/src/index.ts#L269)
+[index.ts:267](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L267)
 
 ___
 
@@ -172,7 +172,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:345](https://github.com/tweaselORG/platform-apis/blob/main/src/index.ts#L345)
+[index.ts:343](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L343)
 
 ___
 
@@ -202,7 +202,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:296](https://github.com/tweaselORG/platform-apis/blob/main/src/index.ts#L296)
+[index.ts:294](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L294)
 
 ___
 
@@ -220,7 +220,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:324](https://github.com/tweaselORG/platform-apis/blob/main/src/index.ts#L324)
+[index.ts:322](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L322)
 
 ___
 
@@ -232,7 +232,7 @@ A platform that is supported by this library.
 
 #### Defined in
 
-[index.ts:9](https://github.com/tweaselORG/platform-apis/blob/main/src/index.ts#L9)
+[index.ts:9](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L9)
 
 ___
 
@@ -250,7 +250,7 @@ A run target that is supported by this library for the given platform.
 
 #### Defined in
 
-[index.ts:11](https://github.com/tweaselORG/platform-apis/blob/main/src/index.ts#L11)
+[index.ts:11](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L11)
 
 ___
 
@@ -262,7 +262,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:352](https://github.com/tweaselORG/platform-apis/blob/main/src/index.ts#L352)
+[index.ts:350](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L350)
 
 ## Variables
 
@@ -274,7 +274,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:638](https://github.com/tweaselORG/platform-apis/blob/main/src/android.ts#L638)
+[android.ts:638](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L638)
 
 ___
 
@@ -286,7 +286,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:381](https://github.com/tweaselORG/platform-apis/blob/main/src/ios.ts#L381)
+[ios.ts:381](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L381)
 
 ## Functions
 
@@ -319,7 +319,7 @@ An object with the properties listed above, or `undefined` if the file doesn't e
 
 #### Defined in
 
-[util.ts:57](https://github.com/tweaselORG/platform-apis/blob/main/src/util.ts#L57)
+[util.ts:57](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L57)
 
 ___
 
@@ -341,7 +341,7 @@ Pause for a given duration.
 
 #### Defined in
 
-[util.ts:36](https://github.com/tweaselORG/platform-apis/blob/main/src/util.ts#L36)
+[util.ts:36](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L36)
 
 ___
 
@@ -373,4 +373,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:361](https://github.com/tweaselORG/platform-apis/blob/main/src/index.ts#L361)
+[index.ts:359](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L359)

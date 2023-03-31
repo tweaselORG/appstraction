@@ -61,9 +61,7 @@ export type PlatformApi<
      * @param appPath Path to the app file (`.ipa` on iOS, `.apk` on Android) to install. On Android, this can also be
      *   an array of the paths of the split APKs of a single app.
      */
-    installApp: Platform extends 'android'
-        ? (apkPath: string | string[]) => Promise<void>
-        : (ipaPath: string) => Promise<void>;
+    installApp: (appPath: Platform extends 'android' ? string | string[] : string) => Promise<void>;
     /**
      * Uninstall the app with the given app ID. Will not fail if the app is not installed.
      *
