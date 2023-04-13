@@ -38,7 +38,7 @@ Additionally, you will need to [prepare the target device/emulator](#device-prep
 
 ### Host dependencies for Android
 
-For Android, you need the [Android command line tools](https://developer.android.com/studio/command-line/) (can also be installed through [Android Studio](https://developer.android.com/studio)). Note that these need to be included in your `PATH`, e.g. by including something like this in your `.zshrc`/`.bashrc`:
+For Android, you need the [Android SDK platform tools](https://developer.android.com/tools/releases/platform-tools) and [Android build tools](https://developer.android.com/tools/releases/build-tools) (can also be installed through [Android Studio](https://developer.android.com/studio)). Note that these need to be included in your `PATH`, e.g. by including something like this in your `.zshrc`/`.bashrc`:
 
 ```sh
 # Android SDK
