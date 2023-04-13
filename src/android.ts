@@ -164,7 +164,9 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
         getCertificateSubjectHashOld: (path: string) =>
             execa('openssl', ['x509', '-inform', 'PEM', '-subject_hash_old', '-in', path]).then(
-                ({ stdout }) => stdout.split('\n')[0]
+                // The `trim()` is necessary for Windows:
+                // https://github.com/tweaselORG/meta/issues/25#issuecomment-1507665763
+                ({ stdout }) => stdout.split('\n')[0]?.trim()
             ),
         hasCertificateAuthority: (filename) =>
             execa('adb', ['shell', 'ls', `/system/etc/security/cacerts/${filename}`], { reject: false }).then(
