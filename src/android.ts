@@ -388,7 +388,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 if (
                     err.exitCode === 255 &&
                     (err.stderr.includes('not a changeable permission type') ||
-                        err.stderr.includes('has not requested permission'))
+                        err.stderr.includes('has not requested permission') ||
+                        err.stderr.includes('Unknown permission'))
                 )
                     return;
 
