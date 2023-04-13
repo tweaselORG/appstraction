@@ -141,11 +141,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             }
 
             // Start `frida-server` if it's not already running.
-            const fridaCheck = await execa(`frida-ps -U | grep frida-server`, {
-                shell: true,
-                reject: false,
-            });
-            if (fridaCheck.exitCode === 0) return;
+            const { stdout: fridaCheck } = await execa('frida-ps', ['-U'], { reject: false });
+            if (fridaCheck.includes('frida-server')) return;
 
             await this.requireRoot('Frida');
 
@@ -153,8 +150,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             await execa('adb', ['shell', '-x', '/data/local/tmp/frida-server', '--daemonize']);
 
             const fridaIsStarted = await retryCondition(
-                async () =>
-                    (await execa(`frida-ps -U | grep frida-server`, { shell: true, reject: false })).exitCode === 0,
+                async () => (await execa('frida-ps', ['-U'], { reject: false })).stdout.includes('frida-server'),
                 100
             );
             if (!fridaIsStarted) throw new Error('Failed to start Frida.');
