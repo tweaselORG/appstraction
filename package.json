@@ -57,6 +57,7 @@
         "frida": "^16.0.8",
         "fs-extra": "^11.1.0",
         "ipa-extract-info": "^1.2.6",
+        "node-ssh": "^13.1.0",
         "p-retry": "^5.1.2",
         "pkijs": "^3.0.14",
         "semver": "^7.3.8",

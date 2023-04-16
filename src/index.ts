@@ -1,4 +1,5 @@
 import type { ExecaChildProcess } from 'execa';
+import type { NodeSSH } from 'node-ssh';
 import type { LiteralUnion } from 'type-fest';
 import type { AndroidPermission } from './android';
 import { androidApi } from './android';
@@ -259,7 +260,9 @@ export type PlatformApi<
               objectionProcesses: ExecaChildProcess[];
           }
         : Platform extends 'ios'
-        ? undefined
+        ? {
+              ssh: NodeSSH['execCommand'];
+          }
         : never;
 };
 
