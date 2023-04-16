@@ -164,7 +164,10 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     clearStuckModals: asyncUnimplemented('clearStuckModals') as never,
 
     isAppInstalled: async (appId) => {
-        const { stdout } = await execa('ideviceinstaller', ['-l', '-o', 'list_all']);
+        const { stdout } =
+            process.platform === 'win32'
+                ? await execa('ideviceinstaller', ['-l', '-o', 'list_all'])
+                : await execa('ideviceinstaller', ['list', '-o', 'list_all']);
         return (
             stdout
                 .split('\n')
@@ -176,10 +179,12 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     // We're using `libimobiledevice` instead of `cfgutil` because the latter doesn't wait for the app to be fully
     // installed before exiting.
     installApp: async (ipaPath) => {
-        await execa('ideviceinstaller', ['--install', ipaPath]);
+        if (process.platform === 'win32') await execa('ideviceinstaller', ['install', ipaPath]);
+        else await execa('ideviceinstaller', ['--install', ipaPath]);
     },
     uninstallApp: async (appId) => {
-        await execa('ideviceinstaller', ['--uninstall', appId]);
+        if (process.platform === 'win32') await execa('ideviceinstaller', ['uninstall', appId]);
+        else await execa('ideviceinstaller', ['--uninstall', appId]);
     },
     async setAppPermissions(appId, _permissions) {
         if (!options.capabilities.includes('ssh') || !options.capabilities.includes('frida'))
