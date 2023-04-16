@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 import { execa } from 'execa';
 import frida from 'frida';
 import { readFile } from 'fs/promises';
+import { NodeSSH } from 'node-ssh';
 import { Certificate } from 'pkijs';
 import type { PlatformApi, PlatformApiOptions, Proxy, SupportedCapability, SupportedRunTarget } from '.';
 import { asyncUnimplemented, getObjFromFridaScript, isRecord } from './util';
@@ -120,10 +121,24 @@ send({ name: "get_obj_from_frida_script", payload: getProxySettingsForCurrentWif
 export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     options: PlatformApiOptions<'ios', RunTarget, SupportedCapability<'ios'>[]>
 ): PlatformApi<'ios', 'device', SupportedCapability<'ios'>[]> => ({
-    _internal: undefined,
+    _internal: {
+        ssh: async (...args) => {
+            const ssh = await new NodeSSH().connect({
+                host: options.targetOptions!.ip,
+                username: 'root',
+                password: options.targetOptions!.rootPw || 'alpine',
+            });
+            const res = await ssh.execCommand(...args);
+            // Creating and disposing a new SSH connection for each command is not efficient but it replicates the
+            // previous behaviour of calling `ssh`. If we wanted to keep the connection open, we would also need a way
+            // to dispose of it at the very end, but we don't know when that is (cf. #24).
+            ssh.dispose();
+            return res;
+        },
+    },
 
     resetDevice: asyncUnimplemented('resetDevice') as never,
-    ensureDevice: async () => {
+    async ensureDevice() {
         if ((await execa('ideviceinfo', ['-k', 'DeviceName'], { reject: false })).exitCode !== 0)
             throw new Error('You need to connect your device and trust this computer.');
 
@@ -139,13 +154,7 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
 
         if (options.capabilities.includes('ssh')) {
             try {
-                const { stdout } = await execa('sshpass', [
-                    '-p',
-                    options.targetOptions!.rootPw || 'alpine',
-                    'ssh',
-                    `root@${options.targetOptions!.ip}`,
-                    `uname`,
-                ]);
+                const { stdout } = await this._internal.ssh('uname');
                 if (stdout !== 'Darwin') throw new Error('Wrong uname output.');
             } catch (err) {
                 throw new Error('Cannot connect using SSH.', { cause: err });
@@ -172,31 +181,19 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     uninstallApp: async (appId) => {
         await execa('ideviceinstaller', ['--uninstall', appId]);
     },
-    setAppPermissions: async (appId, _permissions) => {
+    async setAppPermissions(appId, _permissions) {
         if (!options.capabilities.includes('ssh') || !options.capabilities.includes('frida'))
             throw new Error('SSH and Frida are required for setting app permissions.');
 
         const permissionValues = { allow: 2, deny: 0 } as const;
         const setPermission = (permission: string, value: 0 | 2) =>
-            execa('sshpass', [
-                '-p',
-                options.targetOptions!.rootPw || 'alpine',
-                'ssh',
-                `root@${options.targetOptions!.ip}`,
-                'sqlite3',
-                '/private/var/mobile/Library/TCC/TCC.db',
-                `'INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) VALUES("${permission}", "${appId}", 0, ${value}, 2, 1);'`,
-            ]);
+            this._internal.ssh(
+                `sqlite3 /private/var/mobile/Library/TCC/TCC.db 'INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) VALUES("${permission}", "${appId}", 0, ${value}, 2, 1);'`
+            );
         const unsetPermission = (permission: string) =>
-            execa('sshpass', [
-                '-p',
-                options.targetOptions!.rootPw || 'alpine',
-                'ssh',
-                `root@${options.targetOptions!.ip}`,
-                'sqlite3',
-                '/private/var/mobile/Library/TCC/TCC.db',
-                `'DELETE FROM access WHERE service="${permission}" AND client="${appId}";'`,
-            ]);
+            this._internal.ssh(
+                `sqlite3 /private/var/mobile/Library/TCC/TCC.db 'DELETE FROM access WHERE service="${permission}" AND client="${appId}";'`
+            );
         const locationPermissionValues = { ask: 0, never: 2, always: 3, 'while-using': 4 } as const;
         const grantLocationPermission = async (value: 0 | 2 | 3 | 4) => {
             const session = await frida.getUsbDevice().then((f) => f.attach('SpringBoard'));
@@ -224,20 +221,14 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         }
     },
     setAppBackgroundBatteryUsage: asyncUnimplemented('setAppBatteryOptimization') as never,
-    startApp: async (appId) => {
+    async startApp(appId) {
         if (options.capabilities.includes('frida')) {
             const session = await frida.getUsbDevice().then((f) => f.attach('SpringBoard'));
             const script = await session.createScript(fridaScripts.startApp(appId));
             await script.load();
             await session.detach();
         } else if (options.capabilities.includes('ssh')) {
-            execa('sshpass', [
-                '-p',
-                options.targetOptions!.rootPw || 'alpine',
-                'ssh',
-                `root@${options.targetOptions!.ip}`,
-                `open ${appId}`,
-            ]);
+            this._internal.ssh(`open ${appId}`);
         } else {
             throw new Error('Frida or SSH (with the open package installed) is required for starting apps.');
         }
@@ -301,7 +292,7 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         await session.detach();
     },
 
-    installCertificateAuthority: async (path) => {
+    async installCertificateAuthority(path) {
         if (!options.capabilities.includes('ssh'))
             throw new Error('SSH is required for installing a certificate authority.');
 
@@ -324,17 +315,11 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         ).toString('hex');
         const data = certDer.toString('hex');
 
-        await execa('sshpass', [
-            '-p',
-            options.targetOptions!.rootPw || 'alpine',
-            'ssh',
-            `root@${options.targetOptions!.ip}`,
-            'sqlite3',
-            '/private/var/protected/trustd/private/TrustStore.sqlite3',
-            `"INSERT OR REPLACE INTO tsettings (sha256, subj, tset, data) VALUES(x'${sha256}', x'${subj}', x'${tset}', x'${data}');"`,
-        ]);
+        await this._internal.ssh(
+            `sqlite3 /private/var/protected/trustd/private/TrustStore.sqlite3 "INSERT OR REPLACE INTO tsettings (sha256, subj, tset, data) VALUES(x'${sha256}', x'${subj}', x'${tset}', x'${data}');"`
+        );
     },
-    removeCertificateAuthority: async (path) => {
+    async removeCertificateAuthority(path) {
         if (!options.capabilities.includes('ssh'))
             throw new Error('SSH is required for removing a certificate authority.');
 
@@ -343,15 +328,9 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         const certDer = Buffer.from(certBase64, 'base64');
         const sha256 = createHash('sha256').update(certDer).digest('hex');
 
-        await execa('sshpass', [
-            '-p',
-            options.targetOptions!.rootPw || 'alpine',
-            'ssh',
-            `root@${options.targetOptions!.ip}`,
-            'sqlite3',
-            '/private/var/protected/trustd/private/TrustStore.sqlite3',
-            `"DELETE FROM tsettings WHERE sha256=x'${sha256}';"`,
-        ]);
+        await this._internal.ssh(
+            `sqlite3 /private/var/protected/trustd/private/TrustStore.sqlite3 "DELETE FROM tsettings WHERE sha256=x'${sha256}';"`
+        );
     },
     setProxy: async (proxy) => {
         if (!options.capabilities.includes('frida')) throw new Error('Frida is required for configuring a proxy.');

@@ -60,8 +60,6 @@ For iOS, you need [`libimobiledevice`](https://libimobiledevice.org/) and `idevi
 
 For the `frida` capability, you need to install [`frida-tools`](https://frida.re/docs/installation/).
 
-For the `ssh` capability, you need to install [`sshpass`](https://sourceforge.net/projects/sshpass).
-
 ## Supported targets
 
 Appstraction supports the following targets. Note that it will likely also work on other versions of the targets, but these are the ones we have tested.
