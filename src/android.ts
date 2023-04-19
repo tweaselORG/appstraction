@@ -2,7 +2,7 @@ import { decompress as decompressXz } from '@napi-rs/lzma/xz';
 import fetch from 'cross-fetch';
 import { execa } from 'execa';
 import frida from 'frida';
-import { rm, writeFile } from 'fs/promises';
+import { open, rm, writeFile } from 'fs/promises';
 import pRetry from 'p-retry';
 import { major as semverMajor, minVersion as semverMinVersion } from 'semver';
 import { temporaryFile } from 'tempy';
@@ -15,7 +15,16 @@ import type {
     WireGuardConfig,
 } from '.';
 import { dependencies } from '../package.json';
-import { asyncUnimplemented, getObjFromFridaScript, isRecord, parseAppMeta, retryCondition } from './util';
+import {
+    asyncUnimplemented,
+    forEachInZip,
+    getFileFromZip,
+    getObjFromFridaScript,
+    isRecord,
+    parseAppMeta,
+    retryCondition,
+    tmpFileFromZipEntry,
+} from './util';
 
 const fridaScripts = {
     getPrefs: `var app_ctx = Java.use('android.app.ActivityThread').currentApplication().getApplicationContext();
@@ -234,7 +243,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                     const apkUrl = `https://f-droid.org/repo/com.wireguard.android_${fdroidMeta.suggestedVersionCode}.apk`;
 
                     // `adb` complains if we try to install a file with the wrong extension.
-                    const apkTmpPath = temporaryFile({ extension: 'apk' });
+                    const apkTmpPath = temporaryFile({ extension: 'apk' }) as `${string}.apk`;
                     const apk = await fetch(apkUrl).then((res) => res.arrayBuffer());
                     await writeFile(apkTmpPath, Buffer.from(apk));
 
@@ -318,47 +327,106 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         const { stdout } = await execa('adb', ['shell', 'cmd', 'package', 'list', 'packages', appId]);
         return stdout.includes(`package:${appId}`);
     },
-    installApp: async (apkPath) => {
-        const apks = typeof apkPath === 'string' ? [apkPath] : apkPath;
+    async installApp(apkPath) {
+        const installMultiApk = async (apks: string[]) => {
+            const apkMeta = await Promise.all(
+                apks.map((path) =>
+                    parseAppMeta(path).then((m) => {
+                        if (!m) throw new Error(`Failed to install app: "${path}" is not a valid APK.`);
+                        return { path, ...m };
+                    })
+                )
+            );
 
-        const apkMeta = await Promise.all(
-            apks.map((path) =>
-                parseAppMeta(path).then((m) => {
-                    if (!m) throw new Error(`Failed to install app: "${path}" is not a valid APK.`);
-                    return { path, ...m };
-                })
-            )
-        );
+            const appIds = new Set(apkMeta.map((m) => m.id));
+            if (appIds.size > 1) throw new Error('Failed to install app: Split APKs for different apps provided.');
 
-        const appIds = new Set(apkMeta.map((m) => m.id));
-        if (appIds.size > 1) throw new Error('Failed to install app: Split APKs for different apps provided.');
+            const androidArches = await execa('adb', ['shell', 'getprop', 'ro.product.cpu.abilist']).then((r) =>
+                r.stdout.split(',')
+            );
+            const androidArchMap = {
+                'armeabi-v7a': 'arm',
+                armeabi: 'arm',
+                'arm64-v8a': 'arm64',
+                x86: 'x86',
+                // eslint-disable-next-line camelcase
+                x86_64: 'x86_64',
+                mips: 'mips',
+                mips64: 'mips64',
+            } as const;
+            const arches = androidArches.map((a) => androidArchMap[a as keyof typeof androidArchMap]);
 
-        const androidArches = await execa('adb', ['shell', 'getprop', 'ro.product.cpu.abilist']).then((r) =>
-            r.stdout.split(',')
-        );
-        const androidArchMap = {
-            'armeabi-v7a': 'arm',
-            armeabi: 'arm',
-            'arm64-v8a': 'arm64',
-            x86: 'x86',
-            // eslint-disable-next-line camelcase
-            x86_64: 'x86_64',
-            mips: 'mips',
-            mips64: 'mips64',
-        } as const;
-        const arches = androidArches.map((a) => androidArchMap[a as keyof typeof androidArchMap]);
+            const apksForArches = apkMeta
+                .filter(
+                    (m) =>
+                        !m.architectures ||
+                        m.architectures.length === 0 ||
+                        m.architectures.some((a) => arches.includes(a))
+                )
+                .map((m) => m.path);
 
-        const apksForArches = apkMeta
-            .filter(
-                (m) =>
-                    !m.architectures || m.architectures.length === 0 || m.architectures.some((a) => arches.includes(a))
-            )
-            .map((m) => m.path);
+            if (apksForArches.length === 0)
+                throw new Error(
+                    `Failed to install app: App doesn't support device's architectures (${androidArches}).`
+                );
 
-        if (apksForArches.length === 0)
-            throw new Error(`Failed to install app: App doesn't support device's architectures (${androidArches}).`);
+            await execa('adb', ['install-multiple', ...apksForArches]);
+        };
 
-        await execa('adb', ['install-multiple', ...apksForArches]);
+        if (typeof apkPath === 'string' && apkPath.endsWith('.xapk')) {
+            type xapkManifest = {
+                expansions?: { file: string; install_location: string; install_path: string }[];
+                split_apks?: { file: string }[];
+            };
+            const xapk = await open(apkPath);
+            await getFileFromZip(xapk, 'manifest.json').then(async (manifest) => {
+                if (!manifest) throw new Error('Failed to install app: manifest.json not found in XAPK.');
+                const manifestString = await new Promise<string>((resolve) => {
+                    let result = '';
+                    manifest.on('data', (chunk) => (result += chunk.toString()));
+                    manifest.on('end', () => resolve(result));
+                });
+                const manifestJson: xapkManifest = JSON.parse(manifestString);
+
+                const expansionFileNames = manifestJson.expansions?.map((expansion) => expansion.file);
+                const apkFileNames = manifestJson.split_apks?.map((apk) => apk.file);
+                const tmpApks: string[] = [];
+                const externalStorageDir = (await execa('adb', ['shell', 'echo', '$EXTERNAL_STORAGE'])).stdout;
+
+                if (expansionFileNames?.length && expansionFileNames.length > 0) {
+                    await this._internal.requireRoot('writing to external storage in installApp');
+                }
+
+                await forEachInZip(xapk, async (entry, zipFile) => {
+                    if (apkFileNames?.includes(entry.fileName)) {
+                        await tmpFileFromZipEntry(zipFile, entry, 'apk').then((tmpFile) => void tmpApks.push(tmpFile));
+                    } else if (expansionFileNames?.includes(entry.fileName)) {
+                        const expansion = manifestJson.expansions?.find((exp) => exp.file === entry.fileName);
+                        if (expansion && expansion.install_location === 'EXTERNAL_STORAGE')
+                            // Since there doesn't seem to be any public schema of XAPKs and Google explicitly says that
+                            // extension files are supposed to be stored in the external storage, hardcoding this is the
+                            // only way to handle this
+                            // (https://github.com/tweaselORG/appstraction/issues/63#issuecomment-1514822176).
+                            return tmpFileFromZipEntry(zipFile, entry).then(async (tmpFile) => {
+                                await execa('adb', [
+                                    'push',
+                                    tmpFile,
+                                    `${externalStorageDir}/${expansion.install_path}`,
+                                ]);
+                                await rm(tmpFile);
+                            });
+                        throw new Error('Failed to install app: Invalid expansion file declaration.');
+                    }
+                }).then(xapk.close);
+
+                if (tmpApks.length === 0) throw new Error('Failed to install app: No split apks found in XAPK.');
+                await installMultiApk(tmpApks);
+
+                await Promise.all(tmpApks.map((tmpApk) => rm(tmpApk)));
+            });
+        } else {
+            await installMultiApk(typeof apkPath === 'string' ? [apkPath] : apkPath);
+        }
     },
     uninstallApp: async (appId) => {
         await execa('adb', ['shell', 'pm', 'uninstall', '--user', '0', appId]).catch((err) => {

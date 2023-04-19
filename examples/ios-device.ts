@@ -38,7 +38,7 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
 
     console.log('Installed already?', await ios.isAppInstalled(appId));
 
-    await ios.installApp(appPath);
+    await ios.installApp(appPath as `${string}.ipa`);
     // First, grant all permissions.
     await ios.setAppPermissions(appId);
     // Then, revoke the camera permission and unset the calendar permission.
