@@ -14,6 +14,15 @@ export type SupportedRunTarget<Platform extends SupportedPlatform> = Platform ex
     : Platform extends 'ios'
     ? 'device'
     : never;
+/**
+ * On Android, the path to a single APK with the `.apk` extension, an array of paths to split APKs with the `.apk`
+ * extension or the path to an XAPK file with the `.xapk` extension.
+ *
+ * On iOS, the path to an IPA file with the `.ipa` extension.
+ */
+export type AppPath<Platform extends SupportedPlatform> = Platform extends 'android'
+    ? `${string}.apk` | `${string}.xapk` | `${string}.apk`[]
+    : `${string}.ipa`;
 
 /** Functions that are available for the platforms. */
 export type PlatformApi<
@@ -60,9 +69,10 @@ export type PlatformApi<
      * Install the app at the given path.
      *
      * @param appPath Path to the app file (`.ipa` on iOS, `.apk` on Android) to install. On Android, this can also be
-     *   an array of the paths of the split APKs of a single app.
+     *   an array of the paths of the split APKs of a single app or an XAPK file with the extension `.xapk`. Might
+     *   require the `root` capability to install extension files in XAPKs.
      */
-    installApp: (appPath: Platform extends 'android' ? string | string[] : string) => Promise<void>;
+    installApp: (appPath: AppPath<Platform>) => Promise<void>;
     /**
      * Uninstall the app with the given app ID. Will not fail if the app is not installed.
      *
