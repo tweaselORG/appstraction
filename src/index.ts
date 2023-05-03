@@ -266,6 +266,7 @@ export type PlatformApi<
               overlayTmpfs: (directoryPathWithoutLeadingSlash: string) => Promise<void>;
 
               isVpnEnabled: () => Promise<boolean>;
+              installMultiApk: (apks: string[]) => Promise<void>;
 
               objectionProcesses: ExecaChildProcess[];
           }

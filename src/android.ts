@@ -211,6 +211,50 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         // Note that this is only a fairly crude check, cf.
         // https://github.com/tweaselORG/meta/issues/19#issuecomment-1446285561.
         isVpnEnabled: async () => (await execa('adb', ['shell', 'ifconfig', 'tun0'], { reject: false })).exitCode === 0,
+        installMultiApk: async (apks: string[]) => {
+            const apkMeta = await Promise.all(
+                apks.map((path) =>
+                    parseAppMeta(path).then((m) => {
+                        if (!m) throw new Error(`Failed to install app: "${path}" is not a valid APK.`);
+                        return { path, ...m };
+                    })
+                )
+            );
+
+            const appIds = new Set(apkMeta.map((m) => m.id));
+            if (appIds.size > 1) throw new Error('Failed to install app: Split APKs for different apps provided.');
+
+            const androidArches = await execa('adb', ['shell', 'getprop', 'ro.product.cpu.abilist']).then((r) =>
+                r.stdout.split(',')
+            );
+            const androidArchMap = {
+                'armeabi-v7a': 'arm',
+                armeabi: 'arm',
+                'arm64-v8a': 'arm64',
+                x86: 'x86',
+                // eslint-disable-next-line camelcase
+                x86_64: 'x86_64',
+                mips: 'mips',
+                mips64: 'mips64',
+            } as const;
+            const arches = androidArches.map((a) => androidArchMap[a as keyof typeof androidArchMap]);
+
+            const apksForArches = apkMeta
+                .filter(
+                    (m) =>
+                        !m.architectures ||
+                        m.architectures.length === 0 ||
+                        m.architectures.some((a) => arches.includes(a))
+                )
+                .map((m) => m.path);
+
+            if (apksForArches.length === 0)
+                throw new Error(
+                    `Failed to install app: App doesn't support device's architectures (${androidArches}).`
+                );
+
+            await execa('adb', ['install-multiple', ...apksForArches]);
+        },
     },
 
     async resetDevice(snapshotName) {
@@ -328,51 +372,6 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         return stdout.includes(`package:${appId}`);
     },
     async installApp(apkPath) {
-        const installMultiApk = async (apks: string[]) => {
-            const apkMeta = await Promise.all(
-                apks.map((path) =>
-                    parseAppMeta(path).then((m) => {
-                        if (!m) throw new Error(`Failed to install app: "${path}" is not a valid APK.`);
-                        return { path, ...m };
-                    })
-                )
-            );
-
-            const appIds = new Set(apkMeta.map((m) => m.id));
-            if (appIds.size > 1) throw new Error('Failed to install app: Split APKs for different apps provided.');
-
-            const androidArches = await execa('adb', ['shell', 'getprop', 'ro.product.cpu.abilist']).then((r) =>
-                r.stdout.split(',')
-            );
-            const androidArchMap = {
-                'armeabi-v7a': 'arm',
-                armeabi: 'arm',
-                'arm64-v8a': 'arm64',
-                x86: 'x86',
-                // eslint-disable-next-line camelcase
-                x86_64: 'x86_64',
-                mips: 'mips',
-                mips64: 'mips64',
-            } as const;
-            const arches = androidArches.map((a) => androidArchMap[a as keyof typeof androidArchMap]);
-
-            const apksForArches = apkMeta
-                .filter(
-                    (m) =>
-                        !m.architectures ||
-                        m.architectures.length === 0 ||
-                        m.architectures.some((a) => arches.includes(a))
-                )
-                .map((m) => m.path);
-
-            if (apksForArches.length === 0)
-                throw new Error(
-                    `Failed to install app: App doesn't support device's architectures (${androidArches}).`
-                );
-
-            await execa('adb', ['install-multiple', ...apksForArches]);
-        };
-
         if (typeof apkPath === 'string' && apkPath.endsWith('.xapk')) {
             type xapkManifest = {
                 expansions?: { file: string; install_location: string; install_path: string }[];
@@ -392,6 +391,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 const apkFileNames = manifestJson.split_apks?.map((apk) => apk.file);
                 const tmpApks: string[] = [];
                 const externalStorageDir = (await execa('adb', ['shell', 'echo', '$EXTERNAL_STORAGE'])).stdout;
+                const obbPaths: string[] = [];
 
                 if (expansionFileNames?.length && expansionFileNames.length > 0) {
                     await this._internal.requireRoot('writing to external storage in installApp');
@@ -413,6 +413,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                                     tmpFile,
                                     `${externalStorageDir}/${expansion.install_path}`,
                                 ]);
+                                obbPaths.push(`${externalStorageDir}/${expansion.install_path}`);
                                 await rm(tmpFile);
                             });
                         throw new Error('Failed to install app: Invalid expansion file declaration.');
@@ -420,12 +421,17 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 }).then(xapk.close);
 
                 if (tmpApks.length === 0) throw new Error('Failed to install app: No split apks found in XAPK.');
-                await installMultiApk(tmpApks);
+                try {
+                    await this._internal.installMultiApk(tmpApks);
+                } catch (err) {
+                    await Promise.all(obbPaths.map((obbPath) => execa('adb', ['shell', 'rm', obbPath])));
+                    throw err;
+                }
 
                 await Promise.all(tmpApks.map((tmpApk) => rm(tmpApk)));
             });
         } else {
-            await installMultiApk(typeof apkPath === 'string' ? [apkPath] : apkPath);
+            await this._internal.installMultiApk(typeof apkPath === 'string' ? [apkPath] : apkPath);
         }
     },
     uninstallApp: async (appId) => {
