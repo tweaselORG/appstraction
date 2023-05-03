@@ -9,7 +9,7 @@ Appstraction provides an abstraction layer for common instrumentation functions 
 With appstraction, you can perform the following actions programmatically on Android and iOS (for a full list with additional details, see the API reference for the [`PlatformApi` type](docs/README.md#platformapi)):
 
 * Reset an emulator to a snapshot.
-* Install and uninstall apps (including split APKs on Android).
+* Install and uninstall apps, including split APKs and `.obb`s, apps downloaded from popular unofficial APK mirror sites (`.xapk` by APKPure, `.apkm` by APKMirror), and `.apks` files created by SAI on Android.
 * Check whether an app is installed.
 * Set an app's permissions, either granting everything or granularly specifying which permissions to grant or deny.
 * Configure an app's battery optimization settings.

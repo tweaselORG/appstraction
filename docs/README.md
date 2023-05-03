@@ -47,10 +47,10 @@ ___
 
 ### AppPath
 
-Ƭ **AppPath**<`Platform`\>: `Platform` extends ``"android"`` ? \`${string}.apk\` \| \`${string}.xapk\` \| \`${string}.apkm\` \| \`${string}.apk\`[] : \`${string}.ipa\`
+Ƭ **AppPath**<`Platform`\>: `Platform` extends ``"android"`` ? \`${string}.apk\` \| \`${string}.xapk\` \| \`${string}.apkm\` \| \`${string}.apks\` \| \`${string}.apk\`[] : \`${string}.ipa\`
 
 On Android, the path to a single APK with the `.apk` extension, an array of paths to split APKs with the `.apk`
-extension or the path to an XAPK file with the `.xapk` extension.
+extension, the path to an XAPK file with the `.xapk` extension or the path to either an `.apkm` or `.apks` file.
 
 On iOS, the path to an IPA file with the `.ipa` extension.
 
