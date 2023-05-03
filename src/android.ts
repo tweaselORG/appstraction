@@ -431,7 +431,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
                 await Promise.all(tmpApks.map((tmpApk) => rm(tmpApk)));
             });
-        } else if (typeof apkPath === 'string' && apkPath.endsWith('.apkm')) {
+        } else if (typeof apkPath === 'string' && (apkPath.endsWith('.apkm') || apkPath.endsWith('.apks'))) {
+            // APKM and APKS are basically the same format now, see https://github.com/tweaselORG/appstraction/issues/66
             if ((await fileTypeFromFile(apkPath))?.mime !== 'application/zip')
                 throw new Error(
                     'Failed to install app: Encrypted apkm files are not supported, use the newer zip format instead.'
