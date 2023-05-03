@@ -41,7 +41,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:836](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L836)
+[android.ts:842](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L842)
 
 ___
 
@@ -80,7 +80,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:342](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L342)
+[index.ts:343](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L343)
 
 ___
 
@@ -99,7 +99,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:348](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L348)
+[index.ts:349](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L349)
 
 ___
 
@@ -175,7 +175,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:280](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L280)
+[index.ts:281](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L281)
 
 ___
 
@@ -194,7 +194,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:356](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L356)
+[index.ts:357](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L357)
 
 ___
 
@@ -224,7 +224,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:307](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L307)
+[index.ts:308](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L308)
 
 ___
 
@@ -242,7 +242,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:335](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L335)
+[index.ts:336](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L336)
 
 ___
 
@@ -284,7 +284,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:363](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L363)
+[index.ts:364](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L364)
 
 ## Variables
 
@@ -296,7 +296,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:705](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L705)
+[android.ts:711](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L711)
 
 ___
 
@@ -395,4 +395,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:372](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L372)
+[index.ts:373](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L373)
