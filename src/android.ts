@@ -1,6 +1,7 @@
 import { decompress as decompressXz } from '@napi-rs/lzma/xz';
 import fetch from 'cross-fetch';
 import { execa } from 'execa';
+import { fileTypeFromFile } from 'file-type';
 import frida from 'frida';
 import { open, rm, writeFile } from 'fs/promises';
 import pRetry from 'p-retry';
@@ -430,6 +431,23 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
                 await Promise.all(tmpApks.map((tmpApk) => rm(tmpApk)));
             });
+        } else if (typeof apkPath === 'string' && apkPath.endsWith('.apkm')) {
+            if ((await fileTypeFromFile(apkPath))?.mime !== 'application/zip')
+                throw new Error(
+                    'Failed to install app: Encrypted apkm files are not supported, use the newer zip format instead.'
+                );
+            const apkm = await open(apkPath);
+            const tmpApks: `${string}.apk`[] = [];
+
+            await forEachInZip(apkm, async (entry, zipFile) => {
+                if (entry.fileName.endsWith('.apk')) {
+                    await tmpFileFromZipEntry(zipFile, entry, 'apk').then((tmpFile) => void tmpApks.push(tmpFile));
+                }
+            }).then(apkm.close);
+
+            if (tmpApks.length === 0) throw new Error('Failed to install app: No split apks found in XAPK.');
+            await this._internal.installMultiApk(tmpApks);
+            await Promise.all(tmpApks.map((tmpApk) => rm(tmpApk)));
         } else {
             await this._internal.installMultiApk(typeof apkPath === 'string' ? [apkPath] : apkPath);
         }

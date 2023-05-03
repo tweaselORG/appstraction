@@ -233,11 +233,15 @@ export const getFileFromZip = async (zip: FileHandle, filename: string) =>
  *
  * @returns The file name of the temporary file.
  */
-export const tmpFileFromZipEntry = async (zipFile: ZipFile, entry: Entry, extension?: string) =>
-    new Promise<string>((resolve) => {
+export const tmpFileFromZipEntry = async <Extension extends string>(
+    zipFile: ZipFile,
+    entry: Entry,
+    extension?: Extension
+) =>
+    new Promise<`${string}.${Extension}`>((resolve) => {
         zipFile.openReadStream(entry, (err, stream) => {
             if (err) throw Error;
-            const tmpFile = temporaryFile({ extension });
+            const tmpFile = temporaryFile({ extension }) as `${string}.${Extension}`;
             stream.pipe(createWriteStream(tmpFile).on('finish', () => resolve(tmpFile)));
         });
     });

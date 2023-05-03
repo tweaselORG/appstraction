@@ -41,13 +41,13 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:842](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L842)
+[android.ts:860](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L860)
 
 ___
 
 ### AppPath
 
-Ƭ **AppPath**<`Platform`\>: `Platform` extends ``"android"`` ? \`${string}.apk\` \| \`${string}.xapk\` \| \`${string}.apk\`[] : \`${string}.ipa\`
+Ƭ **AppPath**<`Platform`\>: `Platform` extends ``"android"`` ? \`${string}.apk\` \| \`${string}.xapk\` \| \`${string}.apkm\` \| \`${string}.apk\`[] : \`${string}.ipa\`
 
 On Android, the path to a single APK with the `.apk` extension, an array of paths to split APKs with the `.apk`
 extension or the path to an XAPK file with the `.xapk` extension.
@@ -296,7 +296,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:711](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L711)
+[android.ts:729](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L729)
 
 ___
 
