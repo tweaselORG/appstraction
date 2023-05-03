@@ -21,7 +21,7 @@ export type SupportedRunTarget<Platform extends SupportedPlatform> = Platform ex
  * On iOS, the path to an IPA file with the `.ipa` extension.
  */
 export type AppPath<Platform extends SupportedPlatform> = Platform extends 'android'
-    ? `${string}.apk` | `${string}.xapk` | `${string}.apk`[]
+    ? `${string}.apk` | `${string}.xapk` | `${string}.apkm` | `${string}.apk`[]
     : `${string}.ipa`;
 
 /** Functions that are available for the platforms. */
