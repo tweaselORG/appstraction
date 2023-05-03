@@ -5,6 +5,7 @@ import { fileTypeFromFile } from 'file-type';
 import frida from 'frida';
 import { open, rm, writeFile } from 'fs/promises';
 import pRetry from 'p-retry';
+import { basename } from 'path';
 import { major as semverMajor, minVersion as semverMinVersion } from 'semver';
 import { temporaryFile } from 'tempy';
 import type {
@@ -255,6 +256,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 );
 
             await execa('adb', ['install-multiple', ...apksForArches]);
+            return appIds.values().next().value;
         },
     },
 
@@ -372,7 +374,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         const { stdout } = await execa('adb', ['shell', 'cmd', 'package', 'list', 'packages', appId]);
         return stdout.includes(`package:${appId}`);
     },
-    async installApp(apkPath) {
+    async installApp(apkPath, obbPaths) {
+        let appId = '';
         if (typeof apkPath === 'string' && apkPath.endsWith('.xapk')) {
             type xapkManifest = {
                 expansions?: { file: string; install_location: string; install_path: string }[];
@@ -423,7 +426,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
                 if (tmpApks.length === 0) throw new Error('Failed to install app: No split apks found in XAPK.');
                 try {
-                    await this._internal.installMultiApk(tmpApks);
+                    appId = await this._internal.installMultiApk(tmpApks);
                 } catch (err) {
                     await Promise.all(obbPaths.map((obbPath) => execa('adb', ['shell', 'rm', obbPath])));
                     throw err;
@@ -447,10 +450,26 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             }).then(apkm.close);
 
             if (tmpApks.length === 0) throw new Error('Failed to install app: No split apks found in XAPK.');
-            await this._internal.installMultiApk(tmpApks);
+            appId = await this._internal.installMultiApk(tmpApks);
             await Promise.all(tmpApks.map((tmpApk) => rm(tmpApk)));
         } else {
-            await this._internal.installMultiApk(typeof apkPath === 'string' ? [apkPath] : apkPath);
+            appId = await this._internal.installMultiApk(typeof apkPath === 'string' ? [apkPath] : apkPath);
+        }
+
+        if (obbPaths && obbPaths.length > 0) {
+            await this._internal.requireRoot('writing to external storage in installApp');
+            const externalStorageDir = (await execa('adb', ['shell', 'echo', '$EXTERNAL_STORAGE'])).stdout;
+            await Promise.all(
+                obbPaths.map((obbPath) =>
+                    execa('adb', [
+                        'push',
+                        obbPath.obb,
+                        `${externalStorageDir}/${
+                            obbPath.installPath || `Android/obb/${appId}/${basename(obbPath.obb)}`
+                        }`,
+                    ])
+                )
+            );
         }
     },
     uninstallApp: async (appId) => {

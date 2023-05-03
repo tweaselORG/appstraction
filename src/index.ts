@@ -24,6 +24,17 @@ export type AppPath<Platform extends SupportedPlatform> = Platform extends 'andr
     ? `${string}.apk` | `${string}.xapk` | `${string}.apkm` | `${string}.apks` | `${string}.apk`[]
     : `${string}.ipa`;
 
+/** An object that describes how an Android extension file (`.obb`) should be installed on the device. */
+export type ObbInstallSpec = {
+    /** Path to the obb on the host. */
+    obb: `${string}.obb`;
+    /**
+     * Path in relation to `$EXTERNAL_STORAGE` in which to install the obb on the guest. Will be the default app folder
+     * (`$EXTERNAL_STORAGE/Android/obb/<app id>/<file name on host>`) if nothing is specified.
+     */
+    installPath?: `${string}.obb`;
+};
+
 /** Functions that are available for the platforms. */
 export type PlatformApi<
     Platform extends SupportedPlatform,
@@ -72,7 +83,10 @@ export type PlatformApi<
      *   an array of the paths of the split APKs of a single app or the following custom APK bundle formats: `.xapk`,
      *   `.apkm` and `.apks`. Might require the `root` capability to install extension files in XAPKs.
      */
-    installApp: (appPath: AppPath<Platform>) => Promise<void>;
+    installApp: (
+        appPath: AppPath<Platform>,
+        obbPaths?: Platform extends 'android' ? ObbInstallSpec[] : never
+    ) => Promise<void>;
     /**
      * Uninstall the app with the given app ID. Will not fail if the app is not installed.
      *
@@ -266,7 +280,7 @@ export type PlatformApi<
               overlayTmpfs: (directoryPathWithoutLeadingSlash: string) => Promise<void>;
 
               isVpnEnabled: () => Promise<boolean>;
-              installMultiApk: (apks: string[]) => Promise<void>;
+              installMultiApk: (apks: string[]) => Promise<string>;
 
               objectionProcesses: ExecaChildProcess[];
           }
