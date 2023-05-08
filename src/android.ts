@@ -1,4 +1,5 @@
 import { decompress as decompressXz } from '@napi-rs/lzma/xz';
+import { runAndroidDevTool } from 'andromatic';
 import fetch from 'cross-fetch';
 import { execa } from 'execa';
 import { fileTypeFromFile } from 'file-type';
@@ -17,7 +18,7 @@ import type {
     WireGuardConfig,
 } from '.';
 import { dependencies } from '../package.json';
-import type { XapkManifest } from './util';
+import type { ParametersExceptFirst, XapkManifest } from './util';
 import {
     asyncUnimplemented,
     forEachInZip,
@@ -28,6 +29,8 @@ import {
     retryCondition,
     tmpFileFromZipEntry,
 } from './util';
+
+const adb = (...args: ParametersExceptFirst<typeof runAndroidDevTool>) => runAndroidDevTool('adb', args[0], args[1]);
 
 const fridaScripts = {
     getPrefs: `var app_ctx = Java.use('android.app.ActivityThread').currentApplication().getApplicationContext();
@@ -60,23 +63,17 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
         awaitAdb: async () => {
             const adbIsStarted = await retryCondition(async () => {
-                const { stdout: devBootcomplete } = await execa(
-                    'adb',
+                const { stdout: devBootcomplete } = await adb(
                     ['wait-for-device', 'shell', 'getprop', 'dev.bootcomplete'],
                     { reject: false }
                 );
-                const { stdout: sysBootCompleted } = await execa(
-                    'adb',
+                const { stdout: sysBootCompleted } = await adb(
                     ['wait-for-device', 'shell', 'getprop', 'sys.boot_completed'],
                     { reject: false }
                 );
-                const { stdout: bootanim } = await execa(
-                    'adb',
-                    ['wait-for-device', 'shell', 'getprop', 'init.svc.bootanim'],
-                    {
-                        reject: false,
-                    }
-                );
+                const { stdout: bootanim } = await adb(['wait-for-device', 'shell', 'getprop', 'init.svc.bootanim'], {
+                    reject: false,
+                });
                 return devBootcomplete.includes('1') && sysBootCompleted.includes('1') && bootanim.includes('stopped');
             }, 100);
             if (!adbIsStarted) throw new Error('Failed to connect via adb.');
@@ -96,11 +93,9 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 );
 
             // Check whether `frida-server` is already installed on the device and has the correct major version.
-            const { stdout: fridaServerVersion } = await execa(
-                'adb',
-                ['shell', '/data/local/tmp/frida-server --version'],
-                { reject: false }
-            );
+            const { stdout: fridaServerVersion } = await adb(['shell', '/data/local/tmp/frida-server --version'], {
+                reject: false,
+            });
             const fridaServerMajorVersion = fridaServerVersion && semverMajor(fridaServerVersion);
 
             // Download and install `frida-server` if necessary.
@@ -113,7 +108,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                         `No frida-server found for version ${fridaToolsVersion}. Please install frida-server manually.`
                     );
 
-                const { stdout: androidArch } = await execa('adb', ['shell', 'getprop', 'ro.product.cpu.abi']);
+                const { stdout: androidArch } = await adb(['shell', 'getprop', 'ro.product.cpu.abi']);
                 const archMap = {
                     'arm64-v8a': 'arm64',
                     'armeabi-v7a': 'arm',
@@ -141,11 +136,10 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 const fridaServerBinary = await decompressXz(Buffer.from(fridaServerXz));
                 await writeFile(fridaServerTmpPath, Buffer.from(fridaServerBinary));
 
-                await execa('adb', ['push', fridaServerTmpPath, '/data/local/tmp/frida-server']);
-                await execa('adb', ['shell', 'chmod', '755', '/data/local/tmp/frida-server']);
+                await adb(['push', fridaServerTmpPath, '/data/local/tmp/frida-server']);
+                await adb(['shell', 'chmod', '755', '/data/local/tmp/frida-server']);
 
-                const { stdout: installedFridaServerVersion } = await execa(
-                    'adb',
+                const { stdout: installedFridaServerVersion } = await adb(
                     ['shell', '/data/local/tmp/frida-server --version'],
                     { reject: false }
                 );
@@ -159,8 +153,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
             await this.requireRoot('Frida');
 
-            await execa('adb', ['shell', 'chmod', '755', '/data/local/tmp/frida-server']);
-            await execa('adb', ['shell', '-x', '/data/local/tmp/frida-server', '--daemonize']);
+            await adb(['shell', 'chmod', '755', '/data/local/tmp/frida-server']);
+            await adb(['shell', '-x', '/data/local/tmp/frida-server', '--daemonize']);
 
             const fridaIsStarted = await retryCondition(
                 async () => (await execa('frida-ps', ['-U'], { reject: false })).stdout.includes('frida-server'),
@@ -171,7 +165,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         async requireRoot(action) {
             if (!options.capabilities.includes('root')) throw new Error(`Root access is required for ${action}.`);
 
-            await execa('adb', ['root']);
+            await adb(['root']);
             await this.awaitAdb();
         },
 
@@ -182,17 +176,17 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 ({ stdout }) => stdout.split('\n')[0]?.trim()
             ),
         hasCertificateAuthority: (filename) =>
-            execa('adb', ['shell', 'ls', `/system/etc/security/cacerts/${filename}`], { reject: false }).then(
+            adb(['shell', 'ls', `/system/etc/security/cacerts/${filename}`], { reject: false }).then(
                 ({ exitCode }) => exitCode === 0
             ),
         overlayTmpfs: async (directoryPath) => {
-            const isTmpfsAlready = (await execa('adb', ['shell', 'mount'])).stdout
+            const isTmpfsAlready = (await adb(['shell', 'mount'])).stdout
                 .split('\n')
                 .some((line) => line.includes(directoryPath) && line.includes('type tmpfs'));
             if (isTmpfsAlready) return;
 
-            await execa('adb', ['shell', 'mkdir', '-pm', '600', '/data/local/tmp/appstraction-overlay-tmpfs-tmp']);
-            await execa('adb', [
+            await adb(['shell', 'mkdir', '-pm', '600', '/data/local/tmp/appstraction-overlay-tmpfs-tmp']);
+            await adb([
                 'shell',
                 'cp',
                 '--preserve=all',
@@ -200,8 +194,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 '/data/local/tmp/appstraction-overlay-tmpfs-tmp',
             ]);
 
-            await execa('adb', ['shell', 'mount', '-t', 'tmpfs', 'tmpfs', directoryPath]);
-            await execa('adb', [
+            await adb(['shell', 'mount', '-t', 'tmpfs', 'tmpfs', directoryPath]);
+            await adb([
                 'shell',
                 'cp',
                 '--preserve=all',
@@ -209,12 +203,12 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 directoryPath,
             ]);
 
-            await execa('adb', ['shell', 'rm', '-r', '/data/local/tmp/appstraction-overlay-tmpfs-tmp']);
+            await adb(['shell', 'rm', '-r', '/data/local/tmp/appstraction-overlay-tmpfs-tmp']);
         },
 
         // Note that this is only a fairly crude check, cf.
         // https://github.com/tweaselORG/meta/issues/19#issuecomment-1446285561.
-        isVpnEnabled: async () => (await execa('adb', ['shell', 'ifconfig', 'tun0'], { reject: false })).exitCode === 0,
+        isVpnEnabled: async () => (await adb(['shell', 'ifconfig', 'tun0'], { reject: false })).exitCode === 0,
         installMultiApk: async (apks: string[]) => {
             const apkMeta = await Promise.all(
                 apks.map((path) =>
@@ -228,7 +222,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             const appIds = new Set(apkMeta.map((m) => m.id));
             if (appIds.size > 1) throw new Error('Failed to install app: Split APKs for different apps provided.');
 
-            const androidArches = await execa('adb', ['shell', 'getprop', 'ro.product.cpu.abilist']).then((r) =>
+            const androidArches = await adb(['shell', 'getprop', 'ro.product.cpu.abilist']).then((r) =>
                 r.stdout.split(',')
             );
             const androidArchMap = {
@@ -257,7 +251,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                     `Failed to install app: App doesn't support device's architectures (${androidArches}).`
                 );
 
-            await execa('adb', ['install-multiple', ...apksForArches]);
+            await adb(['install-multiple', ...apksForArches]);
             return appIds.values().next().value;
         },
     },
@@ -267,7 +261,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
         // Annoyingly, this command doesn't return a non-zero exit code if it fails (e.g. if the snapshot doesn't
         // exist). It only prints to stdout (not even stderr -.-).
-        const { stdout } = await execa('adb', ['emu', 'avd', 'snapshot', 'load', snapshotName]);
+        const { stdout } = await adb(['emu', 'avd', 'snapshot', 'load', snapshotName]);
         if (stdout.includes('KO')) throw new Error(`Failed to load snapshot: ${stdout}.`);
 
         await this.ensureDevice();
@@ -311,8 +305,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
             // Enable remote control in config if necessary.
             const remoteControlEnabled = async () => {
-                const { stdout: config } = await execa(
-                    'adb',
+                const { stdout: config } = await adb(
                     ['shell', 'cat /data/data/com.wireguard.android/files/datastore/settings.preferences_pb'],
                     { reject: false }
                 );
@@ -328,14 +321,14 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                         '\n\u0015\n\u000frestore_on_boot\u0012\u0002\b\u0000\n\u0010\n\ndark_theme\u0012\u0002\b\u0000\n\u0016\n\u0010multiple_tunnels\u0012\u0002\b\u0000\n"\n\u001callow_remote_control_intents\u0012\u0002\b\u0001';
                     const configAsBase64 = Buffer.from(config).toString('base64');
 
-                    const { stdout: appUser } = await execa('adb', [
+                    const { stdout: appUser } = await adb([
                         'shell',
                         'stat',
                         '-c',
                         '%U',
                         '/data/data/com.wireguard.android',
                     ]);
-                    await execa('adb', [
+                    await adb([
                         'shell',
                         'su',
                         appUser,
@@ -343,7 +336,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                         '-c',
                         '"mkdir -p /data/data/com.wireguard.android/files/datastore"',
                     ]);
-                    await execa('adb', [
+                    await adb([
                         'shell',
                         'su',
                         appUser,
@@ -362,18 +355,18 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 }
             }
 
-            await execa('adb', ['shell', 'cmd', 'appops', 'set', 'com.wireguard.android', 'ACTIVATE_VPN', 'allow']);
+            await adb(['shell', 'cmd', 'appops', 'set', 'com.wireguard.android', 'ACTIVATE_VPN', 'allow']);
         }
     },
     clearStuckModals: async () => {
         // Press back button.
-        await execa('adb', ['shell', 'input', 'keyevent', '4']);
+        await adb(['shell', 'input', 'keyevent', '4']);
         // Press home button.
-        await execa('adb', ['shell', 'input', 'keyevent', '3']);
+        await adb(['shell', 'input', 'keyevent', '3']);
     },
 
     isAppInstalled: async (appId) => {
-        const { stdout } = await execa('adb', ['shell', 'cmd', 'package', 'list', 'packages', appId]);
+        const { stdout } = await adb(['shell', 'cmd', 'package', 'list', 'packages', appId]);
         return stdout.includes(`package:${appId}`);
     },
     async installApp(apkPath, obbPaths) {
@@ -392,7 +385,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 const expansionFileNames = manifestJson.expansions?.map((expansion) => expansion.file);
                 const apkFileNames = manifestJson.split_apks?.map((apk) => apk.file);
                 const tmpApks: string[] = [];
-                const externalStorageDir = (await execa('adb', ['shell', 'echo', '$EXTERNAL_STORAGE'])).stdout;
+                const externalStorageDir = (await adb(['shell', 'echo', '$EXTERNAL_STORAGE'])).stdout;
                 const obbPaths: string[] = [];
 
                 if (expansionFileNames?.length && expansionFileNames.length > 0) {
@@ -410,11 +403,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                             // only way to handle this
                             // (https://github.com/tweaselORG/appstraction/issues/63#issuecomment-1514822176).
                             return tmpFileFromZipEntry(zipFile, entry).then(async (tmpFile) => {
-                                await execa('adb', [
-                                    'push',
-                                    tmpFile,
-                                    `${externalStorageDir}/${expansion.install_path}`,
-                                ]);
+                                await adb(['push', tmpFile, `${externalStorageDir}/${expansion.install_path}`]);
                                 obbPaths.push(`${externalStorageDir}/${expansion.install_path}`);
                                 await rm(tmpFile);
                             });
@@ -426,7 +415,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 try {
                     appId = await this._internal.installMultiApk(tmpApks);
                 } catch (err) {
-                    await Promise.all(obbPaths.map((obbPath) => execa('adb', ['shell', 'rm', obbPath])));
+                    await Promise.all(obbPaths.map((obbPath) => adb(['shell', 'rm', obbPath])));
                     throw err;
                 }
 
@@ -456,10 +445,10 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
         if (obbPaths && obbPaths.length > 0) {
             await this._internal.requireRoot('writing to external storage in installApp');
-            const externalStorageDir = (await execa('adb', ['shell', 'echo', '$EXTERNAL_STORAGE'])).stdout;
+            const externalStorageDir = (await adb(['shell', 'echo', '$EXTERNAL_STORAGE'])).stdout;
             await Promise.all(
                 obbPaths.map((obbPath) =>
-                    execa('adb', [
+                    adb([
                         'push',
                         obbPath.obb,
                         `${externalStorageDir}/${
@@ -471,7 +460,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         }
     },
     uninstallApp: async (appId) => {
-        await execa('adb', ['shell', 'pm', 'uninstall', '--user', '0', appId]).catch((err) => {
+        await adb(['shell', 'pm', 'uninstall', '--user', '0', appId]).catch((err) => {
             // Don't fail if app wasn't installed.
             if (!err.stdout.includes('not installed for 0')) throw err;
         });
@@ -479,7 +468,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     setAppPermissions: async (appId, _permissions) => {
         const getAllPermissions = () =>
             // The `-g` is required to also get the runtime permissions, see https://github.com/tweaselORG/appstraction/issues/15#issuecomment-1420771931.
-            execa('adb', ['shell', 'pm', 'list', 'permissions', '-u', '-g'])
+            adb(['shell', 'pm', 'list', 'permissions', '-u', '-g'])
                 .then((r) => r.stdout)
                 .then((stdout) =>
                     stdout
@@ -496,7 +485,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             const command = { allow: 'grant', deny: 'revoke' }[value!];
 
             // We expect this to fail for unchangeable permissions and those the app doesn't want.
-            await execa('adb', ['shell', 'pm', command, appId, permission]).catch((err) => {
+            await adb(['shell', 'pm', command, appId, permission]).catch((err) => {
                 if (
                     err.exitCode === 255 &&
                     (err.stderr.includes('not a changeable permission type') ||
@@ -512,16 +501,16 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     setAppBackgroundBatteryUsage: async (appId, state) => {
         switch (state) {
             case 'unrestricted':
-                await execa('adb', ['shell', 'cmd', 'appops', 'set', appId, 'RUN_ANY_IN_BACKGROUND', 'allow']);
-                await execa('adb', ['shell', 'dumpsys', 'deviceidle', 'whitelist', `+${appId}`]);
+                await adb(['shell', 'cmd', 'appops', 'set', appId, 'RUN_ANY_IN_BACKGROUND', 'allow']);
+                await adb(['shell', 'dumpsys', 'deviceidle', 'whitelist', `+${appId}`]);
                 return;
             case 'optimized':
-                await execa('adb', ['shell', 'cmd', 'appops', 'set', appId, 'RUN_ANY_IN_BACKGROUND', 'allow']);
-                await execa('adb', ['shell', 'dumpsys', 'deviceidle', 'whitelist', `-${appId}`]);
+                await adb(['shell', 'cmd', 'appops', 'set', appId, 'RUN_ANY_IN_BACKGROUND', 'allow']);
+                await adb(['shell', 'dumpsys', 'deviceidle', 'whitelist', `-${appId}`]);
                 return;
             case 'restricted':
-                await execa('adb', ['shell', 'cmd', 'appops', 'set', appId, 'RUN_ANY_IN_BACKGROUND', 'ignore']);
-                await execa('adb', ['shell', 'dumpsys', 'deviceidle', 'whitelist', `-${appId}`]);
+                await adb(['shell', 'cmd', 'appops', 'set', appId, 'RUN_ANY_IN_BACKGROUND', 'ignore']);
+                await adb(['shell', 'dumpsys', 'deviceidle', 'whitelist', `-${appId}`]);
                 return;
             default:
                 throw new Error(`Invalid battery optimization state: ${state}`);
@@ -541,22 +530,22 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             return Promise.resolve();
         }
 
-        execa('adb', ['shell', 'monkey', '-p', appId, '-v', '1', '--dbg-no-events']);
+        adb(['shell', 'monkey', '-p', appId, '-v', '1', '--dbg-no-events']);
         return Promise.resolve();
     },
     stopApp: async (appId) => {
-        await execa('adb', ['shell', 'am', 'force-stop', appId]);
+        await adb(['shell', 'am', 'force-stop', appId]);
     },
 
     // Adapted after: https://stackoverflow.com/a/28573364
     getForegroundAppId: async () => {
-        const { stdout } = await execa('adb', ['shell', 'dumpsys', 'activity', 'recents']);
+        const { stdout } = await adb(['shell', 'dumpsys', 'activity', 'recents']);
         const foregroundLine = stdout.split('\n').find((l) => l.includes('Recent #0'));
         const [, appId] = Array.from(foregroundLine?.match(/A=\d+:(.+?) U=/) || []);
         return appId ? appId.trim() : undefined;
     },
     getPidForAppId: async (appId) => {
-        const { stdout } = await execa('adb', ['shell', 'pidof', '-s', appId]);
+        const { stdout } = await adb(['shell', 'pidof', '-s', appId]);
         return parseInt(stdout, 10);
     },
     async getPrefs(appId) {
@@ -597,7 +586,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         // https://github.com/httptoolkit/httptoolkit-server/blob/9658bef164fb5cfce13b2c4b1bedacc158767f57/src/interceptors/android/adb-commands.ts#L228-L230
         await this._internal.overlayTmpfs('/system/etc/security/cacerts');
 
-        await execa('adb', ['push', path, `/system/etc/security/cacerts/${certFilename}`]);
+        await adb(['push', path, `/system/etc/security/cacerts/${certFilename}`]);
     },
     async removeCertificateAuthority(path) {
         const certFilename = `${await this._internal.getCertificateSubjectHashOld(path)}.0`;
@@ -607,7 +596,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         await this._internal.requireRoot('removeCertificateAuthority');
 
         await this._internal.overlayTmpfs('/system/etc/security/cacerts');
-        await execa('adb', ['shell', 'rm', `/system/etc/security/cacerts/${certFilename}`]);
+        await adb(['shell', 'rm', `/system/etc/security/cacerts/${certFilename}`]);
     },
     async setProxy(_proxy) {
         // We are dealing with a WireGuard tunnel.
@@ -621,7 +610,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             const config = _proxy as WireGuardConfig | null;
 
             const deleteConfig = async () => {
-                await execa('adb', ['shell', 'rm', '-f', `/data/data/com.wireguard.android/files/${tunnelName}.conf`], {
+                await adb(['shell', 'rm', '-f', `/data/data/com.wireguard.android/files/${tunnelName}.conf`], {
                     reject: false,
                 });
                 // We need to restart the WireGuard app, otherwise it will still show the deleted config.
@@ -629,7 +618,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             };
 
             if (config === null) {
-                await execa('adb', [
+                await adb([
                     'shell',
                     'am',
                     'broadcast',
@@ -655,14 +644,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
             await this._internal.requireRoot('enabling a WireGuard tunnel');
 
-            const { stdout: appUser } = await execa('adb', [
-                'shell',
-                'stat',
-                '-c',
-                '%U',
-                '/data/data/com.wireguard.android',
-            ]);
-            await execa('adb', [
+            const { stdout: appUser } = await adb(['shell', 'stat', '-c', '%U', '/data/data/com.wireguard.android']);
+            await adb([
                 'shell',
                 'su',
                 appUser,
@@ -674,7 +657,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             // We need to restart the WireGuard app for it to recognize our new tunnel config.
             await this.stopApp('com.wireguard.android');
 
-            await execa('adb', [
+            await adb([
                 'shell',
                 'am',
                 'broadcast',
@@ -700,11 +683,9 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         // We are dealing with a regular global proxy.
         const proxy = _proxy as Proxy | null;
 
-        const putSetting = (key: string, value: string) =>
-            execa('adb', ['shell', 'settings', 'put', 'global', key, value]);
-        const deleteSetting = (key: string) => execa('adb', ['shell', 'settings', 'delete', 'global', key]);
-        const getSetting = (key: string) =>
-            execa('adb', ['shell', 'settings', 'get', 'global', key]).then((r) => r.stdout);
+        const putSetting = (key: string, value: string) => adb(['shell', 'settings', 'put', 'global', key, value]);
+        const deleteSetting = (key: string) => adb(['shell', 'settings', 'delete', 'global', key]);
+        const getSetting = (key: string) => adb(['shell', 'settings', 'get', 'global', key]).then((r) => r.stdout);
 
         // Regardless of whether we want to set or remove the proxy, we don't want proxy auto-config to interfere.
         await deleteSetting('global_proxy_pac_url');

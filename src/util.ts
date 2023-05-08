@@ -1,4 +1,4 @@
-import { execa } from 'execa';
+import { runAndroidDevTool } from 'andromatic';
 import { fileTypeFromFile } from 'file-type';
 import type { TargetProcess } from 'frida';
 import frida from 'frida';
@@ -83,7 +83,7 @@ export const parseAppMeta = async <Platform extends SupportedPlatform>(
         const parseApk = async (apkPath: string) => {
             // This sometimes fails with `AndroidManifest.xml:42: error: ERROR getting 'android:icon' attribute: attribute
             // value reference does not exist` but still has the correct version in the output.
-            const { stdout } = await execa('aapt', ['dump', 'badging', apkPath], { reject: false });
+            const { stdout } = await runAndroidDevTool('aapt', ['dump', 'badging', apkPath], { reject: false });
 
             const id = stdout.match(/package: name='(.*?)'/)?.[1];
             if (!id) return undefined;
@@ -304,6 +304,10 @@ export const tmpFileFromZipEntry = async <Extension extends string>(
             stream.pipe(createWriteStream(tmpFile).on('finish', () => resolve(tmpFile)));
         });
     });
+
+// Taken from: https://stackoverflow.com/a/67605309
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ParametersExceptFirst<F> = F extends (arg0: any, ...rest: infer R) => any ? R : never;
 
 export type XapkManifest = {
     expansions?: { file: string; install_location: string; install_path: string }[];
