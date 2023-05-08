@@ -30,7 +30,7 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
 
     console.log('Installed already?', await android.isAppInstalled(appId));
 
-    await android.installApp(`${appPath}/${appId}/*.apk`);
+    await android.installApp(`${appPath}/${appId}/${appId}.apk`);
     await android.setAppBackgroundBatteryUsage(appId, 'unrestricted');
     // First, grant all permissions.
     await android.setAppPermissions(appId);
