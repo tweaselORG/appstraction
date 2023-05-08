@@ -42,7 +42,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:878](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L878)
+[android.ts:859](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L859)
 
 ___
 
@@ -319,7 +319,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:747](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L747)
+[android.ts:728](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L728)
 
 ___
 
@@ -407,7 +407,7 @@ Get the API object with the functions for the given platform and run target.
 | Name | Type |
 | :------ | :------ |
 | `Platform` | extends [`SupportedPlatform`](README.md#supportedplatform) |
-| `RunTarget` | extends ``"device"`` \| ``"emulator"`` |
+| `RunTarget` | extends ``"emulator"`` \| ``"device"`` |
 | `Capabilities` | extends [`SupportedCapability`](README.md#supportedcapability)<`Platform`\>[] |
 
 #### Parameters
