@@ -1,15 +1,17 @@
 import { execa } from 'execa';
+import { fileTypeFromFile } from 'file-type';
 import type { TargetProcess } from 'frida';
 import frida from 'frida';
 import { createWriteStream } from 'fs';
 import fs from 'fs-extra';
 import type { FileHandle } from 'fs/promises';
+import { open } from 'fs/promises';
 import _ipaInfo from 'ipa-extract-info';
 import type { Readable } from 'stream';
 import { temporaryFile } from 'tempy';
 import type { Entry, ZipFile } from 'yauzl';
 import { fromFd } from 'yauzl';
-import type { SupportedPlatform } from './index';
+import type { AppPath, SupportedPlatform } from './index';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 export const asyncNop = async () => {};
@@ -54,15 +56,17 @@ export const pause = (durationInMs: number) =>
  * - `architectures`: The architectures the device needs to support to run the app. On Android, this will be empty for
  *   apps that don't have native code.
  *
- * @param appPath Path to the app file (`.ipa` on iOS, `.apk` on Android) to get the metadata of.
+ * @param appPath Path to the app file (`.ipa` on iOS, `.apk` on Android) to get the metadata of. On Android, this can
+ *   also be an array of the paths of the split APKs of a single app or the following custom APK bundle formats:
+ *   `.xapk`, `.apkm` and `.apks`.
  * @param platform The platform the app file is for. If not provided, it will be inferred from the file extension.
  *
  * @returns An object with the properties listed above, or `undefined` if the file doesn't exist or is not a valid app
  *   for the platform.
  */
-export const parseAppMeta = async (
-    appPath: string,
-    _platform?: SupportedPlatform
+export const parseAppMeta = async <Platform extends SupportedPlatform>(
+    appPath: AppPath<Platform>,
+    _platform?: Platform
 ): Promise<
     | {
           id: string;
@@ -73,45 +77,84 @@ export const parseAppMeta = async (
       }
     | undefined
 > => {
-    const platform = _platform ?? (appPath.endsWith('.ipa') ? 'ios' : 'android');
+    const platform = _platform ?? (typeof appPath === 'string' && appPath.endsWith('.ipa') ? 'ios' : 'android');
 
     if (platform === 'android') {
-        // This sometimes fails with `AndroidManifest.xml:42: error: ERROR getting 'android:icon' attribute: attribute
-        // value reference does not exist` but still has the correct version in the output.
-        const { stdout } = await execa('aapt', ['dump', 'badging', appPath], { reject: false });
+        const parseApk = async (apkPath: string) => {
+            // This sometimes fails with `AndroidManifest.xml:42: error: ERROR getting 'android:icon' attribute: attribute
+            // value reference does not exist` but still has the correct version in the output.
+            const { stdout } = await execa('aapt', ['dump', 'badging', apkPath], { reject: false });
 
-        const id = stdout.match(/package: name='(.*?)'/)?.[1];
-        if (!id) return undefined;
+            const id = stdout.match(/package: name='(.*?)'/)?.[1];
+            if (!id) return undefined;
 
-        const nativeCode =
-            stdout
-                .match(/native-code: (.+)/)?.[1]
-                ?.split(' ')
-                .map((s) => s.replace(/'/g, ''))
-                .filter(Boolean) ?? [];
-        // See: https://github.com/tweaselORG/appstraction/issues/4#issuecomment-1485068617 and
-        // https://android.stackexchange.com/a/168320
-        const architectureNativeCodeMap = {
-            arm: 'armeabi-v7a',
-            arm64: 'arm64-v8a',
-            x86: 'x86',
-            // eslint-disable-next-line camelcase
-            x86_64: 'x86_64',
-            mips: 'mips',
-            mips64: 'mips64',
-        } as const;
+            const nativeCode =
+                stdout
+                    .match(/native-code: (.+)/)?.[1]
+                    ?.split(' ')
+                    .map((s) => s.replace(/'/g, ''))
+                    .filter(Boolean) ?? [];
+            // See: https://github.com/tweaselORG/appstraction/issues/4#issuecomment-1485068617 and
+            // https://android.stackexchange.com/a/168320
+            const architectureNativeCodeMap = {
+                arm: 'armeabi-v7a',
+                arm64: 'arm64-v8a',
+                x86: 'x86',
+                // eslint-disable-next-line camelcase
+                x86_64: 'x86_64',
+                mips: 'mips',
+                mips64: 'mips64',
+            } as const;
 
-        return {
-            id,
-            name: stdout.match(/application-label:'(.*?)'/)?.[1],
-            version: stdout.match(/versionName='([^']+?)'/)?.[1],
-            versionCode: stdout.match(/versionCode='([^']+?)'/)?.[1],
-            architectures: (
-                Object.keys(architectureNativeCodeMap) as (keyof typeof architectureNativeCodeMap)[]
-            ).filter((a) => nativeCode.includes(architectureNativeCodeMap[a])),
+            return {
+                id,
+                name: stdout.match(/application-label:'(.*?)'/)?.[1],
+                version: stdout.match(/versionName='([^']+?)'/)?.[1],
+                versionCode: stdout.match(/versionCode='([^']+?)'/)?.[1],
+                architectures: (
+                    Object.keys(architectureNativeCodeMap) as (keyof typeof architectureNativeCodeMap)[]
+                ).filter((a) => nativeCode.includes(architectureNativeCodeMap[a])),
+                isSplit: stdout.includes("split='"),
+            };
         };
+
+        if (Array.isArray(appPath)) {
+            for (const apkPath of appPath) {
+                const meta = await parseApk(apkPath);
+                if (!meta?.isSplit) return meta;
+            }
+
+            return undefined;
+        } else if (appPath.endsWith('.xapk')) {
+            const xapk = await open(appPath);
+            return await getFileFromZip(xapk, 'manifest.json').then(async (manifest) => {
+                if (!manifest) return undefined;
+                const manifestString = await new Promise<string>((resolve) => {
+                    let result = '';
+                    manifest.on('data', (chunk) => (result += chunk.toString()));
+                    manifest.on('end', () => resolve(result));
+                });
+                const manifestJson: XapkManifest = JSON.parse(manifestString);
+                const baseApkFileName = manifestJson.split_apks?.find((apk) => apk.id === 'base');
+                const baseApkPath = baseApkFileName && (await writeFileFromZipToTmp(xapk, baseApkFileName.file));
+                await xapk.close();
+                return baseApkPath ? parseApk(baseApkPath) : undefined;
+            });
+        } else if (appPath.endsWith('.apkm') || appPath.endsWith('.apks')) {
+            if ((await fileTypeFromFile(appPath))?.mime !== 'application/zip')
+                throw new Error(
+                    'Failed to parse app meta: Encrypted apkm files are not supported, use the newer zip format instead.'
+                );
+
+            const bundle = await open(appPath);
+            const baseApkPath = await writeFileFromZipToTmp(bundle, 'base.apk');
+            await bundle.close();
+            return baseApkPath ? parseApk(baseApkPath) : undefined;
+        }
+
+        return parseApk(appPath);
     } else if (platform === 'ios') {
-        const meta = await ipaInfo(appPath);
+        const meta = await ipaInfo(appPath as AppPath<'ios'>);
 
         const id = meta.info['CFBundleIdentifier'] as string | undefined;
         if (!id) return undefined;
@@ -138,7 +181,7 @@ export const parseAppMeta = async (
     throw new Error(`Unsupported platform "${platform}".`);
 };
 
-export const ipaInfo = async (ipaPath: string) => {
+export const ipaInfo = async (ipaPath: `${string}.ipa`) => {
     const fd = await fs.open(ipaPath, 'r');
     return await _ipaInfo(fd);
 };
@@ -224,6 +267,22 @@ export const getFileFromZip = async (zip: FileHandle, filename: string) =>
             })
     );
 
+export const writeFileFromZipToTmp = async (zip: FileHandle, filename: string) =>
+    openZipFile(zip).then(
+        (zipFile) =>
+            new Promise<string | void>((resolve) => {
+                zipFile.readEntry();
+                zipFile.on('entry', (entry: Entry) => {
+                    if (entry.fileName !== filename) {
+                        zipFile.readEntry();
+                        return;
+                    }
+                    tmpFileFromZipEntry(zipFile, entry).then((tmpFile) => resolve(tmpFile));
+                });
+                zipFile.on('end', () => resolve());
+            })
+    );
+
 /**
  * Write the contents of a zip entry to a temporary file.
  *
@@ -245,3 +304,8 @@ export const tmpFileFromZipEntry = async <Extension extends string>(
             stream.pipe(createWriteStream(tmpFile).on('finish', () => resolve(tmpFile)));
         });
     });
+
+export type XapkManifest = {
+    expansions?: { file: string; install_location: string; install_path: string }[];
+    split_apks?: { file: string; id: string }[];
+};

@@ -17,6 +17,7 @@ import type {
     WireGuardConfig,
 } from '.';
 import { dependencies } from '../package.json';
+import type { XapkManifest } from './util';
 import {
     asyncUnimplemented,
     forEachInZip,
@@ -217,7 +218,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         installMultiApk: async (apks: string[]) => {
             const apkMeta = await Promise.all(
                 apks.map((path) =>
-                    parseAppMeta(path).then((m) => {
+                    parseAppMeta(path as `${string}.apk`).then((m) => {
                         if (!m) throw new Error(`Failed to install app: "${path}" is not a valid APK.`);
                         return { path, ...m };
                     })
@@ -378,10 +379,6 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     async installApp(apkPath, obbPaths) {
         let appId = '';
         if (typeof apkPath === 'string' && apkPath.endsWith('.xapk')) {
-            type xapkManifest = {
-                expansions?: { file: string; install_location: string; install_path: string }[];
-                split_apks?: { file: string }[];
-            };
             const xapk = await open(apkPath);
             await getFileFromZip(xapk, 'manifest.json').then(async (manifest) => {
                 if (!manifest) throw new Error('Failed to install app: manifest.json not found in XAPK.');
@@ -390,7 +387,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                     manifest.on('data', (chunk) => (result += chunk.toString()));
                     manifest.on('end', () => resolve(result));
                 });
-                const manifestJson: xapkManifest = JSON.parse(manifestString);
+                const manifestJson: XapkManifest = JSON.parse(manifestString);
 
                 const expansionFileNames = manifestJson.expansions?.map((expansion) => expansion.file);
                 const apkFileNames = manifestJson.split_apks?.map((apk) => apk.file);

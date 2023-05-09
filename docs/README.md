@@ -42,7 +42,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:881](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L881)
+[android.ts:878](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L878)
 
 ___
 
@@ -172,8 +172,8 @@ Functions that are available for the platforms.
 | `startApp` | (`appId`: `string`) => `Promise`<`void`\> | Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning bypass if enabled. Requires the `frida` or `ssh` capability on iOS. On Android, this will start the app with or without a certificate pinning bypass depending on the `certificate-pinning-bypass` capability. |
 | `stopApp` | (`appId`: `string`) => `Promise`<`void`\> | Force-stop the app with the given app ID. |
 | `target` | { `platform`: `Platform` ; `runTarget`: `RunTarget`  } | An indicator for what platform and run target this instance of PlatformApi is configured for. This is useful mostly to write typeguards. |
-| `target.platform` | `Platform` | The platform this instance is configured for, e.g. `ios` or `android`. |
-| `target.runTarget` | `RunTarget` | The run target this instance is configured for, e.g. `device` or `emulator`. |
+| `target.platform` | `Platform` | The platform this instance is configured for, i.e. `ios` or `android`. |
+| `target.runTarget` | `RunTarget` | The run target this instance is configured for, i.e. `device` or `emulator`. |
 | `uninstallApp` | (`appId`: `string`) => `Promise`<`void`\> | Uninstall the app with the given app ID. Will not fail if the app is not installed. This also removes any data stored by the app. |
 
 #### Defined in
@@ -319,7 +319,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:750](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L750)
+[android.ts:747](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L747)
 
 ___
 
@@ -337,7 +337,7 @@ The IDs of known permissions on iOS.
 
 ### parseAppMeta
 
-▸ **parseAppMeta**(`appPath`, `_platform?`): `Promise`<`undefined` \| { `architectures`: (``"arm64"`` \| ``"arm"`` \| ``"x86"`` \| ``"x86_64"`` \| ``"mips"`` \| ``"mips64"``)[] ; `id`: `string` ; `name?`: `string` ; `version?`: `string` ; `versionCode?`: `string`  }\>
+▸ **parseAppMeta**<`Platform`\>(`appPath`, `_platform?`): `Promise`<`undefined` \| { `architectures`: (``"arm64"`` \| ``"arm"`` \| ``"x86"`` \| ``"x86_64"`` \| ``"mips"`` \| ``"mips64"``)[] ; `id`: `string` ; `name?`: `string` ; `version?`: `string` ; `versionCode?`: `string`  }\>
 
 Get metadata about the app at the given path. This includes the following properties:
 
@@ -348,12 +348,18 @@ Get metadata about the app at the given path. This includes the following proper
 - `architectures`: The architectures the device needs to support to run the app. On Android, this will be empty for
   apps that don't have native code.
 
+#### Type parameters
+
+| Name | Type |
+| :------ | :------ |
+| `Platform` | extends [`SupportedPlatform`](README.md#supportedplatform) |
+
 #### Parameters
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `appPath` | `string` | Path to the app file (`.ipa` on iOS, `.apk` on Android) to get the metadata of. |
-| `_platform?` | [`SupportedPlatform`](README.md#supportedplatform) | - |
+| `appPath` | [`AppPath`](README.md#apppath)<`Platform`\> | Path to the app file (`.ipa` on iOS, `.apk` on Android) to get the metadata of. On Android, this can also be an array of the paths of the split APKs of a single app or the following custom APK bundle formats: `.xapk`, `.apkm` and `.apks`. |
+| `_platform?` | `Platform` | - |
 
 #### Returns
 
@@ -364,7 +370,7 @@ An object with the properties listed above, or `undefined` if the file doesn't e
 
 #### Defined in
 
-[util.ts:63](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L63)
+[util.ts:67](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L67)
 
 ___
 
@@ -386,7 +392,7 @@ Pause for a given duration.
 
 #### Defined in
 
-[util.ts:42](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L42)
+[util.ts:44](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L44)
 
 ___
 
