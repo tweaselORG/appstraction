@@ -31,7 +31,7 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
 
     await ios.setClipboard('I copied this.');
 
-    const appMeta = await parseAppMeta(appPath);
+    const appMeta = await parseAppMeta(appPath as `${string}.ipa`);
     if (!appMeta) throw new Error('Invalid app.');
     const appId = appMeta.id;
     console.log('App:', appId, '@', appMeta.version);
