@@ -267,7 +267,16 @@ export type PlatformApi<
         : Platform extends 'ios'
         ? (proxy: Proxy | null) => Promise<void>
         : never;
-
+    /**
+     * An indicator for what platform and run target this instance of PlatformApi is configured for. This is useful
+     * mostly to write typeguards.
+     */
+    readonly target: {
+        /** The platform this instance is configured for, e.g. `ios` or `android`. */
+        platform: Platform;
+        /** The run target this instance is configured for, e.g. `device` or `emulator`. */
+        runTarget: RunTarget;
+    };
     /** @ignore */
     _internal: Platform extends 'android'
         ? {

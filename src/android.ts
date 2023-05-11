@@ -53,6 +53,7 @@ send({ name: "get_obj_from_frida_script", payload: true });`,
 export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     options: PlatformApiOptions<'android', RunTarget, SupportedCapability<'android'>[]>
 ): PlatformApi<'android', 'device' | 'emulator', SupportedCapability<'android'>[]> => ({
+    target: { platform: 'android', runTarget: options.runTarget },
     _internal: {
         objectionProcesses: [],
 

@@ -42,7 +42,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:880](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L880)
+[android.ts:881](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L881)
 
 ___
 
@@ -81,7 +81,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:357](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L357)
+[index.ts:366](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L366)
 
 ___
 
@@ -100,7 +100,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:363](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L363)
+[index.ts:372](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L372)
 
 ___
 
@@ -112,7 +112,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:382](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L382)
+[ios.ts:383](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L383)
 
 ___
 
@@ -171,6 +171,9 @@ Functions that are available for the platforms.
 | `setProxy` | `Platform` extends ``"android"`` ? (`proxy`: ``"wireguard"`` extends `Capability` ? [`WireGuardConfig`](README.md#wireguardconfig) : [`Proxy`](README.md#proxy) \| ``null``) => `Promise`<`void`\> : `Platform` extends ``"ios"`` ? (`proxy`: [`Proxy`](README.md#proxy) \| ``null``) => `Promise`<`void`\> : `never` | Set or disable the proxy on the device. If you have enabled the `wireguard` capability, this will start or stop a WireGuard tunnel. Otherwise, it will set the global proxy on the device. On iOS, the proxy is set for the current WiFi network. It won't apply for other networks or for cellular data connections. WireGuard is currently only supported on Android. Enabling a WireGuard tunnel requires the `root` capability. **`Remarks`** The WireGuard integration will create a new tunnel in the app called `appstraction` and delete it when the proxy is stopped. If you have an existing tunnel with the same name, it will be overridden. **`Param`** The proxy to set, or `null` to disable the proxy. If you have enabled the `wireguard` capability, this is a string of the full WireGuard configuration to use. |
 | `startApp` | (`appId`: `string`) => `Promise`<`void`\> | Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning bypass if enabled. Requires the `frida` or `ssh` capability on iOS. On Android, this will start the app with or without a certificate pinning bypass depending on the `certificate-pinning-bypass` capability. |
 | `stopApp` | (`appId`: `string`) => `Promise`<`void`\> | Force-stop the app with the given app ID. |
+| `target` | { `platform`: `Platform` ; `runTarget`: `RunTarget`  } | An indicator for what platform and run target this instance of PlatformApi is configured for. This is useful mostly to write typeguards. |
+| `target.platform` | `Platform` | The platform this instance is configured for, e.g. `ios` or `android`. |
+| `target.runTarget` | `RunTarget` | The run target this instance is configured for, e.g. `device` or `emulator`. |
 | `uninstallApp` | (`appId`: `string`) => `Promise`<`void`\> | Uninstall the app with the given app ID. Will not fail if the app is not installed. This also removes any data stored by the app. |
 
 #### Defined in
@@ -195,7 +198,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:295](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L295)
+[index.ts:304](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L304)
 
 ___
 
@@ -214,7 +217,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:371](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L371)
+[index.ts:380](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L380)
 
 ___
 
@@ -244,7 +247,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:322](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L322)
+[index.ts:331](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L331)
 
 ___
 
@@ -262,7 +265,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:350](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L350)
+[index.ts:359](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L359)
 
 ___
 
@@ -304,7 +307,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:378](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L378)
+[index.ts:387](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L387)
 
 ## Variables
 
@@ -316,7 +319,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:749](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L749)
+[android.ts:750](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L750)
 
 ___
 
@@ -328,7 +331,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:365](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L365)
+[ios.ts:366](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L366)
 
 ## Functions
 
@@ -415,4 +418,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:387](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L387)
+[index.ts:396](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L396)
