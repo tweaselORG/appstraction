@@ -304,6 +304,7 @@ export type PlatformApi<
         : Platform extends 'ios'
         ? {
               ssh: NodeSSH['execCommand'];
+              setupEnvironment: () => Promise<void>;
           }
         : never;
 };

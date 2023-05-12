@@ -144,6 +144,41 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
             ssh.dispose();
             return res;
         },
+        async setupEnvironment() {
+            if (!options.capabilities.includes('ssh'))
+                throw new Error('SSH is required for setting up the environment.');
+
+            if ((await this.ssh('stat /etc/apt/sources.list.d/appstraction.sources')).code === 0) return;
+
+            const neededPackages = [
+                're.frida.server',
+                'sqlite3',
+                'com.conradkramer.open',
+                'com.julioverne.sslkillswitch2',
+            ];
+            const { stdout: packageList } = await this.ssh('apt list --installed');
+            const packagesToInstall = neededPackages.filter((p) => !packageList.includes(p));
+
+            if (packagesToInstall.length > 0) {
+                // https://github.com/tweaselORG/appstraction/issues/59
+                await this.ssh(`echo "Types: deb
+URIs: http://apt.thebigboss.org/repofiles/cydia/
+Suites: stable
+Components: main
+
+Types: deb
+URIs: https://build.frida.re/
+Suites: ./
+Components:
+
+Types: deb
+URIs: https://julioverne.github.io/
+Suites: ./
+Components:" > /etc/apt/sources.list.d/appstraction.sources`);
+                await this.ssh('apt --allow-insecure-repositories update');
+                await this.ssh(`apt --allow-unauthenticated -y install ${packagesToInstall.join(' ')}`);
+            }
+        },
     },
 
     resetDevice: asyncUnimplemented('resetDevice') as never,
@@ -187,6 +222,8 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
             } catch (err) {
                 throw new Error('Cannot connect using SSH.', { cause: err });
             }
+
+            await this._internal.setupEnvironment();
         }
     },
     clearStuckModals: asyncUnimplemented('clearStuckModals') as never,
