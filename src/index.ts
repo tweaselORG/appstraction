@@ -272,9 +272,9 @@ export type PlatformApi<
      * mostly to write typeguards.
      */
     readonly target: {
-        /** The platform this instance is configured for, e.g. `ios` or `android`. */
+        /** The platform this instance is configured for, i.e. `ios` or `android`. */
         platform: Platform;
-        /** The run target this instance is configured for, e.g. `device` or `emulator`. */
+        /** The run target this instance is configured for, i.e. `device` or `emulator`. */
         runTarget: RunTarget;
     };
     /** @ignore */
