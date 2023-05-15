@@ -121,6 +121,7 @@ send({ name: "get_obj_from_frida_script", payload: getProxySettingsForCurrentWif
 export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     options: PlatformApiOptions<'ios', RunTarget, SupportedCapability<'ios'>[]>
 ): PlatformApi<'ios', 'device', SupportedCapability<'ios'>[]> => ({
+    target: { platform: 'ios', runTarget: options.runTarget },
     _internal: {
         ssh: async (...args) => {
             const ssh = await new NodeSSH().connect({
