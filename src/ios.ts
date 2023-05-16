@@ -139,6 +139,7 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     },
 
     resetDevice: asyncUnimplemented('resetDevice') as never,
+    waitForDevice: asyncUnimplemented('waitForDevice') as never,
     async ensureDevice() {
         if ((await execa('ideviceinfo', ['-k', 'DeviceName'], { reject: false })).exitCode !== 0)
             throw new Error('You need to connect your device and trust this computer.');

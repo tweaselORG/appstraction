@@ -42,7 +42,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:859](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L859)
+[android.ts:871](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L871)
 
 ___
 
@@ -81,7 +81,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:366](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L366)
+[index.ts:373](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L373)
 
 ___
 
@@ -100,7 +100,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:372](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L372)
+[index.ts:379](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L379)
 
 ___
 
@@ -112,7 +112,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:383](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L383)
+[ios.ts:389](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L389)
 
 ___
 
@@ -175,6 +175,7 @@ Functions that are available for the platforms.
 | `target.platform` | `Platform` | The platform this instance is configured for, i.e. `ios` or `android`. |
 | `target.runTarget` | `RunTarget` | The run target this instance is configured for, i.e. `device` or `emulator`. |
 | `uninstallApp` | (`appId`: `string`) => `Promise`<`void`\> | Uninstall the app with the given app ID. Will not fail if the app is not installed. This also removes any data stored by the app. |
+| `waitForDevice` | (`tries?`: `number`) => `Promise`<`void`\> | Wait until the device or emulator has been connected and has booted up completely. |
 
 #### Defined in
 
@@ -198,7 +199,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:304](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L304)
+[index.ts:311](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L311)
 
 ___
 
@@ -217,7 +218,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:380](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L380)
+[index.ts:387](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L387)
 
 ___
 
@@ -247,7 +248,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:331](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L331)
+[index.ts:338](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L338)
 
 ___
 
@@ -265,7 +266,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:359](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L359)
+[index.ts:366](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L366)
 
 ___
 
@@ -307,7 +308,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:387](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L387)
+[index.ts:394](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L394)
 
 ## Variables
 
@@ -319,7 +320,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:728](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L728)
+[android.ts:740](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L740)
 
 ___
 
@@ -331,7 +332,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:366](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L366)
+[ios.ts:372](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L372)
 
 ## Functions
 
@@ -424,4 +425,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:396](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L396)
+[index.ts:403](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L403)

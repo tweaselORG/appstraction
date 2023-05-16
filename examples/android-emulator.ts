@@ -18,6 +18,9 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
     const caCertPath = process.argv[5];
     const wireguardConfigPath = process.argv[5];
 
+    // Wait until the emulator is completely booted.
+    await android.waitForDevice();
+
     await android.ensureDevice();
     await android.resetDevice(snapshotName);
 
