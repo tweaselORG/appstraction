@@ -65,17 +65,18 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             const adbIsStarted = await retryCondition(async () => {
                 const { stdout: devBootcomplete } = await adb(
                     ['wait-for-device', 'shell', 'getprop', 'dev.bootcomplete'],
-                    { reject: false }
+                    { reject: false, timeout: 200 }
                 );
                 const { stdout: sysBootCompleted } = await adb(
                     ['wait-for-device', 'shell', 'getprop', 'sys.boot_completed'],
-                    { reject: false }
+                    { reject: false, timeout: 200 }
                 );
                 const { stdout: bootanim } = await adb(['wait-for-device', 'shell', 'getprop', 'init.svc.bootanim'], {
                     reject: false,
+                    timeout: 200,
                 });
                 return devBootcomplete.includes('1') && sysBootCompleted.includes('1') && bootanim.includes('stopped');
-            }, 100);
+            }, 20);
             if (!adbIsStarted) throw new Error('Failed to connect via adb.');
         },
         async ensureFrida() {
