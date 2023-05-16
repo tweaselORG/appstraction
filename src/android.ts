@@ -60,25 +60,6 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     target: { platform: 'android', runTarget: options.runTarget },
     _internal: {
         objectionProcesses: [],
-
-        awaitAdb: async () => {
-            const adbIsStarted = await retryCondition(async () => {
-                const { stdout: devBootcomplete } = await adb(
-                    ['wait-for-device', 'shell', 'getprop', 'dev.bootcomplete'],
-                    { reject: false, timeout: 200 }
-                );
-                const { stdout: sysBootCompleted } = await adb(
-                    ['wait-for-device', 'shell', 'getprop', 'sys.boot_completed'],
-                    { reject: false, timeout: 200 }
-                );
-                const { stdout: bootanim } = await adb(['wait-for-device', 'shell', 'getprop', 'init.svc.bootanim'], {
-                    reject: false,
-                    timeout: 200,
-                });
-                return devBootcomplete.includes('1') && sysBootCompleted.includes('1') && bootanim.includes('stopped');
-            }, 20);
-            if (!adbIsStarted) throw new Error('Failed to connect via adb.');
-        },
         async ensureFrida() {
             if (!options.capabilities.includes('frida')) return;
 
@@ -163,11 +144,29 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             );
             if (!fridaIsStarted) throw new Error('Failed to start Frida.');
         },
+        async hasDeviceBooted(options) {
+            const waitForDevice = options?.waitForDevice ?? false;
+            const { stdout: devBootcomplete } = await adb(
+                [...(waitForDevice ? ['wait-for-device'] : []), 'shell', 'getprop', 'dev.bootcomplete'],
+                { reject: false, timeout: 200 }
+            );
+            const { stdout: sysBootCompleted } = await adb(
+                [...(waitForDevice ? ['wait-for-device'] : []), 'shell', 'getprop', 'sys.boot_completed'],
+                { reject: false, timeout: 200 }
+            );
+            const { stdout: bootanim } = await adb(
+                [...(waitForDevice ? ['wait-for-device'] : []), 'shell', 'getprop', 'init.svc.bootanim'],
+                { reject: false, timeout: 200 }
+            );
+            return devBootcomplete.includes('1') && sysBootCompleted.includes('1') && bootanim.includes('stopped');
+        },
         async requireRoot(action) {
             if (!options.capabilities.includes('root')) throw new Error(`Root access is required for ${action}.`);
 
             await adb(['root']);
-            await this.awaitAdb();
+            await adb(['wait-for-device'], { timeout: 2500 }).catch((e) => {
+                throw new Error('Failed to require root: Timed out waiting for device.', { cause: e });
+            });
         },
 
         getCertificateSubjectHashOld: (path: string) =>
@@ -257,6 +256,16 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         },
     },
 
+    async waitForDevice(tries = 20) {
+        if (
+            !(await retryCondition(() => this._internal.hasDeviceBooted({ waitForDevice: true }), tries, 100).catch(
+                (e) => {
+                    throw new Error('Failed to wait for device: Error in adb', { cause: e });
+                }
+            ))
+        )
+            throw new Error('Failed to wait for device: No booted device found after timeout.');
+    },
     async resetDevice(snapshotName) {
         if (options.runTarget !== 'emulator') throw new Error('Resetting devices is only supported for emulators.');
 
@@ -268,12 +277,14 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         await this.ensureDevice();
     },
     async ensureDevice() {
-        await this._internal.awaitAdb().catch((err) => {
+        if (
+            !(await this._internal.hasDeviceBooted().catch((e) => {
+                throw new Error('Failed to look for device: Error in adb', { cause: e });
+            }))
+        )
             throw new Error(
-                options.runTarget === 'device' ? 'You need to connect your device.' : 'You need to start the emulator.',
-                { cause: err }
+                options.runTarget === 'device' ? 'You need to connect your device.' : 'You need to start the emulator.'
             );
-        });
 
         await pRetry(() => this._internal.ensureFrida());
 

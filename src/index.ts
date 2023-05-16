@@ -43,6 +43,13 @@ export type PlatformApi<
     Capability = Capabilities[number]
 > = {
     /**
+     * Wait until the device or emulator has been connected and has booted up completely.
+     *
+     * @param tries The number of times to check if the device is present and booted. One try times out after 6 seconds
+     *   on Android. It defaults to 20.
+     */
+    waitForDevice: Platform extends 'android' ? (tries?: number) => Promise<void> : never;
+    /**
      * Assert that the selected device is connected and ready to be used with the selected capabilities, performing
      * necessary setup steps. This should always be the first function you call.
      *
@@ -280,7 +287,7 @@ export type PlatformApi<
     /** @ignore */
     _internal: Platform extends 'android'
         ? {
-              awaitAdb: () => Promise<void>;
+              hasDeviceBooted: (options?: { waitForDevice?: boolean }) => Promise<boolean>;
               ensureFrida: () => Promise<void>;
               requireRoot: (action: string) => Promise<void>;
 

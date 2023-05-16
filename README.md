@@ -152,6 +152,8 @@ Other functions do need capabilities, though, which you would pass to the `capab
         capabilities: ['frida', 'certificate-pinning-bypass'],
     });
 
+    // Wait until the emulator is completely booted.
+    await android.waitForDevice();
     await android.ensureDevice();
     await android.startApp('<app id>');
     const prefs = await android.getPrefs('<app id>');
