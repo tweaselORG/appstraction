@@ -81,7 +81,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:373](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L373)
+[index.ts:374](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L374)
 
 ___
 
@@ -100,7 +100,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:379](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L379)
+[index.ts:380](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L380)
 
 ___
 
@@ -112,7 +112,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:389](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L389)
+[ios.ts:392](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L392)
 
 ___
 
@@ -199,7 +199,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:311](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L311)
+[index.ts:312](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L312)
 
 ___
 
@@ -218,7 +218,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:387](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L387)
+[index.ts:388](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L388)
 
 ___
 
@@ -248,7 +248,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:338](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L338)
+[index.ts:339](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L339)
 
 ___
 
@@ -266,7 +266,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:366](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L366)
+[index.ts:367](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L367)
 
 ___
 
@@ -308,7 +308,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:394](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L394)
+[index.ts:395](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L395)
 
 ## Variables
 
@@ -332,7 +332,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:372](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L372)
+[ios.ts:375](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L375)
 
 ## Functions
 
@@ -425,4 +425,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:403](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L403)
+[index.ts:404](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L404)

@@ -5,7 +5,7 @@ import { readFile } from 'fs/promises';
 import { NodeSSH } from 'node-ssh';
 import { Certificate } from 'pkijs';
 import type { PlatformApi, PlatformApiOptions, Proxy, SupportedCapability, SupportedRunTarget } from '.';
-import { asyncUnimplemented, getObjFromFridaScript, isRecord } from './util';
+import { asyncUnimplemented, getObjFromFridaScript, isRecord, retryCondition } from './util';
 
 const fridaScripts = {
     getPrefs: `// Taken from: https://codeshare.frida.re/@dki/ios-app-info/
@@ -139,7 +139,15 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     },
 
     resetDevice: asyncUnimplemented('resetDevice') as never,
-    waitForDevice: asyncUnimplemented('waitForDevice') as never,
+    async waitForDevice(tries = 100) {
+        if (
+            !(await retryCondition(
+                async () => (await execa('ideviceinfo', ['-k', 'DeviceName'], { reject: false })).exitCode === 0,
+                tries
+            ))
+        )
+            throw new Error('Failed to wait for device: No booted device found after timeout.');
+    },
     async ensureDevice() {
         if ((await execa('ideviceinfo', ['-k', 'DeviceName'], { reject: false })).exitCode !== 0)
             throw new Error('You need to connect your device and trust this computer.');
