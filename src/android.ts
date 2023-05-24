@@ -1,5 +1,6 @@
 import { decompress as decompressXz } from '@napi-rs/lzma/xz';
 import { runAndroidDevTool } from 'andromatic';
+import { getVenv } from 'autopy';
 import fetch from 'cross-fetch';
 import { execa } from 'execa';
 import { fileTypeFromFile } from 'file-type';
@@ -18,6 +19,7 @@ import type {
     WireGuardConfig,
 } from '.';
 import { dependencies } from '../package.json';
+import { venvOptions } from '../scripts/common/python';
 import type { ParametersExceptFirst, XapkManifest } from './util';
 import {
     asyncUnimplemented,
@@ -31,6 +33,8 @@ import {
 } from './util';
 
 const adb = (...args: ParametersExceptFirst<typeof runAndroidDevTool>) => runAndroidDevTool('adb', args[0], args[1]);
+const venv = getVenv(venvOptions);
+const python = async (...args: Parameters<Awaited<typeof venv>>) => (await venv)(...args);
 
 const fridaScripts = {
     getPrefs: `var app_ctx = Java.use('android.app.ActivityThread').currentApplication().getApplicationContext();
@@ -65,7 +69,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
             // Ensure that the correct version of `frida-tools` is installed for our Frida JS bindings.
             if (!dependencies.frida) throw new Error('Frida dependency not found. This should never happen.');
-            const { stdout: fridaToolsVersion } = await execa('frida', ['--version']);
+            const { stdout: fridaToolsVersion } = await python('frida', ['--version']);
             const fridaToolsMajorVersion = semverMajor(fridaToolsVersion);
             // `dependencies.frida` is not a specific version but a range, so we get the minimum possible version.
             const fridaJsMajorVersion = semverMinVersion(dependencies.frida)?.major;
@@ -130,7 +134,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             }
 
             // Start `frida-server` if it's not already running.
-            const { stdout: fridaCheck } = await execa('frida-ps', ['-U'], { reject: false });
+            const { stdout: fridaCheck } = await python('frida-ps', ['-U'], { reject: false });
             if (fridaCheck.includes('frida-server')) return;
 
             await this.requireRoot('Frida');
@@ -139,7 +143,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             await adb(['shell', '-x', '/data/local/tmp/frida-server', '--daemonize']);
 
             const fridaIsStarted = await retryCondition(
-                async () => (await execa('frida-ps', ['-U'], { reject: false })).stdout.includes('frida-server'),
+                async () => (await python('frida-ps', ['-U'], { reject: false })).stdout.includes('frida-server'),
                 100
             );
             if (!fridaIsStarted) throw new Error('Failed to start Frida.');
@@ -528,10 +532,11 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 throw new Error(`Invalid battery optimization state: ${state}`);
         }
     },
-    startApp(appId) {
+    async startApp(appId) {
         // We deliberately don't await these since objection doesn't exit after the app is started.
         if (options.capabilities.includes('certificate-pinning-bypass')) {
-            const process = execa('objection', [
+            // We use venv() here because we don’t want to await objection, which python() would do.
+            const process = (await venv)('objection', [
                 '--gadget',
                 appId,
                 'explore',

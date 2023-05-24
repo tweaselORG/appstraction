@@ -42,7 +42,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:871](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L871)
+[android.ts:876](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L876)
 
 ___
 
@@ -112,7 +112,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:392](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L392)
+[ios.ts:397](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L397)
 
 ___
 
@@ -320,7 +320,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:740](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L740)
+[android.ts:745](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L745)
 
 ___
 
@@ -332,7 +332,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:375](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L375)
+[ios.ts:380](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L380)
 
 ## Functions
 
