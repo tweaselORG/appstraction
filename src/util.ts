@@ -5,8 +5,9 @@ import frida from 'frida';
 import { createWriteStream } from 'fs';
 import fs from 'fs-extra';
 import type { FileHandle } from 'fs/promises';
-import { open } from 'fs/promises';
+import { open, readFile } from 'fs/promises';
 import _ipaInfo from 'ipa-extract-info';
+import { Certificate } from 'pkijs';
 import type { Readable } from 'stream';
 import { temporaryFile } from 'tempy';
 import type { Entry, ZipFile } from 'yauzl';
@@ -312,4 +313,14 @@ export type ParametersExceptFirst<F> = F extends (arg0: any, ...rest: infer R) =
 export type XapkManifest = {
     expansions?: { file: string; install_location: string; install_path: string }[];
     split_apks?: { file: string; id: string }[];
+};
+
+export const parsePemCertificateFromFile = async (path: string) => {
+    const certPem = await readFile(path, 'utf8');
+
+    // A PEM certificate is just a base64-encoded DER certificate with a header and footer.
+    const certBase64 = certPem.replace(/(-----(BEGIN|END) CERTIFICATE-----|[\r\n])/g, '');
+    const certDer = Buffer.from(certBase64, 'base64');
+
+    return { cert: Certificate.fromBER(certDer), certPem, certDer };
 };

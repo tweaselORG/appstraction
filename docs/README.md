@@ -42,7 +42,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:876](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L876)
+[android.ts:882](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L882)
 
 ___
 
@@ -112,7 +112,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:397](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L397)
+[ios.ts:393](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L393)
 
 ___
 
@@ -320,7 +320,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:745](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L745)
+[android.ts:751](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L751)
 
 ___
 
@@ -332,7 +332,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:380](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L380)
+[ios.ts:376](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L376)
 
 ## Functions
 
@@ -371,7 +371,7 @@ An object with the properties listed above, or `undefined` if the file doesn't e
 
 #### Defined in
 
-[util.ts:67](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L67)
+[util.ts:68](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L68)
 
 ___
 
@@ -393,7 +393,7 @@ Pause for a given duration.
 
 #### Defined in
 
-[util.ts:44](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L44)
+[util.ts:45](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L45)
 
 ___
 

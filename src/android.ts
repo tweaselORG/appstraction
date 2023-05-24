@@ -2,7 +2,7 @@ import { decompress as decompressXz } from '@napi-rs/lzma/xz';
 import { runAndroidDevTool } from 'andromatic';
 import { getVenv } from 'autopy';
 import fetch from 'cross-fetch';
-import { execa } from 'execa';
+import { createHash } from 'crypto';
 import { fileTypeFromFile } from 'file-type';
 import frida from 'frida';
 import { open, rm, writeFile } from 'fs/promises';
@@ -28,6 +28,7 @@ import {
     getObjFromFridaScript,
     isRecord,
     parseAppMeta,
+    parsePemCertificateFromFile,
     retryCondition,
     tmpFileFromZipEntry,
 } from './util';
@@ -173,12 +174,17 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             });
         },
 
-        getCertificateSubjectHashOld: (path: string) =>
-            execa('openssl', ['x509', '-inform', 'PEM', '-subject_hash_old', '-in', path]).then(
-                // The `trim()` is necessary for Windows:
-                // https://github.com/tweaselORG/meta/issues/25#issuecomment-1507665763
-                ({ stdout }) => stdout.split('\n')[0]?.trim()
-            ),
+        // This imitates `openssl x509 -inform PEM -subject_hash_old -in <path>`.
+        // See: https://github.com/tweaselORG/appstraction/issues/79
+        getCertificateSubjectHashOld: async (path: string) => {
+            const { cert } = await parsePemCertificateFromFile(path);
+
+            const hash = createHash('md5').update(Buffer.from(cert.subject.valueBeforeDecode)).digest();
+            const truncated = hash.subarray(0, 4);
+            const ulong = (truncated[0]! | (truncated[1]! << 8) | (truncated[2]! << 16) | (truncated[3]! << 24)) >>> 0;
+
+            return ulong.toString(16);
+        },
         hasCertificateAuthority: (filename) =>
             adb(['shell', 'ls', `/system/etc/security/cacerts/${filename}`], { reject: false }).then(
                 ({ exitCode }) => exitCode === 0
