@@ -2,12 +2,16 @@ import { getVenv } from 'autopy';
 import { createHash } from 'crypto';
 import { execa } from 'execa';
 import frida from 'frida';
-import { readFile } from 'fs/promises';
 import { NodeSSH } from 'node-ssh';
-import { Certificate } from 'pkijs';
 import type { PlatformApi, PlatformApiOptions, Proxy, SupportedCapability, SupportedRunTarget } from '.';
 import { venvOptions } from '../scripts/common/python';
-import { asyncUnimplemented, getObjFromFridaScript, isRecord, retryCondition } from './util';
+import {
+    asyncUnimplemented,
+    getObjFromFridaScript,
+    isRecord,
+    parsePemCertificateFromFile,
+    retryCondition,
+} from './util';
 
 const venv = getVenv(venvOptions);
 const python = async (...args: Parameters<Awaited<typeof venv>>) => (await venv)(...args);
@@ -316,16 +320,10 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         if (!options.capabilities.includes('ssh'))
             throw new Error('SSH is required for installing a certificate authority.');
 
-        const certPem = await readFile(path, 'utf8');
-
-        // A PEM certificate is just a base64-encoded DER certificate with a header and footer.
-        const certBase64 = certPem.replace(/(-----(BEGIN|END) CERTIFICATE-----|[\r\n])/g, '');
-        const certDer = Buffer.from(certBase64, 'base64');
-
-        const c = Certificate.fromBER(certDer);
+        const { cert, certDer } = await parsePemCertificateFromFile(path);
 
         const sha256 = createHash('sha256').update(certDer).digest('hex');
-        const subj = Buffer.from(c.subject.toSchema().valueBlock.toBER()).toString('hex');
+        const subj = Buffer.from(cert.subject.toSchema().valueBlock.toBER()).toString('hex');
         const tset = Buffer.from(
             `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -343,9 +341,7 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
         if (!options.capabilities.includes('ssh'))
             throw new Error('SSH is required for removing a certificate authority.');
 
-        const certPem = await readFile(path, 'utf8');
-        const certBase64 = certPem.replace(/(-----(BEGIN|END) CERTIFICATE-----|[\r\n])/g, '');
-        const certDer = Buffer.from(certBase64, 'base64');
+        const { certDer } = await parsePemCertificateFromFile(path);
         const sha256 = createHash('sha256').update(certDer).digest('hex');
 
         await this._internal.ssh(

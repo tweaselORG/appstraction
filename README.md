@@ -40,8 +40,6 @@ Additionally, you will need to [prepare the target device/emulator](#device-prep
 
 If you want to work with physical devices, [some setup may be necessary depending on your system](https://developer.android.com/studio/run/device#setting-up). On Ubuntu, you need to be a member of the `plugdev` group (`sudo usermod -aG plugdev <username>`) and have `udev` rules for your device (`sudo apt install android-sdk-platform-tools-common`). For other distributions, see [android-udev-rules](https://github.com/M0Rf30/android-udev-rules).
 
-You also need `openssl`.
-
 ### Host dependencies for iOS
 
 For iOS, you need [`libimobiledevice`](https://libimobiledevice.org/) and `ideviceinstaller`. The distribution packages are fine, if available. On Windows, you will additionally need the Apple Device Driver and the Apple Application Support service. You can get those by installing iTunes.
