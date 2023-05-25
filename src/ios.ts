@@ -4,13 +4,8 @@ import frida from 'frida';
 import { NodeSSH } from 'node-ssh';
 import type { PlatformApi, PlatformApiOptions, Proxy, SupportedCapability, SupportedRunTarget } from '.';
 import { venvOptions } from '../scripts/common/python';
-import {
-    asyncUnimplemented,
-    getObjFromFridaScript,
-    isRecord,
-    parsePemCertificateFromFile,
-    retryCondition,
-} from './util';
+
+import { asyncUnimplemented, getObjFromFridaScript, isRecord, retryCondition,parsePemCertificateFromFile } from './utils';
 
 const venv = getVenv(venvOptions);
 const python = async (...args: Parameters<Awaited<typeof venv>>) => (await venv)(...args);

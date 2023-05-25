@@ -6,7 +6,7 @@ import type { AndroidPermission } from './android';
 import { androidApi } from './android';
 import type { IosPermission } from './ios';
 import { iosApi } from './ios';
-import type { ParametersExceptFirst } from './util';
+import type { ParametersExceptFirst } from './utils';
 
 /** A platform that is supported by this library. */
 export type SupportedPlatform = 'android' | 'ios';
@@ -450,5 +450,5 @@ export function platformApi<
 
 export { androidPermissions } from './android';
 export { iosPermissions } from './ios';
-export { parseAppMeta, pause } from './util';
+export { parseAppMeta, pause } from './utils';
 export { IosPermission, AndroidPermission };

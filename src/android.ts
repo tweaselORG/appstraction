@@ -20,20 +20,18 @@ import type {
 } from '.';
 import { dependencies } from '../package.json';
 import { venvOptions } from '../scripts/common/python';
-import type { ParametersExceptFirst, XapkManifest } from './util';
+import type { ParametersExceptFirst, XapkManifest } from './utils';
 import {
     asyncUnimplemented,
     escapeArg,
     escapeCommand,
-    forEachInZip,
-    getFileFromZip,
     getObjFromFridaScript,
     isRecord,
     parseAppMeta,
     parsePemCertificateFromFile,
     retryCondition,
-    tmpFileFromZipEntry,
-} from './util';
+} from './utils';
+import { forEachInZip, getFileFromZip, tmpFileFromZipEntry } from './utils/zip';
 
 const adb = (...args: ParametersExceptFirst<typeof runAndroidDevTool>) => runAndroidDevTool('adb', args[0], args[1]);
 const venv = getVenv(venvOptions);
