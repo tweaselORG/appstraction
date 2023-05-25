@@ -28,10 +28,10 @@ import {
     getObjFromFridaScript,
     isRecord,
     parseAppMeta,
-    parsePemCertificateFromFile,
     retryCondition,
 } from './utils';
 import { forEachInZip, getFileFromZip, tmpFileFromZipEntry } from './utils/zip';
+import { parsePemCertificateFromFile} from './utils/crypto';
 
 const adb = (...args: ParametersExceptFirst<typeof runAndroidDevTool>) => runAndroidDevTool('adb', args[0], args[1]);
 const venv = getVenv(venvOptions);
