@@ -326,6 +326,26 @@ export type PlatformApi<
                */
               setupEnvironment: () => Promise<void>;
               ensureFrida: () => Promise<void>;
+              /**
+               * Ensures that the current host is configured to supervise the connected device. If this is not the case,
+               * it sets the host to be the (only) supervisor by installing its certificate on the device. This will
+               * overwrite parts of the exisiting CloudConfiguration. If there is no host certificate, yet, or it has
+               * expired, it will be generated.
+               *
+               * Might restart the device, if a new cofniguration is pushed. You are adviced to wait for the device.
+               */
+              ensureSupervision: () => Promise<void>;
+              /**
+               * Removes all configured supervision hosts from the device.
+               *
+               * Will restart the device. You are adviced to wait for the device.
+               */
+              removeSupervision: () => Promise<void>;
+              /**
+               * Restarts the device only in the userspace, e.g. to keep the jailbroken kernel running. You might want
+               * to wait for the device to ensure it is available again.
+               */
+              userspaceRestart: () => Promise<void>;
           }
         : never;
 };

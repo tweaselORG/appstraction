@@ -8,15 +8,18 @@ import {
     Certificate,
     CryptoEngine,
     PFX,
+    PKCS8ShroudedKeyBag,
     PrivateKeyInfo,
     SafeBag,
     SafeContents,
+    setEngine,
 } from 'pkijs';
 
 const crypto = new CryptoEngine({ name: 'node-webcrypto', crypto: webcrypto as Crypto });
+setEngine('node-webcrypto', crypto); // We need to do this, because there is a bug in pkijs (https://github.com/PeculiarVentures/PKI.js/issues/379)
 
 export const generateCertificate = async (commonName: string, days?: number) => {
-    const algorithm = crypto.getAlgorithmParameters('ecdsa', 'generateKey');
+    const algorithm = crypto.getAlgorithmParameters('RSA-PSS', 'generateKey');
     const { privateKey, publicKey } = await crypto.generateKey(
         algorithm.algorithm as EcKeyAlgorithm,
         true,
@@ -51,7 +54,24 @@ export const generateCertificate = async (commonName: string, days?: number) => 
         privateKey: await crypto.exportKey('pkcs8', privateKey),
     };
 };
+
+export const certificateFingerprint = async (certificateBuffer: ArrayBuffer, hashAlgorithm?: 'SHA-256' | 'SHA-1') => {
+    const certificate = await Certificate.fromBER(certificateBuffer);
+    const hash = await crypto.digest(
+        hashAlgorithm || 'SHA-256',
+        certificate.subjectPublicKeyInfo.toSchema().toBER(false)
+    );
+    return Buffer.from(hash).toString('hex');
+};
+
+export const certificateHasExpired = async (certificateBuffer: ArrayBuffer) => {
+    const certificate = await Certificate.fromBER(certificateBuffer);
+    return certificate.notAfter.value < new Date();
+};
+
 export const createPkcs12Container = async (cert: ArrayBuffer, key: ArrayBuffer, password?: string) => {
+    const encodedPassword = new TextEncoder().encode(password || '').buffer;
+
     const pkcs12 = new PFX({
         parsedValue: {
             integrityMode: 0, // Password-Based Integrity Mode
@@ -59,13 +79,22 @@ export const createPkcs12Container = async (cert: ArrayBuffer, key: ArrayBuffer,
                 parsedValue: {
                     safeContents: [
                         {
-                            privacyMode: password ? 1 : 0, // 1 - Password based privacy mode, 0 - No privacy mode
+                            privacyMode: 0, // 0 - No privacy mode
                             value: new SafeContents({
                                 safeBags: [
                                     new SafeBag({
-                                        bagId: '1.2.840.113549.1.12.10.1.1', // Private key bag
-                                        bagValue: PrivateKeyInfo.fromBER(key),
+                                        bagId: '1.2.840.113549.1.12.10.1.2', // Shrouded Private Key Bag
+                                        bagValue: new PKCS8ShroudedKeyBag({
+                                            parsedValue: PrivateKeyInfo.fromBER(key),
+                                        }),
                                     }),
+                                ],
+                            }),
+                        },
+                        {
+                            privacyMode: 1, // 1 - Password based privacy mode,
+                            value: new SafeContents({
+                                safeBags: [
                                     new SafeBag({
                                         bagId: '1.2.840.113549.1.12.10.1.3', // Certificate bag
                                         bagValue: new CertBag({
@@ -84,28 +113,42 @@ export const createPkcs12Container = async (cert: ArrayBuffer, key: ArrayBuffer,
     if (!pkcs12.parsedValue?.authenticatedSafe)
         throw new Error('Broken certificate container: pkcs12.parsedValue.authenticatedSafe is empty');
 
+    await pkcs12.parsedValue.authenticatedSafe.parsedValue.safeContents[0].value.safeBags[0].bagValue.makeInternalValues(
+        {
+            password: encodedPassword,
+            contentEncryptionAlgorithm: {
+                name: 'AES-CBC', // OpenSSL can only handle AES-CBC (https://github.com/PeculiarVentures/PKI.js/blob/469c403d102ee5149e8eb9ad19754c9696ed7c55/test/pkcs12SimpleExample.ts#L438)
+                length: 128,
+            },
+            hmacHashAlgorithm: 'SHA-1', // OpenSSL can only handle SHA-1 (https://github.com/PeculiarVentures/PKI.js/blob/469c403d102ee5149e8eb9ad19754c9696ed7c55/test/pkcs12SimpleExample.ts#L441)
+            iterationCount: 100000,
+        },
+        crypto
+    );
+
     pkcs12.parsedValue.authenticatedSafe.makeInternalValues(
         {
-            safeContents: password
-                ? [
-                      {
-                          password: new TextEncoder().encode(password),
-                          contentEncryptionAlgorithm: {
-                              name: 'AES-CBC',
-                              length: 128,
-                          },
-                          hmacHashAlgorithm: 'SHA-256',
-                          iterationCount: 2048,
-                      },
-                  ]
-                : [{}],
+            safeContents: [
+                {
+                    // Private key contents are encrypted differently, so this needs to be empty.
+                },
+                {
+                    password: encodedPassword,
+                    contentEncryptionAlgorithm: {
+                        name: 'AES-CBC',
+                        length: 128,
+                    },
+                    hmacHashAlgorithm: 'SHA-1',
+                    iterationCount: 100000,
+                },
+            ],
         },
         crypto
     );
 
     await pkcs12.makeInternalValues(
         {
-            password: password || '',
+            password: encodedPassword,
             iterations: 100000,
             pbkdf2HashAlgorithm: 'SHA-256',
             hmacHashAlgorithm: 'SHA-256',
@@ -128,4 +171,12 @@ export const parsePemCertificateFromFile = async (path: string) => {
     const certDer = Buffer.from(certBase64, 'base64');
 
     return { cert: Certificate.fromBER(certDer), certPem, certDer };
+};
+
+export const pemToArrayBuffer = (pem: string) => {
+    const base64 = pem
+        .replace(/-----BEGIN (.*)-----/, '')
+        .replace(/-----END (.*)-----/, '')
+        .replace(/\n/g, '');
+    return Uint8Array.from(Buffer.from(base64, 'base64')).buffer;
 };

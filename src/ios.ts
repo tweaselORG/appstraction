@@ -1,12 +1,24 @@
 import { getVenv } from 'autopy';
+import bplist from 'bplist-creator';
+import { parseFile } from 'bplist-parser';
 import { createHash } from 'crypto';
 import frida from 'frida';
+import { exists,mkdirp } from 'fs-extra';
+import { readFile,writeFile } from 'fs/promises';
+import globalCacheDir from 'global-cache-dir';
 import { NodeSSH } from 'node-ssh';
-import type { PlatformApi, PlatformApiOptions, Proxy, SupportedCapability, SupportedRunTarget } from '.';
+import { join } from 'path';
+import type { PlatformApi,PlatformApiOptions,Proxy,SupportedCapability,SupportedRunTarget } from '.';
 import { venvOptions } from '../scripts/common/python';
-import { asyncUnimplemented, getObjFromFridaScript, isRecord, retryCondition } from './utils';
-import { parsePemCertificateFromFile} from './utils/crypto';
-
+import { asyncUnimplemented,getObjFromFridaScript,isRecord,retryCondition } from './utils';
+import {
+arrayBufferToPem,
+certificateFingerprint,
+certificateHasExpired,
+generateCertificate,
+parsePemCertificateFromFile,
+pemToArrayBuffer
+} from './utils/crypto';
 
 const venv = getVenv(venvOptions);
 const python = async (...args: Parameters<Awaited<typeof venv>>) => (await venv)(...args);
@@ -121,6 +133,8 @@ function getProxySettingsForCurrentWifiNetwork() {
 
 send({ name: "get_obj_from_frida_script", payload: getProxySettingsForCurrentWifiNetwork() });`,
 } as const;
+const cloudConfigPath =
+    '/var/containers/Shared/SystemGroup/systemgroup.com.apple.configurationprofiles/Library/ConfigurationProfiles/CloudConfigurationDetails.plist' as const;
 
 export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     options: PlatformApiOptions<'ios', RunTarget, SupportedCapability<'ios'>[]>
@@ -205,6 +219,99 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
                     throw new Error('Cannot connect using Frida.', { cause: err });
                 });
             await session.detach();
+        },
+        async ensureSupervision() {
+            if (!options.capabilities.includes('ssh'))
+                throw new Error('SSH is currently required to ensure supervison mode.');
+
+            const OrganizationName = 'appstraction';
+            const cacheDir = await globalCacheDir('appstraction');
+
+            const { stdout: encodedPlist } = await this.ssh(`cat ${cloudConfigPath} | base64`);
+            const plist = (await parseFile(Buffer.from(encodedPlist, 'base64')))?.[0] as
+                | CloudConfigurationDetails
+                | undefined;
+
+            if (!plist) throw new Error('Failed to ensure supervision mode: Invalid CloudConfiguration.');
+
+            let hostCert;
+            let hostKey;
+
+            if (
+                (await exists(join(cacheDir, 'ios', 'supervisorCert.pem'))) &&
+                (await exists(join(cacheDir, 'ios', 'supervisorPrivateKey.pem')))
+            ) {
+                hostCert = pemToArrayBuffer((await readFile(join(cacheDir, 'ios', 'supervisorCert.pem'))).toString());
+                hostKey = pemToArrayBuffer(
+                    (await readFile(join(cacheDir, 'ios', 'supervisorPrivateKey.pem'))).toString()
+                );
+
+                if (!(await certificateHasExpired(hostCert))) {
+                    const hostCertFingerprint = await certificateFingerprint(hostCert);
+
+                    // Test if the current host certificate is already controlling the device.
+                    if (
+                        plist.IsSupervised &&
+                        plist.SupervisorHostCertificates &&
+                        plist.SupervisorHostCertificates.length > 0 &&
+                        plist.SupervisorHostCertificates.some(
+                            async (cert) => (await certificateFingerprint(cert)) === hostCertFingerprint
+                        )
+                    )
+                        return;
+                } else {
+                    hostCert = undefined;
+                    hostKey = undefined;
+                }
+            }
+
+            if (!hostCert || !hostKey) {
+                // We have no exsiting keys, so let’s generate one.
+                const generated = await generateCertificate(OrganizationName);
+                hostCert = generated.certificate;
+                hostKey = generated.privateKey;
+
+                await mkdirp(join(cacheDir, 'ios'));
+                await writeFile(join(cacheDir, 'ios', 'supervisorCert.pem'), arrayBufferToPem(hostCert, 'CERTIFICATE'));
+                await writeFile(
+                    join(cacheDir, 'ios', 'supervisorPrivateKey.pem'),
+                    arrayBufferToPem(hostKey, 'PRIVATE KEY')
+                );
+            }
+
+            const newPlist = {
+                ...plist,
+                SupervisorHostCertificates: [Buffer.from(hostCert)],
+                IsSupervised: true,
+                OrganizationName,
+                AllowPairing: true,
+            };
+
+            await this.ssh(`echo "${bplist(newPlist).toString('base64')}" | base64 -d > ${cloudConfigPath}`);
+            await this.userspaceRestart();
+        },
+        async removeSupervision() {
+            const { stdout: encodedPlist } = await this.ssh(`cat ${cloudConfigPath} | base64`);
+            const plist = (await parseFile(Buffer.from(encodedPlist, 'base64')))?.[0] as
+                | CloudConfigurationDetails
+                | undefined;
+
+            if (!plist) throw new Error('Failed to remove supervision mode: Invalid CloudConfiguration.');
+            const newPlist = {
+                ...plist,
+                SupervisorHostCertificates: [],
+                IsSupervised: false,
+                OrganizationName: '',
+            };
+
+            await this.ssh(`echo "${bplist(newPlist).toString('base64')}" | base64 -d > ${cloudConfigPath}`);
+            await this.userspaceRestart();
+        },
+        async userspaceRestart() {
+            if (!options.capabilities.includes('ssh'))
+                throw new Error('SSH is currently required to restart in userspace.');
+
+            await this.ssh('ldrestart');
         },
     },
 
@@ -429,6 +536,13 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
             throw new Error('Failed to set proxy.');
     },
 });
+
+type CloudConfigurationDetails = Partial<{
+    AllowPairing: boolean;
+    IsSupervised: boolean;
+    OrganizationName: string;
+    SupervisorHostCertificates: Buffer[];
+}>;
 
 /** The IDs of known permissions on iOS. */
 export const iosPermissions = [
