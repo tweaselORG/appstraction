@@ -329,21 +329,24 @@ export type PlatformApi<
               /**
                * Ensures that the current host is configured to supervise the connected device. If this is not the case,
                * it sets the host to be the (only) supervisor by installing its certificate on the device. This will
-               * overwrite parts of the exisiting CloudConfiguration. If there is no host certificate, yet, or it has
+               * overwrite parts of the exisiting CloudConfiguration. If there is no host certificate yet, or it has
                * expired, it will be generated.
                *
-               * Might restart the device, if a new cofniguration is pushed. You are adviced to wait for the device.
+               * Might restart the device, if a new configuration is pushed. You are advised to wait for the device.
+               *
+               * @param forceNewKey If set to `true`, a new host key will be generated and set up, even if there is
+               *   already a valid old one.
                */
-              ensureSupervision: () => Promise<void>;
+              ensureSupervision: (options?: { forceNewKey?: boolean }) => Promise<void>;
               /**
                * Removes all configured supervision hosts from the device.
                *
-               * Will restart the device. You are adviced to wait for the device.
+               * Will restart the device. You are advised to wait for the device.
                */
               removeSupervision: () => Promise<void>;
               /**
-               * Restarts the device only in the userspace, e.g. to keep the jailbroken kernel running. You might want
-               * to wait for the device to ensure it is available again.
+               * Restarts the device only in userspace, e.g. to keep the jailbroken kernel running. You might want to
+               * wait for the device to ensure it is available again.
                */
               userspaceRestart: () => Promise<void>;
           }
@@ -402,14 +405,23 @@ export type RunTargetOptions<
         /** The options for the iOS emulator run target. */
         emulator: never;
         /** The options for the iOS physical device run target. */
-        device: 'ssh' extends Capability
+        device: ('ssh' extends Capability
             ? {
                   /** The password of the root user on the device, defaults to `alpine` if not set. */
                   rootPw?: string;
                   /** The device's IP address. */
                   ip: string;
               }
-            : unknown;
+            : unknown) &
+            ('supervision' extends Capability
+                ? {
+                      /**
+                       * The password of the private key of the supervision certificate, defaults to `appstraction` if
+                       * not set.
+                       */
+                      supervisionKeyPassword?: string;
+                  }
+                : unknown);
     };
 };
 
@@ -417,7 +429,7 @@ export type RunTargetOptions<
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
     ? 'wireguard' | 'root' | 'frida' | 'certificate-pinning-bypass'
     : Platform extends 'ios'
-    ? 'ssh' | 'frida' | 'certificate-pinning-bypass'
+    ? 'ssh' | 'frida' | 'certificate-pinning-bypass' | 'supervision'
     : never;
 
 /** A supported attribute for the `getDeviceAttribute()` function, depending on the platform. */

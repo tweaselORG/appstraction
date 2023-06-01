@@ -81,7 +81,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:424](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L424)
+[index.ts:436](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L436)
 
 ___
 
@@ -100,7 +100,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:430](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L430)
+[index.ts:442](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L442)
 
 ___
 
@@ -112,7 +112,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:570](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L570)
+[ios.ts:585](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L585)
 
 ___
 
@@ -200,7 +200,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:362](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L362)
+[index.ts:365](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L365)
 
 ___
 
@@ -219,7 +219,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:438](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L438)
+[index.ts:450](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L450)
 
 ___
 
@@ -243,19 +243,19 @@ The options for a specific platform/run target combination.
 | `android` | { `device`: `unknown` ; `emulator`: `unknown`  } | The options for the Android platform. |
 | `android.device` | `unknown` | The options for the Android physical device run target. |
 | `android.emulator` | `unknown` | The options for the Android emulator run target. |
-| `ios` | { `device`: ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` ; `emulator`: `never`  } | The options for the iOS platform. |
-| `ios.device` | ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` | The options for the iOS physical device run target. |
+| `ios` | { `device`: ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` & ``"supervision"`` extends `Capability` ? { `supervisionKeyPassword?`: `string`  } : `unknown` ; `emulator`: `never`  } | The options for the iOS platform. |
+| `ios.device` | ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` & ``"supervision"`` extends `Capability` ? { `supervisionKeyPassword?`: `string`  } : `unknown` | The options for the iOS physical device run target. |
 | `ios.emulator` | `never` | The options for the iOS emulator run target. |
 
 #### Defined in
 
-[index.ts:389](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L389)
+[index.ts:392](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L392)
 
 ___
 
 ### SupportedCapability
 
-Ƭ **SupportedCapability**<`Platform`\>: `Platform` extends ``"android"`` ? ``"wireguard"`` \| ``"root"`` \| ``"frida"`` \| ``"certificate-pinning-bypass"`` : `Platform` extends ``"ios"`` ? ``"ssh"`` \| ``"frida"`` \| ``"certificate-pinning-bypass"`` : `never`
+Ƭ **SupportedCapability**<`Platform`\>: `Platform` extends ``"android"`` ? ``"wireguard"`` \| ``"root"`` \| ``"frida"`` \| ``"certificate-pinning-bypass"`` : `Platform` extends ``"ios"`` ? ``"ssh"`` \| ``"frida"`` \| ``"certificate-pinning-bypass"`` \| ``"supervision"`` : `never`
 
 A capability for the `platformApi()` function.
 
@@ -267,7 +267,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:417](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L417)
+[index.ts:429](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L429)
 
 ___
 
@@ -309,7 +309,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:445](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L445)
+[index.ts:457](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L457)
 
 ## Variables
 
@@ -333,7 +333,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:553](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L553)
+[ios.ts:568](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L568)
 
 ## Functions
 
@@ -426,4 +426,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:454](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L454)
+[index.ts:466](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L466)

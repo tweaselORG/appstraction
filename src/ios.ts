@@ -12,15 +12,15 @@ import type { PlatformApi, PlatformApiOptions, Proxy, SupportedCapability, Suppo
 import { venvOptions } from '../scripts/common/python';
 import { asyncUnimplemented, getObjFromFridaScript, isRecord, retryCondition } from './utils';
 import {
-arrayBufferToPem,
-certificateFingerprint,
-certificateHasExpired,
-generateCertificate,
-parsePemCertificateFromFile,
-pemToArrayBuffer,
-createPkcs12Container,
-asn1ValueToDer,
-certSubjectToAsn1,
+    arrayBufferToPem,
+    asn1ValueToDer,
+    certificateFingerprint,
+    certificateHasExpired,
+    certSubjectToAsn1,
+    createPkcs12Container,
+    generateCertificate,
+    parsePemCertificateFromFile,
+    pemToArrayBuffer,
 } from './utils/crypto';
 
 const venv = getVenv(venvOptions);
@@ -223,11 +223,11 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
                 });
             await session.detach();
         },
-        async ensureSupervision() {
+        async ensureSupervision(supervisionOptions) {
             if (!options.capabilities.includes('ssh'))
-                throw new Error('SSH is currently required to ensure supervison mode.');
+                throw new Error('SSH is currently required to ensure supervision mode.');
 
-            const OrganizationName = 'appstraction';
+            const orgName = 'appstraction';
             const cacheDir = await globalCacheDir('appstraction');
 
             const { stdout: encodedPlist } = await this.ssh(`cat ${cloudConfigPath} | base64`);
@@ -240,13 +240,14 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
             let hostCert;
 
             if (
+                !supervisionOptions?.forceNewKey &&
                 (await exists(join(cacheDir, 'ios', 'supervisorCert.pem'))) &&
                 (await exists(join(cacheDir, 'ios', 'supervisorKeyStore.p12')))
             ) {
                 hostCert = (await readFile(join(cacheDir, 'ios', 'supervisorCert.pem'))).toString();
 
-                if (!(await certificateHasExpired(hostCert))) {
-                    const hostCertFingerprint = await certificateFingerprint(hostCert);
+                if (!certificateHasExpired(hostCert)) {
+                    const hostCertFingerprint = certificateFingerprint(hostCert);
 
                     try {
                         // Test if the current host certificate is already controlling the device.
@@ -270,13 +271,17 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
                 }
             }
 
-            if (!hostCert) {
-                // We have no exsiting keys, so let’s generate one.
-                const generated = await generateCertificate(OrganizationName);
+            if (!hostCert || supervisionOptions?.forceNewKey) {
+                // We have no existing keys, so let’s generate one.
+                const generated = await generateCertificate(orgName);
                 hostCert = generated.certificate;
                 const hostKey = generated.privateKey;
 
-                const keyStore = createPkcs12Container(hostCert, hostKey, 'appstraction');
+                const keyStore = createPkcs12Container(
+                    hostCert,
+                    hostKey,
+                    options.targetOptions?.supervisionKeyPassword || 'appstraction'
+                );
 
                 await mkdirp(join(cacheDir, 'ios'));
                 await writeFile(join(cacheDir, 'ios', 'supervisorCert.pem'), hostCert);
@@ -287,7 +292,7 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
                 ...plist,
                 SupervisorHostCertificates: [Buffer.from(pemToArrayBuffer(hostCert))],
                 IsSupervised: true,
-                OrganizationName,
+                OrganizationName: orgName,
                 AllowPairing: true,
             };
 
@@ -356,6 +361,16 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
 
         if (options.capabilities.includes('frida')) {
             await this._internal.ensureFrida();
+        }
+
+        if (options.capabilities.includes('supervision')) {
+            if (!options.capabilities.includes('ssh'))
+                throw new Error(
+                    'Unimplemented on this platform: Activating supervision mode without the ssh capability.'
+                );
+
+            await this._internal.ensureSupervision();
+            await this.waitForDevice();
         }
     },
     clearStuckModals: asyncUnimplemented('clearStuckModals') as never,
