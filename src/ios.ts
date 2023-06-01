@@ -1,6 +1,5 @@
 import { getVenv } from 'autopy';
 import bplist from 'bplist-creator';
-import { parseFile } from 'bplist-parser';
 import { createHash } from 'crypto';
 import frida from 'frida';
 import { exists, mkdirp } from 'fs-extra';
@@ -8,6 +7,7 @@ import { readFile, writeFile } from 'fs/promises';
 import globalCacheDir from 'global-cache-dir';
 import { NodeSSH } from 'node-ssh';
 import { join } from 'path';
+import simplePlist from 'simple-plist';
 import type { PlatformApi, PlatformApiOptions, Proxy, SupportedCapability, SupportedRunTarget } from '.';
 import { venvOptions } from '../scripts/common/python';
 import { asyncUnimplemented, getObjFromFridaScript, isRecord, retryCondition } from './utils';
@@ -231,7 +231,7 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
             const cacheDir = await globalCacheDir('appstraction');
 
             const { stdout: encodedPlist } = await this.ssh(`cat ${cloudConfigPath} | base64`);
-            const plist = (await parseFile(Buffer.from(encodedPlist, 'base64')))?.[0] as
+            const plist = (await simplePlist.parse(Buffer.from(encodedPlist, 'base64'))) as
                 | CloudConfigurationDetails
                 | undefined;
 
@@ -301,7 +301,7 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
         },
         async removeSupervision() {
             const { stdout: encodedPlist } = await this.ssh(`cat ${cloudConfigPath} | base64`);
-            const plist = (await parseFile(Buffer.from(encodedPlist, 'base64')))?.[0] as
+            const plist = (await simplePlist.parse(Buffer.from(encodedPlist, 'base64'))) as
                 | CloudConfigurationDetails
                 | undefined;
 
@@ -320,7 +320,7 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
             if (!options.capabilities.includes('ssh'))
                 throw new Error('SSH is currently required to restart in userspace.');
 
-            await this.ssh('ldrestart');
+            await this.ssh('launchctl reboot userspace');
         },
     },
 
