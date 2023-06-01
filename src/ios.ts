@@ -3,21 +3,24 @@ import bplist from 'bplist-creator';
 import { parseFile } from 'bplist-parser';
 import { createHash } from 'crypto';
 import frida from 'frida';
-import { exists,mkdirp } from 'fs-extra';
-import { readFile,writeFile } from 'fs/promises';
+import { exists, mkdirp } from 'fs-extra';
+import { readFile, writeFile } from 'fs/promises';
 import globalCacheDir from 'global-cache-dir';
 import { NodeSSH } from 'node-ssh';
 import { join } from 'path';
-import type { PlatformApi,PlatformApiOptions,Proxy,SupportedCapability,SupportedRunTarget } from '.';
+import type { PlatformApi, PlatformApiOptions, Proxy, SupportedCapability, SupportedRunTarget } from '.';
 import { venvOptions } from '../scripts/common/python';
-import { asyncUnimplemented,getObjFromFridaScript,isRecord,retryCondition } from './utils';
+import { asyncUnimplemented, getObjFromFridaScript, isRecord, retryCondition } from './utils';
 import {
 arrayBufferToPem,
 certificateFingerprint,
 certificateHasExpired,
 generateCertificate,
 parsePemCertificateFromFile,
-pemToArrayBuffer
+pemToArrayBuffer,
+createPkcs12Container,
+asn1ValueToDer,
+certSubjectToAsn1,
 } from './utils/crypto';
 
 const venv = getVenv(venvOptions);
@@ -235,53 +238,54 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
             if (!plist) throw new Error('Failed to ensure supervision mode: Invalid CloudConfiguration.');
 
             let hostCert;
-            let hostKey;
 
             if (
                 (await exists(join(cacheDir, 'ios', 'supervisorCert.pem'))) &&
-                (await exists(join(cacheDir, 'ios', 'supervisorPrivateKey.pem')))
+                (await exists(join(cacheDir, 'ios', 'supervisorKeyStore.p12')))
             ) {
-                hostCert = pemToArrayBuffer((await readFile(join(cacheDir, 'ios', 'supervisorCert.pem'))).toString());
-                hostKey = pemToArrayBuffer(
-                    (await readFile(join(cacheDir, 'ios', 'supervisorPrivateKey.pem'))).toString()
-                );
+                hostCert = (await readFile(join(cacheDir, 'ios', 'supervisorCert.pem'))).toString();
 
                 if (!(await certificateHasExpired(hostCert))) {
                     const hostCertFingerprint = await certificateFingerprint(hostCert);
 
-                    // Test if the current host certificate is already controlling the device.
-                    if (
-                        plist.IsSupervised &&
-                        plist.SupervisorHostCertificates &&
-                        plist.SupervisorHostCertificates.length > 0 &&
-                        plist.SupervisorHostCertificates.some(
-                            async (cert) => (await certificateFingerprint(cert)) === hostCertFingerprint
+                    try {
+                        // Test if the current host certificate is already controlling the device.
+                        if (
+                            plist.IsSupervised &&
+                            plist.SupervisorHostCertificates &&
+                            plist.SupervisorHostCertificates.length > 0 &&
+                            plist.SupervisorHostCertificates.some(
+                                (cert) =>
+                                    certificateFingerprint(arrayBufferToPem(cert, 'CERTIFICATE')) ===
+                                    hostCertFingerprint
+                            )
                         )
-                    )
-                        return;
+                            return;
+                    } catch (e) {
+                        // The certificate is invalid, so we need to generate a new one.
+                        hostCert = undefined;
+                    }
                 } else {
                     hostCert = undefined;
-                    hostKey = undefined;
                 }
             }
 
-            if (!hostCert || !hostKey) {
+            if (!hostCert) {
                 // We have no exsiting keys, so let’s generate one.
                 const generated = await generateCertificate(OrganizationName);
                 hostCert = generated.certificate;
-                hostKey = generated.privateKey;
+                const hostKey = generated.privateKey;
+
+                const keyStore = createPkcs12Container(hostCert, hostKey, 'appstraction');
 
                 await mkdirp(join(cacheDir, 'ios'));
-                await writeFile(join(cacheDir, 'ios', 'supervisorCert.pem'), arrayBufferToPem(hostCert, 'CERTIFICATE'));
-                await writeFile(
-                    join(cacheDir, 'ios', 'supervisorPrivateKey.pem'),
-                    arrayBufferToPem(hostKey, 'PRIVATE KEY')
-                );
+                await writeFile(join(cacheDir, 'ios', 'supervisorCert.pem'), hostCert);
+                await writeFile(join(cacheDir, 'ios', 'supervisorKeyStore.p12'), Buffer.from(keyStore.toHex(), 'hex'));
             }
 
             const newPlist = {
                 ...plist,
-                SupervisorHostCertificates: [Buffer.from(hostCert)],
+                SupervisorHostCertificates: [Buffer.from(pemToArrayBuffer(hostCert))],
                 IsSupervised: true,
                 OrganizationName,
                 AllowPairing: true,
@@ -488,7 +492,7 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
         const { cert, certDer } = await parsePemCertificateFromFile(path);
 
         const sha256 = createHash('sha256').update(certDer).digest('hex');
-        const subj = Buffer.from(cert.subject.toSchema().valueBlock.toBER()).toString('hex');
+        const subj = asn1ValueToDer(certSubjectToAsn1(cert)).toHex();
         const tset = Buffer.from(
             `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -507,6 +511,7 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
             throw new Error('SSH is required for removing a certificate authority.');
 
         const { certDer } = await parsePemCertificateFromFile(path);
+
         const sha256 = createHash('sha256').update(certDer).digest('hex');
 
         await this._internal.ssh(
