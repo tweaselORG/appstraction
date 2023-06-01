@@ -148,13 +148,12 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
             if (!options.capabilities.includes('ssh'))
                 throw new Error('SSH is required for setting up the environment.');
 
-            if ((await this.ssh('stat /etc/apt/sources.list.d/appstraction.sources')).code === 0) return;
-
             const neededPackages = [
                 're.frida.server',
                 'sqlite3',
                 'com.conradkramer.open',
                 'com.julioverne.sslkillswitch2',
+                'plutil',
             ];
             const { stdout: packageList } = await this.ssh('apt list --installed');
             const packagesToInstall = neededPackages.filter((p) => !packageList.includes(p));
@@ -177,7 +176,32 @@ Suites: ./
 Components:" > /etc/apt/sources.list.d/appstraction.sources`);
                 await this.ssh('apt --allow-insecure-repositories update');
                 await this.ssh(`apt --allow-unauthenticated -y install ${packagesToInstall.join(' ')}`);
+
+                // Install the frida-server deamon workaround (https://github.com/frida/frida/issues/2375)
+                await this.ssh(
+                    'plutil -remove -key LimitLoadToSessionType /Library/LaunchDaemons/re.frida.server.plist'
+                );
+                await this.ssh('launchctl load -w /Library/LaunchDaemons/re.frida.server.plist');
             }
+        },
+        async ensureFrida() {
+            if (!options.capabilities.includes('frida')) return;
+
+            const fridaIsRunning = async () =>
+                (await python('frida-ps', ['-U'], { reject: false })).stdout.includes('frida-server');
+
+            if (!(await fridaIsRunning()) && options.capabilities.includes('ssh')) {
+                await this.ssh('frida-server -D');
+                if (!(await retryCondition(fridaIsRunning, 20))) throw new Error('Frida server did not start.');
+            }
+
+            const session = await frida
+                .getUsbDevice()
+                .then((f) => f.attach('SpringBoard'))
+                .catch((err) => {
+                    throw new Error('Cannot connect using Frida.', { cause: err });
+                });
+            await session.detach();
         },
     },
 
@@ -205,16 +229,6 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
         if ((await python('pymobiledevice3', ['lockdown', 'info'], { reject: false })).exitCode !== 0)
             throw new Error('You need to trust this computer on your device.');
 
-        if (options.capabilities.includes('frida')) {
-            const session = await frida
-                .getUsbDevice()
-                .then((f) => f.attach('SpringBoard'))
-                .catch((err) => {
-                    throw new Error('Cannot connect using Frida.', { cause: err });
-                });
-            await session.detach();
-        }
-
         if (options.capabilities.includes('ssh')) {
             try {
                 const { stdout } = await this._internal.ssh('uname');
@@ -224,6 +238,10 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
             }
 
             await this._internal.setupEnvironment();
+        }
+
+        if (options.capabilities.includes('frida')) {
+            await this._internal.ensureFrida();
         }
     },
     clearStuckModals: asyncUnimplemented('clearStuckModals') as never,

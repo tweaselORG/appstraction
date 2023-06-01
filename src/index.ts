@@ -305,6 +305,7 @@ export type PlatformApi<
         ? {
               ssh: NodeSSH['execCommand'];
               setupEnvironment: () => Promise<void>;
+              ensureFrida: () => Promise<void>;
           }
         : never;
 };
