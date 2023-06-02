@@ -42,7 +42,7 @@ If you want to work with physical devices, [some setup may be necessary dependin
 
 ### Host dependencies for iOS
 
-For iOS, you need [`libimobiledevice`](https://libimobiledevice.org/) and `ideviceinstaller`. The distribution packages are fine, if available. On Windows, you will additionally need the Apple Device Driver and the Apple Application Support service. You can get those by installing iTunes.
+On Windows, you will need the Apple Device Driver and the Apple Application Support service. You can get those by installing iTunes.
 
 ## Supported targets
 
