@@ -81,7 +81,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:376](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L376)
+[index.ts:382](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L382)
 
 ___
 
@@ -100,7 +100,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:382](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L382)
+[index.ts:388](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L388)
 
 ___
 
@@ -112,7 +112,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:441](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L441)
+[ios.ts:448](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L448)
 
 ___
 
@@ -199,7 +199,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:314](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L314)
+[index.ts:320](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L320)
 
 ___
 
@@ -218,7 +218,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:390](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L390)
+[index.ts:396](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L396)
 
 ___
 
@@ -248,13 +248,13 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:341](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L341)
+[index.ts:347](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L347)
 
 ___
 
 ### SupportedCapability
 
-Ƭ **SupportedCapability**<`Platform`\>: `Platform` extends ``"android"`` ? ``"wireguard"`` \| ``"root"`` \| ``"frida"`` \| ``"certificate-pinning-bypass"`` : `Platform` extends ``"ios"`` ? ``"ssh"`` \| ``"frida"`` : `never`
+Ƭ **SupportedCapability**<`Platform`\>: `Platform` extends ``"android"`` ? ``"wireguard"`` \| ``"root"`` \| ``"frida"`` \| ``"certificate-pinning-bypass"`` : `Platform` extends ``"ios"`` ? ``"ssh"`` \| ``"frida"`` \| ``"certificate-pinning-bypass"`` : `never`
 
 A capability for the `platformApi()` function.
 
@@ -266,7 +266,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:369](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L369)
+[index.ts:375](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L375)
 
 ___
 
@@ -308,7 +308,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:397](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L397)
+[index.ts:403](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L403)
 
 ## Variables
 
@@ -332,7 +332,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:424](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L424)
+[ios.ts:431](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L431)
 
 ## Functions
 
@@ -425,4 +425,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:406](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L406)
+[index.ts:412](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L412)

@@ -148,13 +148,11 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
             if (!options.capabilities.includes('ssh'))
                 throw new Error('SSH is required for setting up the environment.');
 
-            const neededPackages = [
-                're.frida.server',
-                'sqlite3',
-                'com.conradkramer.open',
-                'com.julioverne.sslkillswitch2',
-                'plutil',
-            ];
+            const neededPackages = ['sqlite3', 'com.conradkramer.open', 'ldid'];
+            if (options.capabilities.includes('frida')) neededPackages.push('re.frida.server', 'plutil');
+            if (options.capabilities.includes('certificate-pinning-bypass'))
+                neededPackages.push('com.julioverne.sslkillswitch2');
+
             const { stdout: packageList } = await this.ssh('apt list --installed');
             const packagesToInstall = neededPackages.filter((p) => !packageList.includes(p));
 
@@ -177,11 +175,20 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
                 await this.ssh('apt --allow-insecure-repositories update');
                 await this.ssh(`apt --allow-unauthenticated -y install ${packagesToInstall.join(' ')}`);
 
-                // Install the frida-server deamon workaround (https://github.com/frida/frida/issues/2375)
-                await this.ssh(
-                    'plutil -remove -key LimitLoadToSessionType /Library/LaunchDaemons/re.frida.server.plist'
-                );
-                await this.ssh('launchctl load -w /Library/LaunchDaemons/re.frida.server.plist');
+                if (packagesToInstall.includes('re.frida.server')) {
+                    // Install the frida-server deamon workaround (https://github.com/frida/frida/issues/2375)
+                    // TODO: Replace this with simple-plist once #82 is merged to remove the dependency on plutil
+                    await this.ssh(
+                        'plutil -remove -key LimitLoadToSessionType /Library/LaunchDaemons/re.frida.server.plist'
+                    );
+                    await this.ssh('launchctl load -w /Library/LaunchDaemons/re.frida.server.plist');
+                }
+
+                if (packagesToInstall.includes('com.conradkramer.open')) {
+                    // We need to sign the open binary to prevent iOS from killing it immediately.
+                    // see https://github.com/tweaselORG/meta/issues/4#issuecomment-1380501906
+                    await this.ssh('ldid -s /usr/bin/open');
+                }
             }
         },
         async ensureFrida() {

@@ -8,7 +8,7 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
     const ios = platformApi({
         platform: 'ios',
         runTarget: 'device',
-        capabilities: ['frida', 'ssh'],
+        capabilities: ['frida', 'ssh', 'certificate-pinning-bypass'],
         targetOptions: {
             ip: process.argv[2] || '0.0.0.0',
         },
