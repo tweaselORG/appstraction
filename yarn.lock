@@ -1653,10 +1653,10 @@ astral-regex@^2.0.0:
   resolved "https://registry.yarnpkg.com/astral-regex/-/astral-regex-2.0.0.tgz#483143c567aeed4785759c0865786dc77d7d2e31"
   integrity sha512-Z7tMw1ytTXt5jqMcOP+OQteU1VuNK9Y02uuJtKQ1Sv69jXQKKg5cibLwGJow8yzZP+eAc18EmLGPal0bp36rvQ==
 
-autopy@1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/autopy/-/autopy-1.0.0.tgz#1e6f306aaebd49aa140c9fa6adcc55856cb029ae"
-  integrity sha512-fIP8OLX9eNkXc1olZULTY206EPH3ed7NJLq+Ws+reoH1bPRMKf//Lhyd+Oc3gPt6z7p3A0f3emy5LKysqjorAg==
+autopy@1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/autopy/-/autopy-1.1.0.tgz#273a01aa566550018ba8d854b79f4d9db7842cac"
+  integrity sha512-W8WhfWexE4B1ezbK/lwu5zA2qWmXIVizlLdMNb9pEcxZowN/aOfTa7XKZsGX7fV1YkP59heCF+Pty/uhx/QUaQ==
   dependencies:
     "@mongodb-js/zstd" "^1.1.0"
     "@renovatebot/pep440" "^2.1.15"

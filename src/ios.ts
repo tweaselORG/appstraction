@@ -1,6 +1,5 @@
 import { getVenv } from 'autopy';
 import { createHash } from 'crypto';
-import { execa } from 'execa';
 import frida from 'frida';
 import { NodeSSH } from 'node-ssh';
 import type { PlatformApi, PlatformApiOptions, Proxy, SupportedCapability, SupportedRunTarget } from '.';
@@ -148,18 +147,28 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     },
 
     resetDevice: asyncUnimplemented('resetDevice') as never,
-    async waitForDevice(tries = 100) {
+    async waitForDevice(tries = 20) {
         if (
             !(await retryCondition(
-                async () => (await execa('ideviceinfo', ['-k', 'DeviceName'], { reject: false })).exitCode === 0,
+                // Actually wait until the SpringBoard has been started and users could interact with the device.
+                () =>
+                    python('pymobiledevice3', ['springboard', 'state', 'get'], {
+                        reject: false,
+                        timeout: 1000,
+                    }).then(({ stderr, exitCode }) => exitCode === 0 && !stderr.includes('ERROR')),
                 tries
             ))
         )
             throw new Error('Failed to wait for device: No booted device found after timeout.');
     },
     async ensureDevice() {
-        if ((await execa('ideviceinfo', ['-k', 'DeviceName'], { reject: false })).exitCode !== 0)
-            throw new Error('You need to connect your device and trust this computer.');
+        const { exitCode, stdout: devices } = await python('pymobiledevice3', ['usbmux', 'list', '--no-color'], {
+            reject: false,
+        });
+        if (exitCode !== 0 && JSON.parse(devices).length !== 1)
+            throw new Error('You need to connect exactly one device. Multiple devices are not supported.');
+        if ((await python('pymobiledevice3', ['lockdown', 'info'], { reject: false })).exitCode !== 0)
+            throw new Error('You need to trust this computer on your device.');
 
         if (options.capabilities.includes('frida')) {
             const session = await frida
@@ -182,29 +191,13 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     },
     clearStuckModals: asyncUnimplemented('clearStuckModals') as never,
 
-    isAppInstalled: async (appId) => {
-        const { stdout } =
-            process.platform === 'win32'
-                ? await execa('ideviceinstaller', ['-l', '-o', 'list_all'])
-                : await execa('ideviceinstaller', ['list', '-o', 'list_all']);
-        return (
-            stdout
-                .split('\n')
-                // The first line is the header.
-                .slice(1)
-                .some((l) => l.startsWith(`${appId},`))
-        );
-    },
-    // We're using `libimobiledevice` instead of `cfgutil` because the latter doesn't wait for the app to be fully
-    // installed before exiting.
-    installApp: async (ipaPath) => {
-        if (process.platform === 'win32') await execa('ideviceinstaller', ['install', ipaPath]);
-        else await execa('ideviceinstaller', ['--install', ipaPath]);
-    },
-    uninstallApp: async (appId) => {
-        if (process.platform === 'win32') await execa('ideviceinstaller', ['uninstall', appId]);
-        else await execa('ideviceinstaller', ['--uninstall', appId]);
-    },
+    isAppInstalled: (appId) =>
+        python('pymobiledevice3', ['apps', 'list', '--user', '--no-color']).then(({ stdout }) =>
+            Object.keys(JSON.parse(stdout)).includes(appId)
+        ),
+    installApp: (ipaPath) => python('pymobiledevice3', ['apps', 'install', ipaPath]).then(),
+    uninstallApp: (appId) => python('pymobiledevice3', ['apps', 'uninstall', appId]).then(),
+
     async setAppPermissions(appId, _permissions) {
         if (!options.capabilities.includes('ssh') || !options.capabilities.includes('frida'))
             throw new Error('SSH and Frida are required for setting app permissions.');

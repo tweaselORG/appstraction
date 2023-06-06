@@ -46,8 +46,8 @@ export type PlatformApi<
      * Wait until the device or emulator has been connected and has booted up completely.
      *
      * @param tries The number of times to check if the device is present and booted. On Android, one try times out
-     *   after 7 seconds and the default number of tries is 20. On iOS, one try takes about 1 second and the default
-     *   number of tries is 100.
+     *   after 7 seconds and the default number of tries is 20. On iOS, one try times out after 10 seconds and the
+     *   default number of tries is 20.
      */
     waitForDevice: (tries?: number) => Promise<void>;
     /**
