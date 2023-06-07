@@ -94,17 +94,18 @@ adb emu avd snapshot save "<snapshot name>" # You can later use this name with t
 
 Installing and uninstalling apps and querying the metadata of an IPA file work without any preparation on a physical iOS device.
 
-For everything else, the iOS device needs to be jailbroken. For iOS 15 and 16, we have tested [palera1n](https://github.com/palera1n/palera1n). For iOS 14, we have previously successfully used [checkra1n](https://checkra.in/) for other projects, but we have not tested appstraction on iOS 14 (as we don't have a device running iOS 14).
+For everything else, the iOS device needs to be jailbroken. For iOS 15 and 16, we have tested [palera1n](https://github.com/palera1n/palera1n) in the **rootful mode**. To jailbreak using palera1n, follow [this guide](https://ios.cfw.guide/installing-palera1n/), but then install the jailbreak with `palera1n -fc` to enable the rootful mode and start the iPhone with `palera1n -f` subsequently.
+For iOS 14, we have previously successfully used [checkra1n](https://checkra.in/) for other projects, but we have not tested appstraction on iOS 14 (as we don't have a device running iOS 14).
 
-Depending on the capabilities and features you want to use, you need to install the following packages from Cydia/Sileo:
+Depending on the capabilities and features you want to use, the following packages from Cydia/Sileo need to be installed:
 
 * [OpenSSH](sileo://package/openssh) (for the `ssh` capability)
 * [SQLite 3.x](sileo://package/sqlite3) (if you want to set app permissions)
 * [Frida](sileo://package/re.frida.server) version 16.0.11 or greater (for the `frida` capability), you will need to [add the Frida repository to Cydia/Sileo](https://frida.re/docs/ios/#with-jailbreak): `https://build.frida.re`
 * [Open](http://cydia.saurik.com/package/com.conradkramer.open/) (if you want to launch apps without the `frida` capability), you will need to add a legacy Cydia repository if you are using Sileo: `https://apt.thebigboss.org/repofiles/cydia/`
-* [SSL Kill Switch 2](https://julioverne.github.io/description.html?id=com.julioverne.sslkillswitch2) (if you want to bypass certificate pinning)
+* [SSL Kill Switch 2](https://julioverne.github.io/description.html?id=com.julioverne.sslkillswitch2) (for the `certificate-pinning-bypass` capability). Note that this will permanently disable certificate pinning globally, until you uninstall it.
 
-You may need to respring after installing the packages.
+They are installed automatically for each necessary capability if the `ssh` capability is available (meaning all you need to do is set up OpenSSH, allowing root login, and appstraction will do the rest).
 
 ## API reference
 

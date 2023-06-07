@@ -304,6 +304,14 @@ export type PlatformApi<
         : Platform extends 'ios'
         ? {
               ssh: NodeSSH['execCommand'];
+              /**
+               * Will install and set up the necessary dependencies on the device for the chosen capability. This
+               * includes e.g. the frida-server or SSL Kill Switch 2. It will make persistent changes to the device and
+               * add the repositiory servers to the device's sources list. They will be contacted regularly to check for
+               * updates, so be sure of the privacy implications of this.
+               */
+              setupEnvironment: () => Promise<void>;
+              ensureFrida: () => Promise<void>;
           }
         : never;
 };
@@ -367,7 +375,7 @@ export type RunTargetOptions<
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
     ? 'wireguard' | 'root' | 'frida' | 'certificate-pinning-bypass'
     : Platform extends 'ios'
-    ? 'ssh' | 'frida'
+    ? 'ssh' | 'frida' | 'certificate-pinning-bypass'
     : never;
 
 /** A supported attribute for the `getDeviceAttribute()` function, depending on the platform. */
