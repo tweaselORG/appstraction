@@ -66,28 +66,22 @@ Some functions require the device to be rooted. The steps to do this vary depend
 
 ### Android emulator
 
-Appstraction doesn't require any special preparation in an emulator. You can create the emulator using Android Studio or the command line tools, e.g. like this to create an emulator with Google APIs running Android 13 (API level 33)—we recommend using x86_64 as the architecture (you can still [run ARM apps if you use Android 11 or newer](https://android-developers.googleblog.com/2020/03/run-arm-apps-on-android-emulator.html)):
+Appstraction doesn't require any special preparation in an emulator. You can create the emulator using the Device Manager in [Android Studio](https://developer.android.com/studio) or using [our CLI](https://github.com/tweaselORG/cli)—we recommend using x86_64 as the architecture (you can still [run ARM apps if you use Android 11](https://android-developers.googleblog.com/2020/03/run-arm-apps-on-android-emulator.html)):
 
 ```sh
-# Fetch the system image.
-sdkmanager "system-images;android-33;google_apis;x86_64"
-# Create the emulator.
-avdmanager create avd --abi google_apis/x86_64 --package "system-images;android-33;google_apis;x86_64" --device "pixel_4" --name "<emulator name>"
-
-# Start the emulator (you can also use a different storage size).
-emulator -avd "<emulator name>" -partition-size 8192 -wipe-data
+tweasel android-emulator:create "<emulator name>"
 ```
 
-On subsequent runs, don't include the `-partition-size 8192 -wipe-data` flags, i.e. run:
+You can then start the emulator like this, for example if you want to place honey data on it:
 
 ```sh
-emulator -avd "<emulator name>"
+tweasel android-emulator:start "<emulator name>"
 ```
 
 After you have set up the emulator to your liking, you should create a snapshot to later be able to reset the emulator to this state:
 
 ```sh
-adb emu avd snapshot save "<snapshot name>" # You can later use this name with the `resetDevice` function.
+tweasel android-emulator:snapshot:create "<snapshot name>" # You can later use this name with the `resetDevice` function.
 ```
 
 ### Physical iOS device
