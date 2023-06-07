@@ -105,7 +105,8 @@ Depending on the capabilities and features you want to use, the following packag
 * [Open](http://cydia.saurik.com/package/com.conradkramer.open/) (if you want to launch apps without the `frida` capability), you will need to add a legacy Cydia repository if you are using Sileo: `https://apt.thebigboss.org/repofiles/cydia/`
 * [SSL Kill Switch 2](https://julioverne.github.io/description.html?id=com.julioverne.sslkillswitch2) (for the `certificate-pinning-bypass` capability). Note that this will permanently disable certificate pinning globally, until you uninstall it.
 
-They are installed automatically for each necessary capability if the `ssh` capability is available (meaning all you need to do is set up OpenSSH and appstraction will do the rest).
+They are installed automatically for each necessary capability if the `ssh` capability is available (meaning all you need to do is set up OpenSSH, allowing root login, and appstraction will do the rest).
+
 ## API reference
 
 A full API reference can be found in the [`docs` folder](/docs/README.md).
