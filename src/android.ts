@@ -149,6 +149,11 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             );
             if (!fridaIsStarted) throw new Error('Failed to start Frida.');
         },
+        ensureAdb: () =>
+            adb(['start-server'], { reject: false, timeout: 15000 }).then(({ stdout, exitCode }) => {
+                if (!(exitCode === 0 && (stdout.includes('daemon started successfully') || stdout === '')))
+                    throw new Error('Failed to start ADB.');
+            }),
         async hasDeviceBooted(options) {
             const waitForDevice = options?.waitForDevice ?? false;
             const { stdout: devBootcomplete } = await adb(
@@ -267,6 +272,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     },
 
     async waitForDevice(tries = 20) {
+        await this._internal.ensureAdb();
         if (
             !(await retryCondition(() => this._internal.hasDeviceBooted({ waitForDevice: true }), tries, 100).catch(
                 (e) => {
@@ -287,6 +293,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         await this.ensureDevice();
     },
     async ensureDevice() {
+        await this._internal.ensureAdb();
         if (
             !(await this._internal.hasDeviceBooted().catch((e) => {
                 throw new Error('Failed to look for device: Error in adb', { cause: e });
