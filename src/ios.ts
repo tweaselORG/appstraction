@@ -220,7 +220,7 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
                 () =>
                     python('pymobiledevice3', ['springboard', 'state', 'get'], {
                         reject: false,
-                        timeout: 1000,
+                        timeout: 10000,
                     }).then(({ stderr, exitCode }) => exitCode === 0 && !stderr.includes('ERROR')),
                 tries
             ))
