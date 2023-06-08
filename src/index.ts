@@ -291,6 +291,7 @@ export type PlatformApi<
               hasDeviceBooted: (options?: { waitForDevice?: boolean }) => Promise<boolean>;
               ensureFrida: () => Promise<void>;
               requireRoot: (action: string) => Promise<void>;
+              ensureAdb: () => Promise<void>;
 
               getCertificateSubjectHashOld: (path: string) => Promise<string | undefined>;
               hasCertificateAuthority: (filename: string) => Promise<boolean>;
