@@ -19,6 +19,9 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
 
     await android.ensureDevice();
 
+    const installedApps = await android.listApps();
+    console.log('Installed apps:', installedApps);
+
     if (caCertPath) await android.installCertificateAuthority(caCertPath);
     if (wireguardConfigPath) await android.setProxy(await readFile(wireguardConfigPath, 'utf8'));
 

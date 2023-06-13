@@ -394,9 +394,12 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         await adb(['shell', 'input', 'keyevent', '3']);
     },
 
-    isAppInstalled: async (appId) => {
-        const { stdout } = await adb(['shell', 'cmd', 'package', 'list', 'packages', appId]);
-        return stdout.includes(`package:${appId}`);
+    listApps: (options) =>
+        adb(['shell', 'cmd', 'package', 'list', 'packages', ...(options?.includeSystem ? [] : ['-3'])]).then(
+            ({ stdout }) => stdout.split('\n').map((l) => l.replace(/^package:/, ''))
+        ),
+    async isAppInstalled(appId) {
+        return (await this.listApps()).includes(appId);
     },
     async installApp(apkPath, obbPaths) {
         let appId = '';
