@@ -253,10 +253,17 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
     },
     clearStuckModals: asyncUnimplemented('clearStuckModals') as never,
 
-    isAppInstalled: (appId) =>
-        python('pymobiledevice3', ['apps', 'list', '--user', '--no-color']).then(({ stdout }) =>
-            Object.keys(JSON.parse(stdout)).includes(appId)
-        ),
+    listApps: (options) =>
+        python('pymobiledevice3', [
+            'apps',
+            'list',
+            '--user',
+            ...(options?.includeSystem ? ['--system'] : []),
+            '--no-color',
+        ]).then(({ stdout }) => Object.keys(JSON.parse(stdout))),
+    async isAppInstalled(appId) {
+        return (await this.listApps()).includes(appId);
+    },
     installApp: (ipaPath) => python('pymobiledevice3', ['apps', 'install', ipaPath]).then(),
     uninstallApp: (appId) => python('pymobiledevice3', ['apps', 'uninstall', appId]).then(),
 

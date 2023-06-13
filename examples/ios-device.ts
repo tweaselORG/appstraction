@@ -21,6 +21,9 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
 
     await ios.ensureDevice();
 
+    const installedApps = await ios.listApps();
+    console.log('Installed apps:', installedApps);
+
     if (caCertPath) {
         await ios.installCertificateAuthority(caCertPath);
         console.log(

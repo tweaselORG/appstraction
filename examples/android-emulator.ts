@@ -24,6 +24,9 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
     await android.ensureDevice();
     await android.resetDevice(snapshotName);
 
+    const installedApps = await android.listApps();
+    console.log('Installed apps:', installedApps);
+
     if (caCertPath) {
         await android.removeCertificateAuthority(caCertPath);
         await android.installCertificateAuthority(caCertPath);

@@ -77,6 +77,14 @@ export type PlatformApi<
     clearStuckModals: Platform extends 'android' ? () => Promise<void> : never;
 
     /**
+     * Get a list of the app IDs of all installed apps.
+     *
+     * @param options.includeSystem Whether to include system apps in the list. Defaults to `false`.
+     *
+     * @returns An array of the app IDs.
+     */
+    listApps: (options?: { includeSystem?: boolean }) => Promise<string[]>;
+    /**
      * Check whether the app with the given app ID is installed.
      *
      * @param appId The app ID of the app to check.
