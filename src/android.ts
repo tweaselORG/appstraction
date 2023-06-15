@@ -290,6 +290,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         const { stdout } = await adb(['emu', 'avd', 'snapshot', 'load', snapshotName]);
         if (stdout.includes('KO')) throw new Error(`Failed to load snapshot: ${stdout}.`);
 
+        await this.waitForDevice();
         await this.ensureDevice();
     },
     async ensureDevice() {
