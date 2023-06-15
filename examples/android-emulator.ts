@@ -3,7 +3,7 @@ import { readFile } from 'fs/promises';
 import { parseAppMeta, pause, platformApi } from '../src/index';
 
 // You can pass the following command line arguments:
-// `npx tsx examples/android-emulator.ts <app ID> <app path> <snapshot name> <CA cert path?> <proxy host?> <proxy port?>`
+// `npx tsx examples/android-emulator.ts <app ID> <app path> <snapshot name> <CA cert path?> <WireGuard config path?>`
 
 (async () => {
     const android = platformApi({
@@ -16,7 +16,7 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
     const appPath = process.argv[3] || '/path/to/app-files';
     const snapshotName = process.argv[4] || 'your-snapshot';
     const caCertPath = process.argv[5];
-    const wireguardConfigPath = process.argv[5];
+    const wireguardConfigPath = process.argv[6];
 
     // Wait until the emulator is completely booted.
     await android.waitForDevice();
