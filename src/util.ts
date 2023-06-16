@@ -324,3 +324,22 @@ export const parsePemCertificateFromFile = async (path: string) => {
 
     return { cert: Certificate.fromBER(certDer), certPem, certDer };
 };
+
+// I adapted this from https://github.com/sindresorhus/execa/blob/b44d4066aebd2db0c7864936e710b9fa6f5ab9d2/lib/command.js#L12-L25
+
+const NO_ESCAPE_REGEXP = /^[\w.-]+$/;
+const DOUBLE_QUOTES_REGEXP = /"/g;
+const IS_QUOTED_REGEXP = /^".*"$/;
+
+export const escapeArg = (arg: string) => {
+    if (typeof arg !== 'string' || NO_ESCAPE_REGEXP.test(arg)) {
+        return arg;
+    }
+
+    return `"${arg.replace(DOUBLE_QUOTES_REGEXP, '\\"')}"`;
+};
+
+export const escapeCommand = (args: string[]) => {
+    const escapedCommand = args.map((arg) => escapeArg(arg)).join(' ');
+    return IS_QUOTED_REGEXP.test(escapedCommand) ? escapedCommand : `'${escapedCommand}'`;
+};

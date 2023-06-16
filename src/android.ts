@@ -23,6 +23,8 @@ import { venvOptions } from '../scripts/common/python';
 import type { ParametersExceptFirst, XapkManifest } from './util';
 import {
     asyncUnimplemented,
+    escapeArg,
+    escapeCommand,
     forEachInZip,
     getFileFromZip,
     getObjFromFridaScript,
@@ -174,19 +176,25 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             if (!options.capabilities.includes('root')) throw new Error(`Root access is required for ${action}.`);
 
             if (
-                await adb(['shell', 'su', '-c', 'whoami'], { reject: false }).then(
+                await adb(['shell', 'su', 'root', '/bin/sh -c whoami'], { reject: false }).then(
                     ({ stdout, exitCode }) => exitCode === 0 && stdout.includes('root')
                 )
             )
                 return {
-                    adbRootShell: (...args) => adb(['shell', 'su', '-c', ...(args[0] || [])], args[1]),
+                    adbRootShell: (args, execaOptions) =>
+                        adb(['shell', 'su', 'root', `/bin/sh -c ${args ? escapeCommand(args) : ''}`], execaOptions),
                     adbRootPush: async (source, destination) => {
                         const fileName = randomUUID();
                         const tmpFolder = '/sdcard/appstraction-tmp';
                         await adb(['shell', 'mkdir', '-p', tmpFolder]);
                         await adb(['push', source, `${tmpFolder}/${fileName}`]);
-                        await adb(['shell', 'su', '-c', 'mkdir', '-p', dirname(destination)]);
-                        await adb(['shell', 'su', '-c', 'mv', `${tmpFolder}/${fileName}`, destination]);
+                        await adb(['shell', 'su', 'root', `/bin/sh -c 'mkdir -p ${escapeArg(dirname(destination))}'`]);
+                        await adb([
+                            'shell',
+                            'su',
+                            'root',
+                            `/bin/sh -c 'mv ${escapeArg(`${tmpFolder}/${fileName}`)} ${escapeArg(destination)}'`,
+                        ]);
                     },
                 };
             else if (
@@ -231,19 +239,14 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             if (isTmpfsAlready) return;
 
             await adbRootShell(['mkdir', '-pm', '600', '/data/local/tmp/appstraction-overlay-tmpfs-tmp']);
+            // If we don’t escape the path ourselves, the * will be included in the quotes which will fail on some android versions.
             await adbRootShell([
-                'cp',
-                '--preserve=all',
-                `${directoryPath}/*`,
-                '/data/local/tmp/appstraction-overlay-tmpfs-tmp',
+                `cp --preserve=all ${escapeArg(directoryPath)}/* /data/local/tmp/appstraction-overlay-tmpfs-tmp`,
             ]);
 
             await adbRootShell(['mount', '-t', 'tmpfs', 'tmpfs', directoryPath]);
             await adbRootShell([
-                'cp',
-                '--preserve=all',
-                '/data/local/tmp/appstraction-overlay-tmpfs-tmp/*',
-                directoryPath,
+                `cp --preserve=all /data/local/tmp/appstraction-overlay-tmpfs-tmp/* ${escapeArg(directoryPath)}`,
             ]);
 
             await adbRootShell(['rm', '-r', '/data/local/tmp/appstraction-overlay-tmpfs-tmp']);
@@ -367,7 +370,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             // Enable remote control in config if necessary.
             const remoteControlEnabled = async () => {
                 const { stdout: config } = await adbRootShell(
-                    ['cat /data/data/com.wireguard.android/files/datastore/settings.preferences_pb'],
+                    ['cat', '/data/data/com.wireguard.android/files/datastore/settings.preferences_pb'],
                     { reject: false }
                 );
                 return config.includes('allow_remote_control_intents\u0012\u0002\b\u0001');
@@ -685,8 +688,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                     '-a',
                     'com.wireguard.android.action.SET_TUNNEL_DOWN',
                     '-n',
-                    // The quotes are necessary, otherwise `adb shell` interprets `$IntentReceiver` as a variable.
-                    "'com.wireguard.android/.model.TunnelManager\\$\\IntentReceiver'",
+                    // The slashes are necessary, otherwise `adb shell` interprets `$IntentReceiver` as a variable.
+                    'com.wireguard.android/.model.TunnelManager\\$IntentReceiver',
                     '-e',
                     'tunnel',
                     tunnelName,
@@ -703,10 +706,15 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             }
 
             const { stdout: appUser } = await adbRootShell(['stat', '-c', '%U', '/data/data/com.wireguard.android']);
-            await adbRootShell([
-                `'su ${appUser} /bin/sh -c "echo -n '${Buffer.from(config, 'utf-8').toString(
+            await adb([
+                'shell',
+                'su',
+                appUser,
+                '/bin/sh',
+                '-c',
+                `"echo -n '${Buffer.from(config, 'utf-8').toString(
                     'base64'
-                )}' | base64 -d > /data/data/com.wireguard.android/files/${tunnelName}.conf"'`,
+                )}' | base64 -d > /data/data/com.wireguard.android/files/${tunnelName}.conf"`,
             ]);
 
             // We need to restart the WireGuard app for it to recognize our new tunnel config.
@@ -718,8 +726,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 '-a',
                 'com.wireguard.android.action.SET_TUNNEL_UP',
                 '-n',
-                // The quotes are necessary, otherwise `adb shell` interprets `$IntentReceiver` as a variable.
-                "'com.wireguard.android/.model.TunnelManager\\$\\IntentReceiver'",
+                // The slashes are necessary, otherwise `adb shell` interprets `$IntentReceiver` as a variable.
+                'com.wireguard.android/.model.TunnelManager\\$IntentReceiver',
                 '-e',
                 'tunnel',
                 tunnelName,
