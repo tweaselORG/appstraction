@@ -574,7 +574,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     getForegroundAppId: async () => {
         const { stdout } = await adb(['shell', 'dumpsys', 'activity', 'recents']);
         const foregroundLine = stdout.split('\n').find((l) => l.includes('Recent #0'));
-        const [, appId] = Array.from(foregroundLine?.match(/A=\d+:(.+?) U=/) || []);
+        const [, appId] = Array.from(foregroundLine?.match(/A=\d+:(.+?)[ }]/) || []);
         return appId ? appId.trim() : undefined;
     },
     getPidForAppId: async (appId) => {
