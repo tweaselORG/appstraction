@@ -310,10 +310,22 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             // Install app if necessary.
             if (!(await this.isAppInstalled('com.wireguard.android'))) {
                 try {
-                    const fdroidMeta = await fetch('https://f-droid.org/api/v1/packages/com.wireguard.android').then(
-                        (res) => res.json()
-                    );
-                    const apkUrl = `https://f-droid.org/repo/com.wireguard.android_${fdroidMeta.suggestedVersionCode}.apk`;
+                    const fdroidVersionCode = await fetch('https://f-droid.org/api/v1/packages/com.wireguard.android')
+                        .then((res) => res.json())
+                        .then((fdroidMeta) => {
+                            if (
+                                fdroidMeta.packages.some(
+                                    (p: { versionCode: number }) => p.versionCode === fdroidMeta.suggestedVersionCode
+                                )
+                            )
+                                return fdroidMeta.suggestedVersionCode;
+
+                            return fdroidMeta.packages.sort(
+                                (a: { versionCode: number }, b: { versionCode: number }) =>
+                                    b.versionCode - a.versionCode
+                            )[0].versionCode;
+                        });
+                    const apkUrl = `https://f-droid.org/repo/com.wireguard.android_${fdroidVersionCode}.apk`;
 
                     // `adb` complains if we try to install a file with the wrong extension.
                     const apkTmpPath = temporaryFile({ extension: 'apk' }) as `${string}.apk`;
