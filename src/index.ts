@@ -450,5 +450,5 @@ export function platformApi<
 
 export { androidPermissions } from './android';
 export { iosPermissions } from './ios';
-export { parseAppMeta, pause } from './util';
+export { listDevices, parseAppMeta, pause } from './util';
 export { IosPermission, AndroidPermission };

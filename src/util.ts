@@ -1,4 +1,5 @@
 import { runAndroidDevTool } from 'andromatic';
+import { getVenv } from 'autopy';
 import { fileTypeFromFile } from 'file-type';
 import type { TargetProcess } from 'frida';
 import frida from 'frida';
@@ -12,6 +13,7 @@ import type { Readable } from 'stream';
 import { temporaryFile } from 'tempy';
 import type { Entry, ZipFile } from 'yauzl';
 import { fromFd } from 'yauzl';
+import { venvOptions } from '../scripts/common/python';
 import type { AppPath, SupportedPlatform } from './index';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -342,4 +344,83 @@ export const escapeArg = (arg: string) => {
 export const escapeCommand = (args: string[]) => {
     const escapedCommand = args.map((arg) => escapeArg(arg)).join(' ');
     return IS_QUOTED_REGEXP.test(escapedCommand) ? escapedCommand : `'${escapedCommand}'`;
+};
+
+/**
+ * Returns a list of all detected Android and iOS devices currently connected to the host. This includes Android
+ * emulators running on the host.
+ *
+ * @param options If the `frida` option is set to `true`, this function will use frida to detect the devices rather than
+ *   try to detect them using platform-specific tools (such as `adb` and `pymobiledevice3`).
+ */
+export const listDevices = async (options?: {
+    frida?: boolean;
+}): Promise<
+    {
+        /** A unique id that identifies the device to the platform tools and frida. */
+        id: string;
+        /**
+         * The name or model of the device (adb sometimes can not find that information easily, so it might be
+         * undefined)
+         */
+        name?: string;
+        /** The platform the device is running on. */
+        platform: 'android' | 'ios';
+    }[]
+> => {
+    if (options?.frida)
+        return await frida
+            .enumerateDevices()
+            .then((devices) => devices.filter((device) => device.type === 'usb'))
+            .then((devices) =>
+                Promise.all(
+                    devices.map(async (device) => {
+                        const params = await device.querySystemParameters();
+                        return {
+                            id: device.id,
+                            name: device.name,
+                            platform: params.platform === 'darwin' ? 'ios' : 'android',
+                        };
+                    })
+                )
+            );
+
+    const venv = getVenv(venvOptions);
+    const python = async (...args: Parameters<Awaited<typeof venv>>) => (await venv)(...args);
+
+    const androidDevices = await runAndroidDevTool('adb', ['devices', '-l']).then(({ stdout }) => {
+        const lines = stdout.split('\n');
+        if (lines[0]?.includes('List of devices attached'))
+            return lines
+                .slice(1, -1)
+                .map((line) => {
+                    const device = line.split(/\s+/);
+
+                    // Only return devices which are actually connected (possible values are 'device', 'offline' and 'no', see https://developer.android.com/tools/adb#devicestatus)
+                    if (device[1] !== 'device') return undefined;
+
+                    return device[0] && device[1]
+                        ? {
+                              id: device[0],
+                              name: line.match(/model:(.+)? /)?.[1],
+                              platform: 'android' as const,
+                          }
+                        : undefined;
+                })
+                .filter(Boolean) as { id: string; name?: string; platform: 'android' }[];
+        return [];
+    });
+
+    const iosDevices = await python('pymobiledevice3', ['usbmux', 'list', '--no-color'], { reject: false }).then(
+        ({ stdout, stderr }) =>
+            !stderr.includes('ERROR') && stdout !== ''
+                ? (JSON.parse(stdout) as Record<'DeviceName' | 'Identifier', string>[]).map((device) => ({
+                      id: device.Identifier,
+                      name: device.DeviceName,
+                      platform: 'ios' as const,
+                  }))
+                : []
+    );
+
+    return [...androidDevices, ...iosDevices];
 };

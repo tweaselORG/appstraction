@@ -8,6 +8,7 @@ import {
     asyncUnimplemented,
     getObjFromFridaScript,
     isRecord,
+    listDevices,
     parsePemCertificateFromFile,
     retryCondition,
 } from './util';
@@ -228,11 +229,14 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
             throw new Error('Failed to wait for device: No booted device found after timeout.');
     },
     async ensureDevice() {
-        const { exitCode, stdout: devices } = await python('pymobiledevice3', ['usbmux', 'list', '--no-color'], {
-            reject: false,
-        });
-        if (exitCode !== 0 && JSON.parse(devices).length !== 1)
-            throw new Error('You need to connect exactly one device. Multiple devices are not supported.');
+        const availableDevices = await listDevices({ frida: options.capabilities.includes('frida') });
+
+        if (availableDevices.length > 1)
+            throw new Error('You have multiple devices connected. Please disconnect all but one.');
+        else if (availableDevices.length === 0) throw new Error('You need to connect your device.');
+        else if (availableDevices.filter((device) => device.platform === 'ios').length === 0)
+            throw new Error('You need to connect an iOS device.');
+
         if ((await python('pymobiledevice3', ['lockdown', 'info'], { reject: false })).exitCode !== 0)
             throw new Error('You need to trust this computer on your device.');
 
