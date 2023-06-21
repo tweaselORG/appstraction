@@ -143,7 +143,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             if (fridaCheck.includes('frida-server')) return;
 
             await adbRootShell(['chmod', '755', '/data/local/tmp/frida-server']);
-            adbRootShell(['/data/local/tmp/frida-server', '--daemonize']);
+            adbRootShell(['/data/local/tmp/frida-server', '--daemonize'], { adbShellFlags: ['-x'] });
 
             const fridaIsStarted = await retryCondition(
                 async () => (await python('frida-ps', ['-U'], { reject: false })).stdout.includes('frida-server'),
@@ -181,8 +181,17 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 )
             )
                 return {
-                    adbRootShell: (args, execaOptions) =>
-                        adb(['shell', 'su', 'root', `/bin/sh -c ${args ? escapeCommand(args) : ''}`], execaOptions),
+                    adbRootShell: (command, options) =>
+                        adb(
+                            [
+                                'shell',
+                                ...(options?.adbShellFlags || []),
+                                'su',
+                                'root',
+                                `/bin/sh -c ${command ? escapeCommand(command) : ''}`,
+                            ],
+                            options?.execaOptions
+                        ),
                     adbRootPush: async (source, destination) => {
                         const fileName = randomUUID();
                         const tmpFolder = '/sdcard/appstraction-tmp';
@@ -211,7 +220,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 throw new Error('Failed to require root: Timed out waiting for device.', { cause: e });
             });
             return {
-                adbRootShell: (...args) => adb(['shell', ...(args[0] || [])], args[1]),
+                adbRootShell: (command, options) =>
+                    adb(['shell', ...(options?.adbShellFlags || []), ...(command || [])], options?.execaOptions),
                 adbRootPush: (source, destination) => adb(['push', source, destination]).then(),
             };
         },
@@ -371,7 +381,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             const remoteControlEnabled = async () => {
                 const { stdout: config } = await adbRootShell(
                     ['cat', '/data/data/com.wireguard.android/files/datastore/settings.preferences_pb'],
-                    { reject: false }
+                    { execaOptions: { reject: false } }
                 );
                 return config.includes('allow_remote_control_intents\u0012\u0002\b\u0001');
             };
@@ -675,7 +685,9 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
             const deleteConfig = async () => {
                 await adbRootShell(['rm', '-f', `/data/data/com.wireguard.android/files/${tunnelName}.conf`], {
-                    reject: false,
+                    execaOptions: {
+                        reject: false,
+                    },
                 });
                 // We need to restart the WireGuard app, otherwise it will still show the deleted config.
                 await this.stopApp('com.wireguard.android');

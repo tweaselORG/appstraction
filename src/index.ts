@@ -331,7 +331,11 @@ export type PlatformApi<
 };
 
 export type AdbRootFunction = (
-    ...args: ParametersExceptFirst<typeof runAndroidDevTool>
+    command: ParametersExceptFirst<typeof runAndroidDevTool>[0],
+    options?: {
+        adbShellFlags?: string[];
+        execaOptions?: ParametersExceptFirst<typeof runAndroidDevTool>[1];
+    }
 ) => ReturnType<typeof runAndroidDevTool>;
 
 /** The options for the `platformApi()` function. */
