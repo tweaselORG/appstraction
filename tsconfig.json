@@ -1,6 +1,7 @@
 {
     "extends": "@baltpeter/tsconfig",
     "include": ["src/**/*", "examples/**/*", "src/types/ipa-extract-info.d.ts"],
+    "exclude": ["**/*.tmp.ts"],
     "compilerOptions": {
         "resolveJsonModule": true,
         "paths": {
