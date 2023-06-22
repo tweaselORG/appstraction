@@ -1,3 +1,4 @@
+import type { runAndroidDevTool } from 'andromatic';
 import type { ExecaChildProcess } from 'execa';
 import type { NodeSSH } from 'node-ssh';
 import type { LiteralUnion } from 'type-fest';
@@ -5,6 +6,7 @@ import type { AndroidPermission } from './android';
 import { androidApi } from './android';
 import type { IosPermission } from './ios';
 import { iosApi } from './ios';
+import type { ParametersExceptFirst } from './util';
 
 /** A platform that is supported by this library. */
 export type SupportedPlatform = 'android' | 'ios';
@@ -298,7 +300,10 @@ export type PlatformApi<
         ? {
               hasDeviceBooted: (options?: { waitForDevice?: boolean }) => Promise<boolean>;
               ensureFrida: () => Promise<void>;
-              requireRoot: (action: string) => Promise<void>;
+              requireRoot: (action: string) => Promise<{
+                  adbRootShell: AdbRootFunction;
+                  adbRootPush: (source: string, destination: string) => Promise<void>;
+              }>;
               ensureAdb: () => Promise<void>;
 
               getCertificateSubjectHashOld: (path: string) => Promise<string | undefined>;
@@ -324,6 +329,14 @@ export type PlatformApi<
           }
         : never;
 };
+
+export type AdbRootFunction = (
+    command: ParametersExceptFirst<typeof runAndroidDevTool>[0],
+    options?: {
+        adbShellFlags?: string[];
+        execaOptions?: ParametersExceptFirst<typeof runAndroidDevTool>[1];
+    }
+) => ReturnType<typeof runAndroidDevTool>;
 
 /** The options for the `platformApi()` function. */
 export type PlatformApiOptions<

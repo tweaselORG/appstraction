@@ -62,7 +62,7 @@ You can only run one device at a time with the current version.
 
 To use appstraction with a physical Android device, you need to enable USB debugging. You can do this by going to Settings -> System -> Developer options -> USB debugging.
 
-Some functions require the device to be rooted. The steps to do this vary depending on the device. We recommend using [Magisk](https://topjohnwu.github.io/Magisk/). After you have rooted the device, you need to enable rooted debugging via Settings -> System -> Developer options -> Rooted debugging.
+Most functions require the device to be rooted. The steps to do this vary depending on the device. We recommend using [Magisk](https://topjohnwu.github.io/Magisk/). After you have rooted the device, you need to allow `com.android.shell` to use super user privileges in Magisk. You can do this in the Magisk app and will be asked to do so the first time you run an analysis. Alternatively, you can also enable rooted debugging via Settings -> System -> Developer options -> Rooted debugging. However, this might not be available to you, depending on the distributuion of Android you run. Stock Android generally does not allow rooted debugging in production builds.
 
 ### Android emulator
 

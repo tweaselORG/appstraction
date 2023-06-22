@@ -2,12 +2,12 @@ import { decompress as decompressXz } from '@napi-rs/lzma/xz';
 import { runAndroidDevTool } from 'andromatic';
 import { getVenv } from 'autopy';
 import fetch from 'cross-fetch';
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { fileTypeFromFile } from 'file-type';
 import frida from 'frida';
 import { open, rm, writeFile } from 'fs/promises';
 import pRetry from 'p-retry';
-import { basename } from 'path';
+import { basename, dirname } from 'path';
 import { major as semverMajor, minVersion as semverMinVersion } from 'semver';
 import { temporaryFile } from 'tempy';
 import type {
@@ -23,6 +23,8 @@ import { venvOptions } from '../scripts/common/python';
 import type { ParametersExceptFirst, XapkManifest } from './util';
 import {
     asyncUnimplemented,
+    escapeArg,
+    escapeCommand,
     forEachInZip,
     getFileFromZip,
     getObjFromFridaScript,
@@ -85,6 +87,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             });
             const fridaServerMajorVersion = fridaServerVersion && semverMajor(fridaServerVersion);
 
+            const { adbRootShell, adbRootPush } = await this.requireRoot('Frida');
+
             // Download and install `frida-server` if necessary.
             if (fridaServerMajorVersion !== fridaJsMajorVersion) {
                 const releaseMeta = await fetch(
@@ -123,8 +127,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 const fridaServerBinary = await decompressXz(Buffer.from(fridaServerXz));
                 await writeFile(fridaServerTmpPath, Buffer.from(fridaServerBinary));
 
-                await adb(['push', fridaServerTmpPath, '/data/local/tmp/frida-server']);
-                await adb(['shell', 'chmod', '755', '/data/local/tmp/frida-server']);
+                await adbRootPush(fridaServerTmpPath, '/data/local/tmp/frida-server');
+                await adbRootShell(['chmod', '755', '/data/local/tmp/frida-server']);
 
                 const { stdout: installedFridaServerVersion } = await adb(
                     ['shell', '/data/local/tmp/frida-server --version'],
@@ -138,10 +142,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             const { stdout: fridaCheck } = await python('frida-ps', ['-U'], { reject: false });
             if (fridaCheck.includes('frida-server')) return;
 
-            await this.requireRoot('Frida');
-
-            await adb(['shell', 'chmod', '755', '/data/local/tmp/frida-server']);
-            await adb(['shell', '-x', '/data/local/tmp/frida-server', '--daemonize']);
+            await adbRootShell(['chmod', '755', '/data/local/tmp/frida-server']);
+            adbRootShell(['/data/local/tmp/frida-server', '--daemonize'], { adbShellFlags: ['-x'] });
 
             const fridaIsStarted = await retryCondition(
                 async () => (await python('frida-ps', ['-U'], { reject: false })).stdout.includes('frida-server'),
@@ -173,10 +175,55 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         async requireRoot(action) {
             if (!options.capabilities.includes('root')) throw new Error(`Root access is required for ${action}.`);
 
-            await adb(['root']);
+            if (
+                await adb(['shell', 'su', 'root', '/bin/sh -c whoami'], { reject: false }).then(
+                    ({ stdout, exitCode }) => exitCode === 0 && stdout.includes('root')
+                )
+            )
+                return {
+                    adbRootShell: (command, options) =>
+                        adb(
+                            [
+                                'shell',
+                                ...(options?.adbShellFlags || []),
+                                'su',
+                                'root',
+                                `/bin/sh -c ${command ? escapeCommand(command) : ''}`,
+                            ],
+                            options?.execaOptions
+                        ),
+                    adbRootPush: async (source, destination) => {
+                        const fileName = randomUUID();
+                        const tmpFolder = '/sdcard/appstraction-tmp';
+                        await adb(['shell', 'mkdir', '-p', tmpFolder]);
+                        await adb(['push', source, `${tmpFolder}/${fileName}`]);
+                        await adb(['shell', 'su', 'root', `/bin/sh -c 'mkdir -p ${escapeArg(dirname(destination))}'`]);
+                        await adb([
+                            'shell',
+                            'su',
+                            'root',
+                            `/bin/sh -c 'mv ${escapeArg(`${tmpFolder}/${fileName}`)} ${escapeArg(destination)}'`,
+                        ]);
+                    },
+                };
+            else if (
+                await adb(['root']).then(
+                    ({ stdout, exitCode }) =>
+                        exitCode !== 0 ||
+                        (!stdout.includes('restarting adbd as root') &&
+                            !stdout.includes('adbd is already running as root'))
+                )
+            )
+                throw Error('Failed to activate root: su binary is missing and adb root is not available.');
+
             await adb(['wait-for-device'], { timeout: 2500 }).catch((e) => {
                 throw new Error('Failed to require root: Timed out waiting for device.', { cause: e });
             });
+            return {
+                adbRootShell: (command, options) =>
+                    adb(['shell', ...(options?.adbShellFlags || []), ...(command || [])], options?.execaOptions),
+                adbRootPush: (source, destination) => adb(['push', source, destination]).then(),
+            };
         },
 
         // This imitates `openssl x509 -inform PEM -subject_hash_old -in <path>`.
@@ -194,31 +241,25 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             adb(['shell', 'ls', `/system/etc/security/cacerts/${filename}`], { reject: false }).then(
                 ({ exitCode }) => exitCode === 0
             ),
-        overlayTmpfs: async (directoryPath) => {
-            const isTmpfsAlready = (await adb(['shell', 'mount'])).stdout
+        async overlayTmpfs(directoryPath) {
+            const { adbRootShell } = await this.requireRoot('to overlay the system tmpfs.');
+            const isTmpfsAlready = (await adbRootShell(['mount'])).stdout
                 .split('\n')
                 .some((line) => line.includes(directoryPath) && line.includes('type tmpfs'));
             if (isTmpfsAlready) return;
 
-            await adb(['shell', 'mkdir', '-pm', '600', '/data/local/tmp/appstraction-overlay-tmpfs-tmp']);
-            await adb([
-                'shell',
-                'cp',
-                '--preserve=all',
-                `${directoryPath}/*`,
-                '/data/local/tmp/appstraction-overlay-tmpfs-tmp',
+            await adbRootShell(['mkdir', '-pm', '600', '/data/local/tmp/appstraction-overlay-tmpfs-tmp']);
+            // If we don’t escape the path ourselves, the * will be included in the quotes which will fail on some android versions.
+            await adbRootShell([
+                `cp --preserve=all ${escapeArg(directoryPath)}/* /data/local/tmp/appstraction-overlay-tmpfs-tmp`,
             ]);
 
-            await adb(['shell', 'mount', '-t', 'tmpfs', 'tmpfs', directoryPath]);
-            await adb([
-                'shell',
-                'cp',
-                '--preserve=all',
-                '/data/local/tmp/appstraction-overlay-tmpfs-tmp/*',
-                directoryPath,
+            await adbRootShell(['mount', '-t', 'tmpfs', 'tmpfs', directoryPath]);
+            await adbRootShell([
+                `cp --preserve=all /data/local/tmp/appstraction-overlay-tmpfs-tmp/* ${escapeArg(directoryPath)}`,
             ]);
 
-            await adb(['shell', 'rm', '-r', '/data/local/tmp/appstraction-overlay-tmpfs-tmp']);
+            await adbRootShell(['rm', '-r', '/data/local/tmp/appstraction-overlay-tmpfs-tmp']);
         },
 
         // Note that this is only a fairly crude check, cf.
@@ -318,6 +359,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                     // `adb` complains if we try to install a file with the wrong extension.
                     const apkTmpPath = temporaryFile({ extension: 'apk' }) as `${string}.apk`;
                     const apk = await fetch(apkUrl).then((res) => res.arrayBuffer());
+
                     await writeFile(apkTmpPath, Buffer.from(apk));
 
                     await this.installApp(apkTmpPath);
@@ -333,26 +375,25 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 }
             }
 
+            const { adbRootShell } = await this._internal.requireRoot('configuring WireGuard in ensureDevice()');
+
             // Enable remote control in config if necessary.
             const remoteControlEnabled = async () => {
-                const { stdout: config } = await adb(
-                    ['shell', 'cat /data/data/com.wireguard.android/files/datastore/settings.preferences_pb'],
-                    { reject: false }
+                const { stdout: config } = await adbRootShell(
+                    ['cat', '/data/data/com.wireguard.android/files/datastore/settings.preferences_pb'],
+                    { execaOptions: { reject: false } }
                 );
                 return config.includes('allow_remote_control_intents\u0012\u0002\b\u0001');
             };
 
             if (!(await remoteControlEnabled())) {
                 try {
-                    this._internal.requireRoot('configuring WireGuard in ensureDevice()');
-
                     // This is the default config of version v1.0.20220516, but with remote control enabled.
                     const config =
                         '\n\u0015\n\u000frestore_on_boot\u0012\u0002\b\u0000\n\u0010\n\ndark_theme\u0012\u0002\b\u0000\n\u0016\n\u0010multiple_tunnels\u0012\u0002\b\u0000\n"\n\u001callow_remote_control_intents\u0012\u0002\b\u0001';
                     const configAsBase64 = Buffer.from(config).toString('base64');
 
-                    const { stdout: appUser } = await adb([
-                        'shell',
+                    const { stdout: appUser } = await adbRootShell([
                         'stat',
                         '-c',
                         '%U',
@@ -360,19 +401,15 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                     ]);
                     await adb([
                         'shell',
-                        'su',
-                        appUser,
                         '/bin/sh',
                         '-c',
-                        '"mkdir -p /data/data/com.wireguard.android/files/datastore"',
+                        `'su ${appUser} /bin/sh -c "mkdir -p /data/data/com.wireguard.android/files/datastore"'`,
                     ]);
                     await adb([
                         'shell',
-                        'su',
-                        appUser,
                         '/bin/sh',
                         '-c',
-                        `"echo -n '${configAsBase64}' | base64 -d > /data/data/com.wireguard.android/files/datastore/settings.preferences_pb"`,
+                        `'su ${appUser} /bin/sh -c "echo -n '${configAsBase64}' | base64 -d > /data/data/com.wireguard.android/files/datastore/settings.preferences_pb"'`,
                     ]);
 
                     if (!(await remoteControlEnabled()))
@@ -421,10 +458,6 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 const externalStorageDir = (await adb(['shell', 'echo', '$EXTERNAL_STORAGE'])).stdout;
                 const obbPaths: string[] = [];
 
-                if (expansionFileNames?.length && expansionFileNames.length > 0) {
-                    await this._internal.requireRoot('writing to external storage in installApp');
-                }
-
                 await forEachInZip(xapk, async (entry, zipFile) => {
                     if (apkFileNames?.includes(entry.fileName)) {
                         await tmpFileFromZipEntry(zipFile, entry, 'apk').then((tmpFile) => void tmpApks.push(tmpFile));
@@ -436,7 +469,11 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                             // only way to handle this
                             // (https://github.com/tweaselORG/appstraction/issues/63#issuecomment-1514822176).
                             return tmpFileFromZipEntry(zipFile, entry).then(async (tmpFile) => {
-                                await adb(['push', tmpFile, `${externalStorageDir}/${expansion.install_path}`]);
+                                const { adbRootPush } = await this._internal.requireRoot(
+                                    'writing to external storage in installApp'
+                                );
+
+                                await adbRootPush(tmpFile, `${externalStorageDir}/${expansion.install_path}`);
                                 obbPaths.push(`${externalStorageDir}/${expansion.install_path}`);
                                 await rm(tmpFile);
                             });
@@ -448,7 +485,10 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 try {
                     appId = await this._internal.installMultiApk(tmpApks);
                 } catch (err) {
-                    await Promise.all(obbPaths.map((obbPath) => adb(['shell', 'rm', obbPath])));
+                    const { adbRootShell } = await this._internal.requireRoot(
+                        'writing to external storage in installApp'
+                    );
+                    await Promise.all(obbPaths.map((obbPath) => adbRootShell(['rm', obbPath])));
                     throw err;
                 }
 
@@ -477,17 +517,16 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         }
 
         if (obbPaths && obbPaths.length > 0) {
-            await this._internal.requireRoot('writing to external storage in installApp');
+            const { adbRootPush } = await this._internal.requireRoot('writing to external storage in installApp');
             const externalStorageDir = (await adb(['shell', 'echo', '$EXTERNAL_STORAGE'])).stdout;
             await Promise.all(
                 obbPaths.map((obbPath) =>
-                    adb([
-                        'push',
+                    adbRootPush(
                         obbPath.obb,
                         `${externalStorageDir}/${
                             obbPath.installPath || `Android/obb/${appId}/${basename(obbPath.obb)}`
-                        }`,
-                    ])
+                        }`
+                    )
                 )
             );
         }
@@ -612,7 +651,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
         if (await this._internal.hasCertificateAuthority(certFilename)) return;
 
-        await this._internal.requireRoot('installCertificateAuthority');
+        const { adbRootPush } = await this._internal.requireRoot('installCertificateAuthority');
 
         // Since Android 10, we cannot write to `/system` anymore, even if we are root, see:
         // https://github.com/tweaselORG/meta/issues/18#issuecomment-1437057934
@@ -620,17 +659,17 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         // https://github.com/httptoolkit/httptoolkit-server/blob/9658bef164fb5cfce13b2c4b1bedacc158767f57/src/interceptors/android/adb-commands.ts#L228-L230
         await this._internal.overlayTmpfs('/system/etc/security/cacerts');
 
-        await adb(['push', path, `/system/etc/security/cacerts/${certFilename}`]);
+        await adbRootPush(path, `/system/etc/security/cacerts/${certFilename}`);
     },
     async removeCertificateAuthority(path) {
         const certFilename = `${await this._internal.getCertificateSubjectHashOld(path)}.0`;
 
         if (!(await this._internal.hasCertificateAuthority(certFilename))) return;
 
-        await this._internal.requireRoot('removeCertificateAuthority');
+        const { adbRootShell } = await this._internal.requireRoot('removeCertificateAuthority');
 
         await this._internal.overlayTmpfs('/system/etc/security/cacerts');
-        await adb(['shell', 'rm', `/system/etc/security/cacerts/${certFilename}`]);
+        await adbRootShell(['rm', `/system/etc/security/cacerts/${certFilename}`]);
     },
     async setProxy(_proxy) {
         // We are dealing with a WireGuard tunnel.
@@ -642,31 +681,33 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             await this.setAppBackgroundBatteryUsage('com.wireguard.android', 'unrestricted');
 
             const config = _proxy as WireGuardConfig | null;
+            const { adbRootShell } = await this._internal.requireRoot('enabling a WireGuard tunnel');
 
             const deleteConfig = async () => {
-                await adb(['shell', 'rm', '-f', `/data/data/com.wireguard.android/files/${tunnelName}.conf`], {
-                    reject: false,
+                await adbRootShell(['rm', '-f', `/data/data/com.wireguard.android/files/${tunnelName}.conf`], {
+                    execaOptions: {
+                        reject: false,
+                    },
                 });
                 // We need to restart the WireGuard app, otherwise it will still show the deleted config.
                 await this.stopApp('com.wireguard.android');
             };
 
             if (config === null) {
-                await adb([
-                    'shell',
+                await adbRootShell([
                     'am',
                     'broadcast',
                     '-a',
                     'com.wireguard.android.action.SET_TUNNEL_DOWN',
                     '-n',
-                    // The quotes are necessary, otherwise `adb shell` interprets `$IntentReceiver` as a variable.
-                    "'com.wireguard.android/.model.TunnelManager$IntentReceiver'",
+                    // The slashes are necessary, otherwise `adb shell` interprets `$IntentReceiver` as a variable.
+                    'com.wireguard.android/.model.TunnelManager\\$IntentReceiver',
                     '-e',
                     'tunnel',
                     tunnelName,
                 ]);
 
-                const vpnIsDisabled = await retryCondition(async () => !(await this._internal.isVpnEnabled()));
+                const vpnIsDisabled = await retryCondition(async () => !(await this._internal.isVpnEnabled()), 500);
                 if (!vpnIsDisabled) throw new Error('Failed to disable WireGuard tunnel.');
 
                 // This requires root, but I don't think we should require root for disabling a tunnel. It's not really
@@ -676,30 +717,29 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 return;
             }
 
-            await this._internal.requireRoot('enabling a WireGuard tunnel');
-
-            const { stdout: appUser } = await adb(['shell', 'stat', '-c', '%U', '/data/data/com.wireguard.android']);
+            const { stdout: appUser } = await adbRootShell(['stat', '-c', '%U', '/data/data/com.wireguard.android']);
             await adb([
                 'shell',
                 'su',
                 appUser,
                 '/bin/sh',
                 '-c',
-                `"echo -n '${config}' > /data/data/com.wireguard.android/files/${tunnelName}.conf"`,
+                `"echo -n '${Buffer.from(config, 'utf-8').toString(
+                    'base64'
+                )}' | base64 -d > /data/data/com.wireguard.android/files/${tunnelName}.conf"`,
             ]);
 
             // We need to restart the WireGuard app for it to recognize our new tunnel config.
             await this.stopApp('com.wireguard.android');
 
-            await adb([
-                'shell',
+            await adbRootShell([
                 'am',
                 'broadcast',
                 '-a',
                 'com.wireguard.android.action.SET_TUNNEL_UP',
                 '-n',
-                // The quotes are necessary, otherwise `adb shell` interprets `$IntentReceiver` as a variable.
-                "'com.wireguard.android/.model.TunnelManager$IntentReceiver'",
+                // The slashes are necessary, otherwise `adb shell` interprets `$IntentReceiver` as a variable.
+                'com.wireguard.android/.model.TunnelManager\\$IntentReceiver',
                 '-e',
                 'tunnel',
                 tunnelName,
