@@ -42,7 +42,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:946](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L946)
+[android.ts:955](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L955)
 
 ___
 
@@ -81,7 +81,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:436](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L436)
+[index.ts:439](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L439)
 
 ___
 
@@ -100,7 +100,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:442](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L442)
+[index.ts:445](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L445)
 
 ___
 
@@ -112,7 +112,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:585](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L585)
+[ios.ts:627](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L627)
 
 ___
 
@@ -176,6 +176,7 @@ Functions that are available for the platforms.
 | `target.platform` | `Platform` | The platform this instance is configured for, i.e. `ios` or `android`. |
 | `target.runTarget` | `RunTarget` | The run target this instance is configured for, i.e. `device` or `emulator`. |
 | `uninstallApp` | (`appId`: `string`) => `Promise`<`void`\> | Uninstall the app with the given app ID. Will not fail if the app is not installed. This also removes any data stored by the app. |
+| `unlockScreen` | () => `Promise`<`void`\> | Simulates key presses to unlock the screen. This only works if no passcode is set on the device. |
 | `waitForDevice` | (`tries?`: `number`) => `Promise`<`void`\> | Wait until the device or emulator has been connected and has booted up completely. |
 
 #### Defined in
@@ -200,7 +201,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:365](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L365)
+[index.ts:368](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L368)
 
 ___
 
@@ -219,7 +220,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:450](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L450)
+[index.ts:453](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L453)
 
 ___
 
@@ -249,7 +250,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:392](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L392)
+[index.ts:395](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L395)
 
 ___
 
@@ -267,7 +268,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:429](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L429)
+[index.ts:432](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L432)
 
 ___
 
@@ -309,7 +310,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:457](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L457)
+[index.ts:460](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L460)
 
 ## Variables
 
@@ -321,7 +322,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:815](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L815)
+[android.ts:824](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L824)
 
 ___
 
@@ -333,7 +334,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:568](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L568)
+[ios.ts:610](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L610)
 
 ## Functions
 
@@ -426,4 +427,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:466](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L466)
+[index.ts:469](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L469)

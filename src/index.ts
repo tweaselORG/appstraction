@@ -285,6 +285,9 @@ export type PlatformApi<
         : Platform extends 'ios'
         ? (proxy: Proxy | null) => Promise<void>
         : never;
+
+    /** Simulates key presses to unlock the screen. This only works if no passcode is set on the device. */
+    unlockScreen: () => Promise<void>;
     /**
      * An indicator for what platform and run target this instance of PlatformApi is configured for. This is useful
      * mostly to write typeguards.

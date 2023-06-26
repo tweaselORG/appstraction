@@ -135,6 +135,13 @@ function getProxySettingsForCurrentWifiNetwork() {
 }
 
 send({ name: "get_obj_from_frida_script", payload: getProxySettingsForCurrentWifiNetwork() });`,
+    simulateHomeButton: `// See https://github.com/tweaselORG/appstraction/issues/107
+var atServer = ObjC.classes.HNDAssistiveTouchServer.sharedInstance();
+// frida somehow needs this to attach the method to the object (https://github.com/tweaselORG/appstraction/issues/107#issuecomment-1608013662)
+Object.getOwnPropertyNames(atServer)
+atServer._home()
+// The process will always crash after this, but the home button press will be simulated before that.
+`,
 } as const;
 const cloudConfigPath =
     '/var/containers/Shared/SystemGroup/systemgroup.com.apple.configurationprofiles/Library/ConfigurationProfiles/CloudConfigurationDetails.plist' as const;
@@ -554,6 +561,40 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
                     proxySettings['HTTPSPort'] !== proxy?.port + ''))
         )
             throw new Error('Failed to set proxy.');
+    },
+    unlockScreen: async () => {
+        if (!options.capabilities.includes('frida')) throw new Error('Frida is required for unlocking the screen.');
+        await frida
+            .getUsbDevice()
+            .then((f) => f.attach('assistivetouchd'))
+            .then(async (s) => {
+                await (await s.createScript(fridaScripts.simulateHomeButton)).load();
+                await s.detach();
+            })
+            .catch((e) => {
+                if (e.message === 'Process not found')
+                    throw new Error(
+                        'AssistiveTouch service is not running. Enable it in Settings > Accessibility > Touch > AssistiveTouch.'
+                    );
+                // TODO: Enable AssistiveTouch automatically. This can be done via lockdownd, but is not supported by pymobiledevice3, yet.
+            });
+        // Since assistivetouchd always crashes after the simulated home button press, we need to wait for it to restart.
+        await retryCondition(
+            () =>
+                python('pymobiledevice3', ['processes', 'ps', '--no-color']).then(({ stdout }) =>
+                    Object.values(JSON.parse(stdout) as Record<string, Record<string, string>>).some(
+                        (p) => p['ProcessName'] === 'assistivetouchd'
+                    )
+                ),
+            5
+        );
+        await frida
+            .getUsbDevice()
+            .then((f) => f.attach('assistivetouchd'))
+            .then(async (s) => {
+                await (await s.createScript(fridaScripts.simulateHomeButton)).load();
+                await s.detach();
+            });
     },
 });
 

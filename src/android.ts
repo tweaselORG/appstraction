@@ -809,6 +809,15 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         )
             throw new Error('Failed to set proxy.');
     },
+    unlockScreen: async () => {
+        const { stdout } = await adb(['shell', 'dumpsys', 'window']);
+        if (stdout.includes('mAwake=false'))
+            // The screen is off, simulate lock button press
+            await adb(['shell', 'input', 'keyevent', '26']);
+        if (stdout.includes('mShowingLockscreen=true') || stdout.includes('mDreamingLockscreen=true'))
+            // The screen is locked, simulate a menu key press
+            await adb(['shell', 'input', 'keyevent', '82']);
+    },
 });
 
 /** The IDs of known permissions on Android. */
