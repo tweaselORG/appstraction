@@ -1,16 +1,27 @@
 import { getVenv } from 'autopy';
+import bplist from 'bplist-creator';
 import { createHash } from 'crypto';
 import frida from 'frida';
+import { exists, mkdirp } from 'fs-extra';
+import { readFile, writeFile } from 'fs/promises';
+import globalCacheDir from 'global-cache-dir';
 import { NodeSSH } from 'node-ssh';
+import { join } from 'path';
+import simplePlist from 'simple-plist';
 import type { PlatformApi, PlatformApiOptions, Proxy, SupportedCapability, SupportedRunTarget } from '.';
 import { venvOptions } from '../scripts/common/python';
+import { asyncUnimplemented, getObjFromFridaScript, isRecord, retryCondition } from './utils';
 import {
-    asyncUnimplemented,
-    getObjFromFridaScript,
-    isRecord,
+    arrayBufferToPem,
+    asn1ValueToDer,
+    certificateFingerprint,
+    certificateHasExpired,
+    certSubjectToAsn1,
+    createPkcs12Container,
+    generateCertificate,
     parsePemCertificateFromFile,
-    retryCondition,
-} from './util';
+    pemToArrayBuffer,
+} from './utils/crypto';
 
 const venv = getVenv(venvOptions);
 const python = async (...args: Parameters<Awaited<typeof venv>>) => (await venv)(...args);
@@ -124,7 +135,16 @@ function getProxySettingsForCurrentWifiNetwork() {
 }
 
 send({ name: "get_obj_from_frida_script", payload: getProxySettingsForCurrentWifiNetwork() });`,
+    simulateHomeButton: `// See https://github.com/tweaselORG/appstraction/issues/107
+var atServer = ObjC.classes.HNDAssistiveTouchServer.sharedInstance();
+// frida somehow needs this to attach the method to the object (https://github.com/tweaselORG/appstraction/issues/107#issuecomment-1608013662)
+Object.getOwnPropertyNames(atServer)
+atServer._home()
+// The process will always crash after this, but the home button press will be simulated before that.
+`,
 } as const;
+const cloudConfigPath =
+    '/var/containers/Shared/SystemGroup/systemgroup.com.apple.configurationprofiles/Library/ConfigurationProfiles/CloudConfigurationDetails.plist' as const;
 
 export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     options: PlatformApiOptions<'ios', RunTarget, SupportedCapability<'ios'>[]>
@@ -141,7 +161,7 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
             // Creating and disposing a new SSH connection for each command is not efficient but it replicates the
             // previous behaviour of calling `ssh`. If we wanted to keep the connection open, we would also need a way
             // to dispose of it at the very end, but we don't know when that is (cf. #24).
-            ssh.dispose();
+            if (ssh.connection) ssh.dispose();
             return res;
         },
         async setupEnvironment() {
@@ -210,6 +230,105 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
                 });
             await session.detach();
         },
+        async ensureSupervision(supervisionOptions) {
+            if (!options.capabilities.includes('ssh'))
+                throw new Error('SSH is currently required to ensure supervision mode.');
+
+            const orgName = 'appstraction';
+            const cacheDir = await globalCacheDir('appstraction');
+
+            const { stdout: encodedPlist } = await this.ssh(`cat ${cloudConfigPath} | base64`);
+            const plist = (await simplePlist.parse(Buffer.from(encodedPlist, 'base64'))) as
+                | CloudConfigurationDetails
+                | undefined;
+
+            if (!plist) throw new Error('Failed to ensure supervision mode: Invalid CloudConfiguration.');
+
+            let hostCert;
+
+            if (
+                !supervisionOptions?.forceNewKey &&
+                (await exists(join(cacheDir, 'ios', 'supervisorCert.pem'))) &&
+                (await exists(join(cacheDir, 'ios', 'supervisorKeyStore.p12')))
+            ) {
+                hostCert = (await readFile(join(cacheDir, 'ios', 'supervisorCert.pem'))).toString();
+
+                if (!certificateHasExpired(hostCert)) {
+                    const hostCertFingerprint = certificateFingerprint(hostCert);
+
+                    try {
+                        // Test if the current host certificate is already controlling the device.
+                        if (
+                            plist.IsSupervised &&
+                            plist.SupervisorHostCertificates &&
+                            plist.SupervisorHostCertificates.length > 0 &&
+                            plist.SupervisorHostCertificates.some(
+                                (cert) =>
+                                    certificateFingerprint(arrayBufferToPem(cert, 'CERTIFICATE')) ===
+                                    hostCertFingerprint
+                            )
+                        )
+                            return;
+                    } catch (e) {
+                        // The certificate is invalid, so we need to generate a new one.
+                        hostCert = undefined;
+                    }
+                } else {
+                    hostCert = undefined;
+                }
+            }
+
+            if (!hostCert || supervisionOptions?.forceNewKey) {
+                // We have no existing keys, so let’s generate one.
+                const generated = await generateCertificate(orgName);
+                hostCert = generated.certificate;
+                const hostKey = generated.privateKey;
+
+                const keyStore = createPkcs12Container(
+                    hostCert,
+                    hostKey,
+                    options.targetOptions?.supervisionKeyPassword || 'appstraction'
+                );
+
+                await mkdirp(join(cacheDir, 'ios'));
+                await writeFile(join(cacheDir, 'ios', 'supervisorCert.pem'), hostCert);
+                await writeFile(join(cacheDir, 'ios', 'supervisorKeyStore.p12'), Buffer.from(keyStore.toHex(), 'hex'));
+            }
+
+            const newPlist = {
+                ...plist,
+                SupervisorHostCertificates: [Buffer.from(pemToArrayBuffer(hostCert))],
+                IsSupervised: true,
+                OrganizationName: orgName,
+                AllowPairing: true,
+            };
+
+            await this.ssh(`echo "${bplist(newPlist).toString('base64')}" | base64 -d > ${cloudConfigPath}`);
+            await this.userspaceRestart();
+        },
+        async removeSupervision() {
+            const { stdout: encodedPlist } = await this.ssh(`cat ${cloudConfigPath} | base64`);
+            const plist = (await simplePlist.parse(Buffer.from(encodedPlist, 'base64'))) as
+                | CloudConfigurationDetails
+                | undefined;
+
+            if (!plist) throw new Error('Failed to remove supervision mode: Invalid CloudConfiguration.');
+            const newPlist = {
+                ...plist,
+                SupervisorHostCertificates: [],
+                IsSupervised: false,
+                OrganizationName: '',
+            };
+
+            await this.ssh(`echo "${bplist(newPlist).toString('base64')}" | base64 -d > ${cloudConfigPath}`);
+            await this.userspaceRestart();
+        },
+        async userspaceRestart() {
+            if (!options.capabilities.includes('ssh'))
+                throw new Error('SSH is currently required to restart in userspace.');
+
+            await this.ssh('launchctl reboot userspace');
+        },
     },
 
     resetDevice: asyncUnimplemented('resetDevice') as never,
@@ -249,6 +368,17 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
 
         if (options.capabilities.includes('frida')) {
             await this._internal.ensureFrida();
+        }
+
+        if (options.capabilities.includes('supervision')) {
+            if (!options.capabilities.includes('ssh'))
+                throw new Error(
+                    'Unimplemented on this platform: Activating supervision mode without the ssh capability.'
+                );
+
+            await this._internal.ensureSupervision();
+            await this.waitForDevice();
+            await this.unlockScreen();
         }
     },
     clearStuckModals: asyncUnimplemented('clearStuckModals') as never,
@@ -385,7 +515,7 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
         const { cert, certDer } = await parsePemCertificateFromFile(path);
 
         const sha256 = createHash('sha256').update(certDer).digest('hex');
-        const subj = Buffer.from(cert.subject.toSchema().valueBlock.toBER()).toString('hex');
+        const subj = asn1ValueToDer(certSubjectToAsn1(cert)).toHex();
         const tset = Buffer.from(
             `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -404,6 +534,7 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
             throw new Error('SSH is required for removing a certificate authority.');
 
         const { certDer } = await parsePemCertificateFromFile(path);
+
         const sha256 = createHash('sha256').update(certDer).digest('hex');
 
         await this._internal.ssh(
@@ -432,7 +563,48 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
         )
             throw new Error('Failed to set proxy.');
     },
+    unlockScreen: async () => {
+        if (!options.capabilities.includes('frida')) throw new Error('Frida is required for unlocking the screen.');
+        await frida
+            .getUsbDevice()
+            .then((f) => f.attach('assistivetouchd'))
+            .then(async (s) => {
+                await (await s.createScript(fridaScripts.simulateHomeButton)).load();
+                await s.detach();
+            })
+            .catch((e) => {
+                if (e.message === 'Process not found')
+                    throw new Error(
+                        'AssistiveTouch service is not running. Enable it in Settings > Accessibility > Touch > AssistiveTouch.'
+                    );
+                // TODO: Enable AssistiveTouch automatically. This can be done via lockdownd, but is not supported by pymobiledevice3, yet.
+            });
+        // Since assistivetouchd always crashes after the simulated home button press, we need to wait for it to restart.
+        await retryCondition(
+            () =>
+                python('pymobiledevice3', ['processes', 'ps', '--no-color']).then(({ stdout }) =>
+                    Object.values(JSON.parse(stdout) as Record<string, Record<string, string>>).some(
+                        (p) => p['ProcessName'] === 'assistivetouchd'
+                    )
+                ),
+            5
+        );
+        await frida
+            .getUsbDevice()
+            .then((f) => f.attach('assistivetouchd'))
+            .then(async (s) => {
+                await (await s.createScript(fridaScripts.simulateHomeButton)).load();
+                await s.detach();
+            });
+    },
 });
+
+type CloudConfigurationDetails = Partial<{
+    AllowPairing: boolean;
+    IsSupervised: boolean;
+    OrganizationName: string;
+    SupervisorHostCertificates: Buffer[];
+}>;
 
 /** The IDs of known permissions on iOS. */
 export const iosPermissions = [

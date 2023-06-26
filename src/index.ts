@@ -6,7 +6,7 @@ import type { AndroidPermission } from './android';
 import { androidApi } from './android';
 import type { IosPermission } from './ios';
 import { iosApi } from './ios';
-import type { ParametersExceptFirst } from './util';
+import type { ParametersExceptFirst } from './utils';
 
 /** A platform that is supported by this library. */
 export type SupportedPlatform = 'android' | 'ios';
@@ -285,6 +285,9 @@ export type PlatformApi<
         : Platform extends 'ios'
         ? (proxy: Proxy | null) => Promise<void>
         : never;
+
+    /** Simulates key presses to unlock the screen. This only works if no passcode is set on the device. */
+    unlockScreen: () => Promise<void>;
     /**
      * An indicator for what platform and run target this instance of PlatformApi is configured for. This is useful
      * mostly to write typeguards.
@@ -326,6 +329,29 @@ export type PlatformApi<
                */
               setupEnvironment: () => Promise<void>;
               ensureFrida: () => Promise<void>;
+              /**
+               * Ensures that the current host is configured to supervise the connected device. If this is not the case,
+               * it sets the host to be the (only) supervisor by installing its certificate on the device. This will
+               * overwrite parts of the exisiting CloudConfiguration. If there is no host certificate yet, or it has
+               * expired, it will be generated.
+               *
+               * Might restart the device, if a new configuration is pushed. You are advised to wait for the device.
+               *
+               * @param forceNewKey If set to `true`, a new host key will be generated and set up, even if there is
+               *   already a valid old one.
+               */
+              ensureSupervision: (options?: { forceNewKey?: boolean }) => Promise<void>;
+              /**
+               * Removes all configured supervision hosts from the device.
+               *
+               * Will restart the device. You are advised to wait for the device.
+               */
+              removeSupervision: () => Promise<void>;
+              /**
+               * Restarts the device only in userspace, e.g. to keep the jailbroken kernel running. You might want to
+               * wait for the device to ensure it is available again.
+               */
+              userspaceRestart: () => Promise<void>;
           }
         : never;
 };
@@ -382,14 +408,23 @@ export type RunTargetOptions<
         /** The options for the iOS emulator run target. */
         emulator: never;
         /** The options for the iOS physical device run target. */
-        device: 'ssh' extends Capability
+        device: ('ssh' extends Capability
             ? {
                   /** The password of the root user on the device, defaults to `alpine` if not set. */
                   rootPw?: string;
                   /** The device's IP address. */
                   ip: string;
               }
-            : unknown;
+            : unknown) &
+            ('supervision' extends Capability
+                ? {
+                      /**
+                       * The password of the private key of the supervision certificate, defaults to `appstraction` if
+                       * not set.
+                       */
+                      supervisionKeyPassword?: string;
+                  }
+                : unknown);
     };
 };
 
@@ -397,7 +432,7 @@ export type RunTargetOptions<
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
     ? 'wireguard' | 'root' | 'frida' | 'certificate-pinning-bypass'
     : Platform extends 'ios'
-    ? 'ssh' | 'frida' | 'certificate-pinning-bypass'
+    ? 'ssh' | 'frida' | 'certificate-pinning-bypass' | 'supervision'
     : never;
 
 /** A supported attribute for the `getDeviceAttribute()` function, depending on the platform. */
@@ -450,5 +485,5 @@ export function platformApi<
 
 export { androidPermissions } from './android';
 export { iosPermissions } from './ios';
-export { parseAppMeta, pause } from './util';
+export { parseAppMeta, pause } from './utils';
 export { IosPermission, AndroidPermission };

@@ -6,6 +6,7 @@ import { createHash, randomUUID } from 'crypto';
 import { fileTypeFromFile } from 'file-type';
 import frida from 'frida';
 import { open, rm, writeFile } from 'fs/promises';
+import forge from 'node-forge';
 import pRetry from 'p-retry';
 import { basename, dirname } from 'path';
 import { major as semverMajor, minVersion as semverMinVersion } from 'semver';
@@ -20,20 +21,18 @@ import type {
 } from '.';
 import { dependencies } from '../package.json';
 import { venvOptions } from '../scripts/common/python';
-import type { ParametersExceptFirst, XapkManifest } from './util';
+import type { ParametersExceptFirst, XapkManifest } from './utils';
 import {
     asyncUnimplemented,
     escapeArg,
     escapeCommand,
-    forEachInZip,
-    getFileFromZip,
     getObjFromFridaScript,
     isRecord,
     parseAppMeta,
-    parsePemCertificateFromFile,
     retryCondition,
-    tmpFileFromZipEntry,
-} from './util';
+} from './utils';
+import { certSubjectToAsn1, parsePemCertificateFromFile } from './utils/crypto';
+import { forEachInZip, getFileFromZip, tmpFileFromZipEntry } from './utils/zip';
 
 const adb = (...args: ParametersExceptFirst<typeof runAndroidDevTool>) => runAndroidDevTool('adb', args[0], args[1]);
 const venv = getVenv(venvOptions);
@@ -231,7 +230,9 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         getCertificateSubjectHashOld: async (path: string) => {
             const { cert } = await parsePemCertificateFromFile(path);
 
-            const hash = createHash('md5').update(Buffer.from(cert.subject.valueBeforeDecode)).digest();
+            const hash = createHash('md5')
+                .update(forge.asn1.toDer(certSubjectToAsn1(cert)).toHex(), 'hex')
+                .digest();
             const truncated = hash.subarray(0, 4);
             const ulong = (truncated[0]! | (truncated[1]! << 8) | (truncated[2]! << 16) | (truncated[3]! << 24)) >>> 0;
 
@@ -807,6 +808,15 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             (await getSetting('global_http_proxy_port')) !== proxy.port.toString()
         )
             throw new Error('Failed to set proxy.');
+    },
+    unlockScreen: async () => {
+        const { stdout } = await adb(['shell', 'dumpsys', 'window']);
+        if (stdout.includes('mAwake=false'))
+            // The screen is off, simulate lock button press
+            await adb(['shell', 'input', 'keyevent', '26']);
+        if (stdout.includes('mShowingLockscreen=true') || stdout.includes('mDreamingLockscreen=true'))
+            // The screen is locked, simulate a menu key press
+            await adb(['shell', 'input', 'keyevent', '82']);
     },
 });
 
