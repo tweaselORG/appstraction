@@ -161,7 +161,7 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
             // Creating and disposing a new SSH connection for each command is not efficient but it replicates the
             // previous behaviour of calling `ssh`. If we wanted to keep the connection open, we would also need a way
             // to dispose of it at the very end, but we don't know when that is (cf. #24).
-            ssh.dispose();
+            if (ssh.connection) ssh.dispose();
             return res;
         },
         async setupEnvironment() {
@@ -378,6 +378,7 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
 
             await this._internal.ensureSupervision();
             await this.waitForDevice();
+            await this.unlockScreen();
         }
     },
     clearStuckModals: asyncUnimplemented('clearStuckModals') as never,
