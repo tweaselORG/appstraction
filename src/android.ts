@@ -29,6 +29,7 @@ import {
     getFileFromZip,
     getObjFromFridaScript,
     isRecord,
+    listDevices,
     parseAppMeta,
     parsePemCertificateFromFile,
     retryCondition,
@@ -336,13 +337,29 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     },
     async ensureDevice() {
         await this._internal.ensureAdb();
+
+        const availableDevices = await listDevices({ frida: options.capabilities.includes('frida') });
+
+        if (availableDevices.length > 1)
+            throw new Error('You have multiple devices connected. Please disconnect all but one.');
+        else if (availableDevices.length === 0)
+            throw new Error(
+                options.runTarget === 'device' ? 'You need to connect your device.' : 'You need to start the emulator.'
+            );
+        else if (availableDevices.filter((device) => device.platform === 'android').length === 0)
+            throw new Error(
+                options.runTarget === 'device'
+                    ? 'You need to connect an Android device.'
+                    : 'You need to start the emulator.'
+            );
+
         if (
             !(await this._internal.hasDeviceBooted().catch((e) => {
                 throw new Error('Failed to look for device: Error in adb', { cause: e });
             }))
         )
             throw new Error(
-                options.runTarget === 'device' ? 'You need to connect your device.' : 'You need to start the emulator.'
+                'No fully booted device was found. Please wait until the device has been fully booted. Try using `waitForDevice()`.'
             );
 
         await pRetry(() => this._internal.ensureFrida());

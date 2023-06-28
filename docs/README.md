@@ -28,6 +28,7 @@ appstraction
 
 ### Functions
 
+- [listDevices](README.md#listdevices)
 - [parseAppMeta](README.md#parseappmeta)
 - [pause](README.md#pause)
 - [platformApi](README.md#platformapi-1)
@@ -42,7 +43,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:913](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L913)
+[android.ts:950](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L950)
 
 ___
 
@@ -81,7 +82,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:400](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L400)
+[index.ts:404](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L404)
 
 ___
 
@@ -100,7 +101,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:406](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L406)
+[index.ts:410](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L410)
 
 ___
 
@@ -112,7 +113,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:455](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L455)
+[ios.ts:459](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L459)
 
 ___
 
@@ -200,7 +201,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:338](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L338)
+[index.ts:342](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L342)
 
 ___
 
@@ -219,7 +220,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:414](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L414)
+[index.ts:418](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L418)
 
 ___
 
@@ -249,7 +250,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:365](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L365)
+[index.ts:369](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L369)
 
 ___
 
@@ -267,7 +268,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:393](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L393)
+[index.ts:397](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L397)
 
 ___
 
@@ -309,7 +310,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:421](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L421)
+[index.ts:425](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L425)
 
 ## Variables
 
@@ -321,7 +322,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:782](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L782)
+[android.ts:819](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L819)
 
 ___
 
@@ -333,9 +334,33 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:438](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L438)
+[ios.ts:442](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L442)
 
 ## Functions
+
+### listDevices
+
+▸ **listDevices**(`options?`): `Promise`<{ `id`: `string` ; `name?`: `string` ; `platform`: ``"android"`` \| ``"ios"``  }[]\>
+
+Returns a list of all detected Android and iOS devices currently connected to the host. This includes Android
+emulators running on the host.
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `options?` | `Object` | If the `frida` option is set to `true`, this function will use frida to detect the devices rather than try to detect them using platform-specific tools (such as `adb` and `pymobiledevice3`). |
+| `options.frida?` | `boolean` | - |
+
+#### Returns
+
+`Promise`<{ `id`: `string` ; `name?`: `string` ; `platform`: ``"android"`` \| ``"ios"``  }[]\>
+
+#### Defined in
+
+[util.ts:356](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L356)
+
+___
 
 ### parseAppMeta
 
@@ -372,7 +397,7 @@ An object with the properties listed above, or `undefined` if the file doesn't e
 
 #### Defined in
 
-[util.ts:68](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L68)
+[util.ts:70](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L70)
 
 ___
 
@@ -394,7 +419,7 @@ Pause for a given duration.
 
 #### Defined in
 
-[util.ts:45](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L45)
+[util.ts:47](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L47)
 
 ___
 
@@ -426,4 +451,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:430](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L430)
+[index.ts:434](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L434)
