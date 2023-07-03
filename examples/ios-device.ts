@@ -2,22 +2,19 @@
 import { parseAppMeta, pause, platformApi } from '../src/index';
 
 // You can pass the following command line arguments:
-// `npx tsx examples/ios-device.ts <ip> <app path> <CA cert path?> <proxy host?> <proxy port?>`
+// `npx tsx examples/ios-device.ts <app path> <CA cert path?> <proxy host?> <proxy port?>`
 
 (async () => {
     const ios = platformApi({
         platform: 'ios',
         runTarget: 'device',
         capabilities: ['frida', 'ssh', 'certificate-pinning-bypass'],
-        targetOptions: {
-            ip: process.argv[2] || '0.0.0.0',
-        },
     });
 
-    const appPath = process.argv[3] || '/path/to/app-files';
-    const caCertPath = process.argv[4];
-    const proxyHost = process.argv[5];
-    const proxyPort = process.argv[6];
+    const appPath = process.argv[2] || '/path/to/app-files';
+    const caCertPath = process.argv[3];
+    const proxyHost = process.argv[4];
+    const proxyPort = process.argv[5];
 
     await ios.ensureDevice();
 

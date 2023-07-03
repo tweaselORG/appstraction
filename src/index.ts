@@ -380,12 +380,15 @@ export type RunTargetOptions<
         emulator: never;
         /** The options for the iOS physical device run target. */
         device: 'ssh' extends Capability
-            ? {
-                  /** The password of the root user on the device, defaults to `alpine` if not set. */
-                  rootPw?: string;
-                  /** The device's IP address. */
-                  ip: string;
-              }
+            ?
+                  | {
+                        /** The password of the root user on the device, defaults to `alpine` if not set. */
+                        rootPw?: string;
+                        /** The device's IP address. */
+                        ip?: string;
+                        port?: number;
+                    }
+                  | undefined
             : unknown;
     };
 };

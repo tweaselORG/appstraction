@@ -1,5 +1,6 @@
 import { runAndroidDevTool } from 'andromatic';
 import { getVenv } from 'autopy';
+import type { ExecaChildProcess } from 'execa';
 import { fileTypeFromFile } from 'file-type';
 import type { TargetProcess } from 'frida';
 import frida from 'frida';
@@ -423,4 +424,42 @@ export const listDevices = async (options?: {
     );
 
     return [...androidDevices, ...iosDevices];
+};
+
+/**
+ * Wait for a message to appear in stdout and resolve the promise if the message is detected.
+ *
+ * @param proc A child process.
+ * @param startMessage The message to look for in stdout.
+ */
+export const awaitProcessStart = (proc: ExecaChildProcess<string>, startMessage: string) =>
+    new Promise<true>((res) => {
+        proc.stdout?.addListener('data', (chunk: Buffer) => {
+            if (chunk.includes(startMessage)) {
+                proc.stdout?.removeAllListeners('data');
+                res(true);
+            }
+        });
+    });
+
+export const startUsbmuxProxy = async (srcPort: number, destPort: number): Promise<() => boolean> => {
+    const pythonScript = `from pymobiledevice3.tcp_forwarder import TcpForwarder
+from threading import Event, Thread
+import os
+import signal
+event = Event()
+forwarder = TcpForwarder(${srcPort}, ${destPort}, listening_event=event)
+signal.signal(signal.SIGINT, lambda _: forwarder.stop())
+signal.signal(signal.SIGTERM, lambda _: forwarder.stop())
+
+t = Thread(target=forwarder.start)
+t.start()
+if event.wait():
+    os.write(1, b'appstraction:Forwarder started')
+`;
+    const venv = getVenv(venvOptions);
+    const proc = (await venv)('python', ['-c', pythonScript]);
+
+    await awaitProcessStart(proc, 'appstraction:Forwarder started');
+    return proc.kill;
 };

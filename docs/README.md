@@ -82,7 +82,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:401](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L401)
+[index.ts:404](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L404)
 
 ___
 
@@ -101,7 +101,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:407](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L407)
+[index.ts:410](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L410)
 
 ___
 
@@ -113,7 +113,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:459](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L459)
+[ios.ts:471](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L471)
 
 ___
 
@@ -220,7 +220,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:415](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L415)
+[index.ts:418](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L418)
 
 ___
 
@@ -244,8 +244,8 @@ The options for a specific platform/run target combination.
 | `android` | { `device`: `unknown` ; `emulator`: `unknown`  } | The options for the Android platform. |
 | `android.device` | `unknown` | The options for the Android physical device run target. |
 | `android.emulator` | `unknown` | The options for the Android emulator run target. |
-| `ios` | { `device`: ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` ; `emulator`: `never`  } | The options for the iOS platform. |
-| `ios.device` | ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` | The options for the iOS physical device run target. |
+| `ios` | { `device`: ``"ssh"`` extends `Capability` ? { `ip?`: `string` ; `port?`: `number` ; `rootPw?`: `string`  } \| `undefined` : `unknown` ; `emulator`: `never`  } | The options for the iOS platform. |
+| `ios.device` | ``"ssh"`` extends `Capability` ? { `ip?`: `string` ; `port?`: `number` ; `rootPw?`: `string`  } \| `undefined` : `unknown` | The options for the iOS physical device run target. |
 | `ios.emulator` | `never` | The options for the iOS emulator run target. |
 
 #### Defined in
@@ -268,7 +268,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:394](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L394)
+[index.ts:397](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L397)
 
 ___
 
@@ -310,7 +310,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:422](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L422)
+[index.ts:425](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L425)
 
 ## Variables
 
@@ -334,7 +334,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:442](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L442)
+[ios.ts:454](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L454)
 
 ## Functions
 
@@ -358,7 +358,7 @@ emulators running on the host.
 
 #### Defined in
 
-[util.ts:356](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L356)
+[util.ts:357](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L357)
 
 ___
 
@@ -397,7 +397,7 @@ An object with the properties listed above, or `undefined` if the file doesn't e
 
 #### Defined in
 
-[util.ts:70](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L70)
+[util.ts:71](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L71)
 
 ___
 
@@ -419,7 +419,7 @@ Pause for a given duration.
 
 #### Defined in
 
-[util.ts:47](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L47)
+[util.ts:48](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L48)
 
 ___
 
@@ -451,4 +451,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:431](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L431)
+[index.ts:434](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L434)
