@@ -144,10 +144,7 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
                 username: 'root',
                 password: options.targetOptions?.rootPw || 'alpine',
             });
-            ssh.connection?.on('error', (err) => {
-                if (err.level === 'client-socket') killProxyProcess?.();
-                else throw err;
-            });
+            ssh.connection?.on('error', () => killProxyProcess?.());
             ssh.connection?.on('close', () => killProxyProcess?.());
 
             const res = await ssh.execCommand(...args);
@@ -185,8 +182,12 @@ Types: deb
 URIs: https://julioverne.github.io/
 Suites: ./
 Components:" > /etc/apt/sources.list.d/appstraction.sources`);
-                await this.ssh('apt --allow-insecure-repositories update');
-                await this.ssh(`apt --allow-unauthenticated -y install ${packagesToInstall.join(' ')}`);
+                // Let’s clear the list cache, so that we get fresh versions of packages (See https://github.com/tweaselORG/cli/issues/24)
+                await this.ssh('apt-get clean');
+                // We need to quote the whole command, because otherwise the glob pattern will not be expanded
+                await this.ssh('/usr/bin/rm -rf /var/lib/apt/lists/*');
+                await this.ssh('apt-get --allow-insecure-repositories update');
+                await this.ssh(`apt-get --allow-unauthenticated -y install ${packagesToInstall.join(' ')}`);
 
                 if (packagesToInstall.includes('re.frida.server')) {
                     // Install the frida-server deamon workaround (https://github.com/frida/frida/issues/2375)
