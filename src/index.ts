@@ -1,5 +1,4 @@
 import type { runAndroidDevTool } from 'andromatic';
-import type { ExecaChildProcess } from 'execa';
 import type { NodeSSH } from 'node-ssh';
 import type { LiteralUnion } from 'type-fest';
 import type { AndroidPermission } from './android';
@@ -312,8 +311,6 @@ export type PlatformApi<
 
               isVpnEnabled: () => Promise<boolean>;
               installMultiApk: (apks: string[]) => Promise<string>;
-
-              objectionProcesses: ExecaChildProcess[];
           }
         : Platform extends 'ios'
         ? {

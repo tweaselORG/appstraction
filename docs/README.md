@@ -43,7 +43,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:950](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L950)
+[android.ts:965](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L965)
 
 ___
 
@@ -64,7 +64,7 @@ On iOS, the path to an IPA file with the `.ipa` extension.
 
 #### Defined in
 
-[index.ts:25](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L25)
+[index.ts:24](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L24)
 
 ___
 
@@ -82,7 +82,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:404](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L404)
+[index.ts:401](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L401)
 
 ___
 
@@ -101,7 +101,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:410](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L410)
+[index.ts:407](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L407)
 
 ___
 
@@ -132,7 +132,7 @@ An object that describes how an Android extension file (`.obb`) should be instal
 
 #### Defined in
 
-[index.ts:30](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L30)
+[index.ts:29](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L29)
 
 ___
 
@@ -181,7 +181,7 @@ Functions that are available for the platforms.
 
 #### Defined in
 
-[index.ts:41](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L41)
+[index.ts:40](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L40)
 
 ___
 
@@ -201,7 +201,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:342](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L342)
+[index.ts:339](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L339)
 
 ___
 
@@ -220,7 +220,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:418](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L418)
+[index.ts:415](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L415)
 
 ___
 
@@ -250,7 +250,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:369](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L369)
+[index.ts:366](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L366)
 
 ___
 
@@ -268,7 +268,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:397](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L397)
+[index.ts:394](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L394)
 
 ___
 
@@ -280,7 +280,7 @@ A platform that is supported by this library.
 
 #### Defined in
 
-[index.ts:12](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L12)
+[index.ts:11](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L11)
 
 ___
 
@@ -298,7 +298,7 @@ A run target that is supported by this library for the given platform.
 
 #### Defined in
 
-[index.ts:14](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L14)
+[index.ts:13](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L13)
 
 ___
 
@@ -310,7 +310,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:425](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L425)
+[index.ts:422](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L422)
 
 ## Variables
 
@@ -322,7 +322,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:819](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L819)
+[android.ts:834](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L834)
 
 ___
 
@@ -451,4 +451,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:434](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L434)
+[index.ts:431](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L431)

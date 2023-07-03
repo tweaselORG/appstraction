@@ -5,7 +5,7 @@ import fetch from 'cross-fetch';
 import { createHash, randomUUID } from 'crypto';
 import { fileTypeFromFile } from 'file-type';
 import frida from 'frida';
-import { open, rm, writeFile } from 'fs/promises';
+import { open, readFile, rm, writeFile } from 'fs/promises';
 import pRetry from 'p-retry';
 import { basename, dirname } from 'path';
 import { major as semverMajor, minVersion as semverMinVersion } from 'semver';
@@ -67,7 +67,6 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 ): PlatformApi<'android', 'device' | 'emulator', SupportedCapability<'android'>[]> => ({
     target: { platform: 'android', runTarget: options.runTarget },
     _internal: {
-        objectionProcesses: [],
         async ensureFrida() {
             if (!options.capabilities.includes('frida')) return;
 
@@ -617,23 +616,27 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 throw new Error(`Invalid battery optimization state: ${state}`);
         }
     },
-    async startApp(appId) {
-        // We deliberately don't await these since objection doesn't exit after the app is started.
+    startApp: async (appId) => {
         if (options.capabilities.includes('certificate-pinning-bypass')) {
-            // We use venv() here because we don’t want to await objection, which python() would do.
-            const process = (await venv)('objection', [
-                '--gadget',
-                appId,
-                'explore',
-                '--startup-command',
-                'android sslpinning disable',
-            ]);
-            this._internal.objectionProcesses.push(process);
-            return Promise.resolve();
+            if (!options.capabilities.includes('frida'))
+                throw new Error('Frida is required starting apps with certificate pinning bypassed on Android.');
+
+            const unpinningScript = await readFile(
+                new URL('./external/frida-android-unpinning.js', import.meta.url),
+                'utf-8'
+            );
+
+            const device = await frida.getUsbDevice();
+            const pid = await device.spawn(appId);
+            const session = await device.attach(pid);
+            const script = await session.createScript(unpinningScript);
+            await script.load();
+            await script.eternalize();
+            await device.resume(pid);
+            await session.detach();
         }
 
-        adb(['shell', 'monkey', '-p', appId, '-v', '1', '--dbg-no-events']);
-        return Promise.resolve();
+        await adb(['shell', 'monkey', '-p', appId, '-v', '1', '--dbg-no-events']);
     },
     stopApp: async (appId) => {
         await adb(['shell', 'am', 'force-stop', appId]);
