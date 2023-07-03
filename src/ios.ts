@@ -11,6 +11,7 @@ import {
     listDevices,
     parsePemCertificateFromFile,
     retryCondition,
+    startUsbmuxProxy,
 } from './util';
 
 const venv = getVenv(venvOptions);
@@ -133,11 +134,22 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
     target: { platform: 'ios', runTarget: options.runTarget },
     _internal: {
         ssh: async (...args) => {
+            const killProxyProcess = !options.targetOptions?.ip
+                ? await startUsbmuxProxy(22161, options.targetOptions?.port || 22)
+                : undefined;
+
             const ssh = await new NodeSSH().connect({
-                host: options.targetOptions!.ip,
+                host: options.targetOptions?.ip || '127.0.0.1',
+                port: options.targetOptions?.ip ? options.targetOptions?.port ?? 22 : 22161,
                 username: 'root',
-                password: options.targetOptions!.rootPw || 'alpine',
+                password: options.targetOptions?.rootPw || 'alpine',
             });
+            ssh.connection?.on('error', (err) => {
+                if (err.level === 'client-socket') killProxyProcess?.();
+                else throw err;
+            });
+            ssh.connection?.on('close', () => killProxyProcess?.());
+
             const res = await ssh.execCommand(...args);
             // Creating and disposing a new SSH connection for each command is not efficient but it replicates the
             // previous behaviour of calling `ssh`. If we wanted to keep the connection open, we would also need a way
