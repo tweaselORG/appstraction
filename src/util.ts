@@ -9,6 +9,7 @@ import fs from 'fs-extra';
 import type { FileHandle } from 'fs/promises';
 import { open, readFile } from 'fs/promises';
 import _ipaInfo from 'ipa-extract-info';
+import timeout from 'p-timeout';
 import { Certificate } from 'pkijs';
 import type { Readable } from 'stream';
 import { temporaryFile } from 'tempy';
@@ -444,22 +445,36 @@ export const awaitProcessStart = (proc: ExecaChildProcess<string>, startMessage:
 
 export const startUsbmuxProxy = async (srcPort: number, destPort: number): Promise<() => boolean> => {
     const pythonScript = `from pymobiledevice3.tcp_forwarder import TcpForwarder
-from threading import Event, Thread
+import threading
 import os
 import signal
-event = Event()
+
+event = threading.Event()
+# adapted this from https://stackoverflow.com/a/73750667
+def raise_in_thread(args):
+    threading.Timer(0.01, os._exit, args=(1,)).start()
+    raise args.exc_type(args.exc_value).with_traceback(args.exc_traceback)
+threading.excepthook = raise_in_thread
+
 forwarder = TcpForwarder(${srcPort}, ${destPort}, listening_event=event)
 signal.signal(signal.SIGINT, lambda _: forwarder.stop())
 signal.signal(signal.SIGTERM, lambda _: forwarder.stop())
 
-t = Thread(target=forwarder.start)
+t = threading.Thread(target=forwarder.start)
 t.start()
-if event.wait():
+if event.wait(15):
     os.write(1, b'appstraction:Forwarder started')
+else:
+    raise Exception('Forwarder failed to start')
 `;
     const venv = getVenv(venvOptions);
     const proc = (await venv)('python', ['-c', pythonScript]);
+    proc.on('exit', (code) => {
+        if (code && code !== 0) throw new Error(`Usbmux proxy exited with code ${code}: ${proc.stderr?.read()}`);
+    });
 
-    await awaitProcessStart(proc, 'appstraction:Forwarder started');
+    await timeout(awaitProcessStart(proc, 'appstraction:Forwarder started'), {
+        milliseconds: 15000,
+    });
     return proc.kill;
 };

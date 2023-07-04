@@ -64,6 +64,7 @@
         "ipa-extract-info": "^1.2.6",
         "node-ssh": "^13.1.0",
         "p-retry": "^5.1.2",
+        "p-timeout": "^6.1.2",
         "pkijs": "^3.0.14",
         "semver": "^7.3.8",
         "tempy": "^3.0.0",
