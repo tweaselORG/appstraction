@@ -397,7 +397,7 @@ An object with the properties listed above, or `undefined` if the file doesn't e
 
 #### Defined in
 
-[util.ts:71](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L71)
+[util.ts:72](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L72)
 
 ___
 
@@ -419,7 +419,7 @@ Pause for a given duration.
 
 #### Defined in
 
-[util.ts:48](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L48)
+[util.ts:49](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L49)
 
 ___
 
