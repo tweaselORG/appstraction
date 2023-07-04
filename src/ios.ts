@@ -6,6 +6,7 @@ import type { PlatformApi, PlatformApiOptions, Proxy, SupportedCapability, Suppo
 import { venvOptions } from '../scripts/common/python';
 import {
     asyncUnimplemented,
+    escapeCommand,
     getObjFromFridaScript,
     isRecord,
     listDevices,
@@ -133,25 +134,38 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
 ): PlatformApi<'ios', 'device', SupportedCapability<'ios'>[]> => ({
     target: { platform: 'ios', runTarget: options.runTarget },
     _internal: {
-        ssh: async (...args) => {
+        ssh: async (command, commandOptions) => {
             const killProxyProcess = !options.targetOptions?.ip
                 ? await startUsbmuxProxy(22161, options.targetOptions?.port || 22)
                 : undefined;
 
+            const username = options.targetOptions?.username || 'mobile';
+            const password = options.targetOptions?.password || 'alpine';
+
             const ssh = await new NodeSSH().connect({
                 host: options.targetOptions?.ip || '127.0.0.1',
                 port: options.targetOptions?.ip ? options.targetOptions?.port ?? 22 : 22161,
-                username: 'root',
-                password: options.targetOptions?.rootPw || 'alpine',
+                username,
+                password,
             });
             ssh.connection?.on('error', () => killProxyProcess?.());
             ssh.connection?.on('close', () => killProxyProcess?.());
 
-            const res = await ssh.execCommand(...args);
+            const escapedCommand =
+                username === 'mobile'
+                    ? `echo "${Buffer.from(password).toString(
+                          'base64'
+                      )}" | base64 -d | sudo -S /bin/zsh -c ${escapeCommand(command)}`
+                    : `/bin/zsh -c ${escapeCommand(command)}`;
+
+            const res = await ssh.execCommand(escapedCommand, commandOptions?.nodeSSHOptions);
             // Creating and disposing a new SSH connection for each command is not efficient but it replicates the
             // previous behaviour of calling `ssh`. If we wanted to keep the connection open, we would also need a way
             // to dispose of it at the very end, but we don't know when that is (cf. #24).
             ssh.dispose();
+
+            if ((commandOptions?.reject ?? true) && res.code !== 0)
+                throw new Error(`SSH command failed with exit code ${res.code}: ${res.stderr}`);
             return res;
         },
         async setupEnvironment() {
@@ -163,12 +177,13 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
             if (options.capabilities.includes('certificate-pinning-bypass'))
                 neededPackages.push('com.julioverne.sslkillswitch2');
 
-            const { stdout: packageList } = await this.ssh('apt list --installed');
+            const { stdout: packageList } = await this.ssh(['apt', 'list', '--installed']);
             const packagesToInstall = neededPackages.filter((p) => !packageList.includes(p));
-
             if (packagesToInstall.length > 0) {
                 // https://github.com/tweaselORG/appstraction/issues/59
-                await this.ssh(`echo "Types: deb
+
+                await this.ssh([
+                    `echo "Types: deb
 URIs: http://apt.thebigboss.org/repofiles/cydia/
 Suites: stable
 Components: main
@@ -181,27 +196,33 @@ Components:
 Types: deb
 URIs: https://julioverne.github.io/
 Suites: ./
-Components:" > /etc/apt/sources.list.d/appstraction.sources`);
+Components:" > /etc/apt/sources.list.d/appstraction.sources`,
+                ]);
                 // Let’s clear the list cache, so that we get fresh versions of packages (See https://github.com/tweaselORG/cli/issues/24)
-                await this.ssh('apt-get clean');
+                await this.ssh(['apt-get', 'clean']);
                 // We need to quote the whole command, because otherwise the glob pattern will not be expanded
-                await this.ssh('/usr/bin/rm -rf /var/lib/apt/lists/*');
-                await this.ssh('apt-get --allow-insecure-repositories update');
-                await this.ssh(`apt-get --allow-unauthenticated -y install ${packagesToInstall.join(' ')}`);
+                await this.ssh(['/usr/bin/rm -rf /var/lib/apt/lists/*']);
+
+                await this.ssh(['apt-get', '--allow-insecure-repositories', 'update']);
+                await this.ssh(['apt-get', '--allow-unauthenticated', '-y', 'install', ...packagesToInstall]);
 
                 if (packagesToInstall.includes('re.frida.server')) {
                     // Install the frida-server deamon workaround (https://github.com/frida/frida/issues/2375)
                     // TODO: Replace this with simple-plist once #82 is merged to remove the dependency on plutil
-                    await this.ssh(
-                        'plutil -remove -key LimitLoadToSessionType /Library/LaunchDaemons/re.frida.server.plist'
-                    );
-                    await this.ssh('launchctl load -w /Library/LaunchDaemons/re.frida.server.plist');
+                    await this.ssh([
+                        'plutil',
+                        '-remove',
+                        '-key',
+                        'LimitLoadToSessionType',
+                        '/Library/LaunchDaemons/re.frida.server.plist',
+                    ]);
+                    await this.ssh(['launchctl', 'load', '-w', '/Library/LaunchDaemons/re.frida.server.plist']);
                 }
 
                 if (packagesToInstall.includes('com.conradkramer.open')) {
                     // We need to sign the open binary to prevent iOS from killing it immediately.
                     // see https://github.com/tweaselORG/meta/issues/4#issuecomment-1380501906
-                    await this.ssh('ldid -s /usr/bin/open');
+                    await this.ssh(['ldid', '-s', '/usr/bin/open']);
                 }
             }
         },
@@ -212,7 +233,7 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
                 (await python('frida-ps', ['-U'], { reject: false })).stdout.includes('frida-server');
 
             if (!(await fridaIsRunning()) && options.capabilities.includes('ssh')) {
-                await this.ssh('frida-server -D');
+                await this.ssh(['frida-server', '-D']);
                 if (!(await retryCondition(fridaIsRunning, 20))) throw new Error('Frida server did not start.');
             }
 
@@ -255,7 +276,7 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
 
         if (options.capabilities.includes('ssh')) {
             try {
-                const { stdout } = await this._internal.ssh('uname');
+                const { stdout } = await this._internal.ssh(['uname']);
                 if (stdout !== 'Darwin') throw new Error('Wrong uname output.');
             } catch (err) {
                 throw new Error('Cannot connect using SSH.', { cause: err });
@@ -290,13 +311,13 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
 
         const permissionValues = { allow: 2, deny: 0 } as const;
         const setPermission = (permission: string, value: 0 | 2) =>
-            this._internal.ssh(
-                `sqlite3 /private/var/mobile/Library/TCC/TCC.db 'INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) VALUES("${permission}", "${appId}", 0, ${value}, 2, 1);'`
-            );
+            this._internal.ssh([
+                `sqlite3 /private/var/mobile/Library/TCC/TCC.db "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) VALUES('${permission}', '${appId}', 0, ${value}, 2, 1);"`,
+            ]);
         const unsetPermission = (permission: string) =>
-            this._internal.ssh(
-                `sqlite3 /private/var/mobile/Library/TCC/TCC.db 'DELETE FROM access WHERE service="${permission}" AND client="${appId}";'`
-            );
+            this._internal.ssh([
+                `sqlite3 /private/var/mobile/Library/TCC/TCC.db "DELETE FROM access WHERE service='${permission}' AND client='${appId}';"`,
+            ]);
         const locationPermissionValues = { ask: 0, never: 2, always: 3, 'while-using': 4 } as const;
         const grantLocationPermission = async (value: 0 | 2 | 3 | 4) => {
             const session = await frida.getUsbDevice().then((f) => f.attach('SpringBoard'));
@@ -331,7 +352,7 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
             await script.load();
             await session.detach();
         } else if (options.capabilities.includes('ssh')) {
-            this._internal.ssh(`open ${appId}`);
+            this._internal.ssh(['open', appId]);
         } else {
             throw new Error('Frida or SSH (with the open package installed) is required for starting apps.');
         }
@@ -412,9 +433,9 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
         ).toString('hex');
         const data = certDer.toString('hex');
 
-        await this._internal.ssh(
-            `sqlite3 /private/var/protected/trustd/private/TrustStore.sqlite3 "INSERT OR REPLACE INTO tsettings (sha256, subj, tset, data) VALUES(x'${sha256}', x'${subj}', x'${tset}', x'${data}');"`
-        );
+        await this._internal.ssh([
+            `sqlite3 /private/var/protected/trustd/private/TrustStore.sqlite3 "INSERT OR REPLACE INTO tsettings (sha256, subj, tset, data) VALUES(x'${sha256}', x'${subj}', x'${tset}', x'${data}');"`,
+        ]);
     },
     async removeCertificateAuthority(path) {
         if (!options.capabilities.includes('ssh'))
@@ -423,9 +444,9 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`);
         const { certDer } = await parsePemCertificateFromFile(path);
         const sha256 = createHash('sha256').update(certDer).digest('hex');
 
-        await this._internal.ssh(
-            `sqlite3 /private/var/protected/trustd/private/TrustStore.sqlite3 "DELETE FROM tsettings WHERE sha256=x'${sha256}';"`
-        );
+        await this._internal.ssh([
+            `sqlite3 /private/var/protected/trustd/private/TrustStore.sqlite3 "DELETE FROM tsettings WHERE sha256=x'${sha256}';"`,
+        ]);
     },
     setProxy: async (proxy) => {
         if (!options.capabilities.includes('frida')) throw new Error('Frida is required for configuring a proxy.');

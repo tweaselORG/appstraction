@@ -82,7 +82,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:404](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L404)
+[index.ts:422](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L422)
 
 ___
 
@@ -101,7 +101,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:410](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L410)
+[index.ts:428](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L428)
 
 ___
 
@@ -113,7 +113,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:472](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L472)
+[ios.ts:493](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L493)
 
 ___
 
@@ -187,7 +187,7 @@ ___
 
 ### PlatformApiOptions
 
-Ƭ **PlatformApiOptions**<`Platform`, `RunTarget`, `Capabilities`\>: { `capabilities`: `Capabilities` ; `platform`: `Platform` ; `runTarget`: `RunTarget`  } & [`RunTargetOptions`](README.md#runtargetoptions)<`Capabilities`\>[`Platform`][`RunTarget`] extends `object` ? { `targetOptions`: [`RunTargetOptions`](README.md#runtargetoptions)<`Capabilities`\>[`Platform`][`RunTarget`]  } : { `targetOptions?`: `Record`<`string`, `never`\>  }
+Ƭ **PlatformApiOptions**<`Platform`, `RunTarget`, `Capabilities`\>: { `capabilities`: `Capabilities` ; `platform`: `Platform` ; `runTarget`: `RunTarget`  } & [`RunTargetOptions`](README.md#runtargetoptions)<`Capabilities`\>[`Platform`][`RunTarget`] extends `object` ? { `targetOptions`: [`RunTargetOptions`](README.md#runtargetoptions)<`Capabilities`\>[`Platform`][`RunTarget`]  } : [`RunTargetOptions`](README.md#runtargetoptions)<`Capabilities`\>[`Platform`][`RunTarget`] extends `object` \| `undefined` ? { `targetOptions?`: [`RunTargetOptions`](README.md#runtargetoptions)<`Capabilities`\>[`Platform`][`RunTarget`]  } : { `targetOptions?`: `Record`<`string`, `never`\>  }
 
 The options for the `platformApi()` function.
 
@@ -201,7 +201,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:339](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L339)
+[index.ts:345](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L345)
 
 ___
 
@@ -220,7 +220,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:418](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L418)
+[index.ts:436](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L436)
 
 ___
 
@@ -244,13 +244,13 @@ The options for a specific platform/run target combination.
 | `android` | { `device`: `unknown` ; `emulator`: `unknown`  } | The options for the Android platform. |
 | `android.device` | `unknown` | The options for the Android physical device run target. |
 | `android.emulator` | `unknown` | The options for the Android emulator run target. |
-| `ios` | { `device`: ``"ssh"`` extends `Capability` ? { `ip?`: `string` ; `port?`: `number` ; `rootPw?`: `string`  } \| `undefined` : `unknown` ; `emulator`: `never`  } | The options for the iOS platform. |
-| `ios.device` | ``"ssh"`` extends `Capability` ? { `ip?`: `string` ; `port?`: `number` ; `rootPw?`: `string`  } \| `undefined` : `unknown` | The options for the iOS physical device run target. |
+| `ios` | { `device`: ``"ssh"`` extends `Capability` ? { `ip?`: `string` ; `password?`: `string` ; `port?`: `number` ; `username?`: ``"mobile"`` \| ``"root"``  } \| `undefined` : `unknown` ; `emulator`: `never`  } | The options for the iOS platform. |
+| `ios.device` | ``"ssh"`` extends `Capability` ? { `ip?`: `string` ; `password?`: `string` ; `port?`: `number` ; `username?`: ``"mobile"`` \| ``"root"``  } \| `undefined` : `unknown` | The options for the iOS physical device run target. |
 | `ios.emulator` | `never` | The options for the iOS emulator run target. |
 
 #### Defined in
 
-[index.ts:366](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L366)
+[index.ts:377](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L377)
 
 ___
 
@@ -268,7 +268,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:397](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L397)
+[index.ts:415](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L415)
 
 ___
 
@@ -310,7 +310,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:425](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L425)
+[index.ts:443](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L443)
 
 ## Variables
 
@@ -334,7 +334,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:455](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L455)
+[ios.ts:476](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L476)
 
 ## Functions
 
@@ -451,4 +451,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:434](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L434)
+[index.ts:452](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L452)

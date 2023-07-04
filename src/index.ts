@@ -1,5 +1,5 @@
 import type { runAndroidDevTool } from 'andromatic';
-import type { NodeSSH } from 'node-ssh';
+import type { SSHExecCommandOptions, SSHExecCommandResponse } from 'node-ssh';
 import type { LiteralUnion } from 'type-fest';
 import type { AndroidPermission } from './android';
 import { androidApi } from './android';
@@ -314,7 +314,13 @@ export type PlatformApi<
           }
         : Platform extends 'ios'
         ? {
-              ssh: NodeSSH['execCommand'];
+              ssh: (
+                  command: string[],
+                  options?: {
+                      nodeSSHOptions?: SSHExecCommandOptions;
+                      reject?: boolean;
+                  }
+              ) => Promise<SSHExecCommandResponse>;
               /**
                * Will install and set up the necessary dependencies on the device for the chosen capability. This
                * includes e.g. the frida-server or SSL Kill Switch 2. It will make persistent changes to the device and
@@ -356,6 +362,11 @@ export type PlatformApiOptions<
           /** The options for the selected platform/run target combination. */
           targetOptions: RunTargetOptions<Capabilities>[Platform][RunTarget];
       }
+    : RunTargetOptions<Capabilities>[Platform][RunTarget] extends object | undefined
+    ? {
+          /** The options for the selected platform/run target combination. */
+          targetOptions?: RunTargetOptions<Capabilities>[Platform][RunTarget];
+      }
     : {
           /** The options for the selected platform/run target combination. */
           targetOptions?: Record<string, never>;
@@ -382,10 +393,17 @@ export type RunTargetOptions<
         device: 'ssh' extends Capability
             ?
                   | {
-                        /** The password of the root user on the device, defaults to `alpine` if not set. */
-                        rootPw?: string;
-                        /** The device's IP address. */
+                        /**
+                         * The username to use when logging into the device. Make sure the user is set up for login via
+                         * SSH. If the `mobile` user is chosen, all commands are prepended with sudo. Defaults to
+                         * `mobile`
+                         */
+                        username?: 'mobile' | 'root';
+                        /** The password of the user to log into the device, defaults to `alpine` if not set. */
+                        password?: string;
+                        /** The device's IP address. If none is given, a connection via USB port forwarding is attempted. */
                         ip?: string;
+                        /** The port where the SSH server is running on the device. Defaults to 22. */
                         port?: number;
                     }
                   | undefined

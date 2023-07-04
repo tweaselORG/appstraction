@@ -332,7 +332,7 @@ export const parsePemCertificateFromFile = async (path: string) => {
 
 const NO_ESCAPE_REGEXP = /^[\w.-]+$/;
 const DOUBLE_QUOTES_REGEXP = /"/g;
-const IS_QUOTED_REGEXP = /^".*"$/;
+const IS_QUOTED_REGEXP = /^".*"$/s;
 
 export const escapeArg = (arg: string) => {
     if (typeof arg !== 'string' || NO_ESCAPE_REGEXP.test(arg)) {
