@@ -622,7 +622,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 throw new Error('Frida is required starting apps with certificate pinning bypassed on Android.');
 
             const unpinningScript = await readFile(
-                new URL('./external/frida-android-unpinning.js', import.meta.url),
+                new URL('./external/frida-android-unpinning.js.txt', import.meta.url),
                 'utf-8'
             );
 

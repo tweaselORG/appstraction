@@ -1,5 +1,7 @@
 // Taken from: https://github.com/httptoolkit/frida-android-unpinning/blob/4d477da8c58c353a0290ec4829a1de4ca1ca5ae5/frida-script.js
 // License at the bottom.
+// This file cannot be `.js`, otherwise Parcel will transform it, causing it not to work anymore in the Frida JS engine
+// (https://github.com/tweaselORG/appstraction/pull/111#issuecomment-1623576695).
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
