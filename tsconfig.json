@@ -6,7 +6,8 @@
         "resolveJsonModule": true,
         "paths": {
             "*": ["./*", "./src/types/*"]
-        }
+        },
+        "module": "es2022"
     },
     "typedocOptions": {
         "plugin": ["typedoc-plugin-markdown"],

@@ -129,7 +129,7 @@ Note how the first function we call after constructing the API object is `ensure
 
 This example didn't need any capabilities. Resetting the emulator and installing apps can both be done in any emulator, without the need for any special preparation.
 
-Other functions do need capabilities, though, which you would pass to the `capabilities` array in the options. For example, reading the `SharedPreferences` requires the `frida` capability. And for starting an app, you can optionally pass the `certificate-pinning-bypass`, which will use objection to try and bypass any certificate pinning the app may use.
+Other functions do need capabilities, though, which you would pass to the `capabilities` array in the options. For example, reading the `SharedPreferences` requires the `frida` capability. And for starting an app, you can optionally pass the `certificate-pinning-bypass`, which will use [httptoolkit/frida-android-unpinning](https://github.com/httptoolkit/frida-android-unpinning) to try and bypass any certificate pinning the app may use.
 
 ```ts
 (async () => {
