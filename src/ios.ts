@@ -178,7 +178,9 @@ export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
                 neededPackages.push('com.julioverne.sslkillswitch2');
 
             const { stdout: packageList } = await this.ssh(['apt', 'list', '--installed']);
-            const packagesToInstall = neededPackages.filter((p) => !packageList.includes(p));
+            const packagesToInstall = neededPackages.filter(
+                (p) => !packageList.split('\n').some((l) => l.startsWith(`${p}/`))
+            );
             if (packagesToInstall.length > 0) {
                 // https://github.com/tweaselORG/appstraction/issues/59
 
