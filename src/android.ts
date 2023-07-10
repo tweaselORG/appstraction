@@ -139,8 +139,10 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             }
 
             // Start `frida-server` if it's not already running.
-            const { stdout: fridaCheck } = await python('frida-ps', ['-U'], { reject: false });
+            const { stdout: fridaCheck } = await python('frida-ps', ['-U'], { reject: false, timeout: 10000 });
             if (fridaCheck.includes('frida-server')) return;
+            // Make sure any stuck frida processes are killed.
+            await adbRootShell(['killall', 'frida-server'], { execaOptions: { reject: false } });
 
             await adbRootShell(['chmod', '755', '/data/local/tmp/frida-server']);
             adbRootShell(['/data/local/tmp/frida-server', '--daemonize'], { adbShellFlags: ['-x'] });
@@ -361,7 +363,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 'No fully booted device was found. Please wait until the device has been fully booted. Try using `waitForDevice()`.'
             );
 
-        await pRetry(() => this._internal.ensureFrida());
+        await pRetry(() => this._internal.ensureFrida(), { retries: 5 });
 
         if (options.capabilities.includes('wireguard')) {
             // Install app if necessary.
