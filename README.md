@@ -27,7 +27,9 @@ Appstraction is written in TypeScript and provides comprehensive type definition
 
 ## Installation
 
-You can install appstraction using yarn or npm:
+Make sure you have an up to date [nodejs](https://nodejs.org) version installed. We require and test against v18. You can install it using [nvm](https://github.com/nvm-sh/nvm) or install node [via your OS’s package manager](https://nodejs.dev/en/download/package-manager/).
+
+Then, you can install appstraction using yarn or npm:
 
 ```sh
 yarn add appstraction
