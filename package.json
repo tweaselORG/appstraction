@@ -54,7 +54,7 @@
     "prettier": "@baltpeter/prettier-config",
     "dependencies": {
         "@napi-rs/lzma": "^1.1.2",
-        "andromatic": "^1.0.0",
+        "andromatic": "^1.1.1",
         "autopy": "^1.1.1",
         "cross-fetch": "^3.1.5",
         "execa": "^6.1.0",
