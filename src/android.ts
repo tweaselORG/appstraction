@@ -141,8 +141,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             // Start `frida-server` if it's not already running.
             const { stdout: fridaCheck } = await python('frida-ps', ['-U'], { reject: false, timeout: 10000 });
             if (fridaCheck.includes('frida-server')) return;
-            // Make sure any stuck frida processes are killed.
-            await adbRootShell(['killall', 'frida-server'], { execaOptions: { reject: false } });
+            // Make sure any stuck frida processes are killed (see https://github.com/tweaselORG/appstraction/issues/102).
+            await adbRootShell(['killall', '-9', 'frida-server'], { execaOptions: { reject: false } });
 
             await adbRootShell(['chmod', '755', '/data/local/tmp/frida-server']);
             adbRootShell(['/data/local/tmp/frida-server', '--daemonize'], { adbShellFlags: ['-x'] });
