@@ -1472,6 +1472,14 @@
     "@typescript-eslint/types" "5.48.0"
     eslint-visitor-keys "^3.3.0"
 
+"@viperproject/locate-java-home@^1.1.12":
+  version "1.1.12"
+  resolved "https://registry.yarnpkg.com/@viperproject/locate-java-home/-/locate-java-home-1.1.12.tgz#78028c9839868135cc667dd8c743a61401863189"
+  integrity sha512-Rlvdp+k9aoiFD35UgLW41rgt66hcs1FacwZT/JxuW7PBcmDVpAyENN/AzETtIPcgQCl+cF4Xf4YFB/pQQsYmXQ==
+  dependencies:
+    async "^3.2.3"
+    semver "^7.3.5"
+
 abortcontroller-polyfill@^1.1.9:
   version "1.7.5"
   resolved "https://registry.yarnpkg.com/abortcontroller-polyfill/-/abortcontroller-polyfill-1.7.5.tgz#6738495f4e901fbb57b6c0611d0c75f76c485bed"
@@ -1534,15 +1542,15 @@ amdefine@>=0.0.4:
   resolved "https://registry.yarnpkg.com/amdefine/-/amdefine-1.0.1.tgz#4a5282ac164729e93619bcfd3ad151f817ce91f5"
   integrity sha512-S2Hw0TtNkMJhIabBwIojKL9YHO5T0n5eNqWJ7Lrlel/zDbftQpxpapi8tZs3X1HWa+u+QeydGmzzNU0m09+Rcg==
 
-andromatic@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/andromatic/-/andromatic-1.0.0.tgz#138e5f46cbcd0cefd1e52b34568bbf99d59f1590"
-  integrity sha512-Gk0wimaBdDq4fahBA0STqBvDMrL+mjxh3a7ax70j4Tk7qUwXwSNFJ7wnXw32R7uIJggPHT+I70d9sK6ATfsJvw==
+andromatic@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/andromatic/-/andromatic-1.1.1.tgz#9fcdb1ff4159c5c36f60730f1311dc7933a41a52"
+  integrity sha512-qMjt9r0mNUJIyB40mr4YWaoJNvf99Y7zBbZUXt1RH/55yunT0waa+cPRAffKlDubtApYdqGBfUrVVwgUEwezdg==
   dependencies:
+    "@viperproject/locate-java-home" "^1.1.12"
     cross-fetch "^3.1.5"
     decompress "^4.2.1"
     execa "^7.1.1"
-    find-java-home "^2.0.0"
     fs-extra "^11.1.1"
     global-cache-dir "^4.4.0"
     globby "^13.1.4"
@@ -1652,6 +1660,11 @@ astral-regex@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/astral-regex/-/astral-regex-2.0.0.tgz#483143c567aeed4785759c0865786dc77d7d2e31"
   integrity sha512-Z7tMw1ytTXt5jqMcOP+OQteU1VuNK9Y02uuJtKQ1Sv69jXQKKg5cibLwGJow8yzZP+eAc18EmLGPal0bp36rvQ==
+
+async@^3.2.3:
+  version "3.2.4"
+  resolved "https://registry.yarnpkg.com/async/-/async-3.2.4.tgz#2d22e00f8cddeb5fde5dd33522b56d1cf569a81c"
+  integrity sha512-iAB+JbDEGXhyIUavoDl9WP/Jj106Kz9DEn1DPgYw5ruDn0e3Wgi3sKFm55sASdGBNOQB8F59d9qQ7deqrHA8wQ==
 
 autopy@^1.1.1:
   version "1.1.1"
@@ -2882,14 +2895,6 @@ find-java-home@^1.2.2:
   version "1.2.2"
   resolved "https://registry.yarnpkg.com/find-java-home/-/find-java-home-1.2.2.tgz#8c5d82df57e48840da6625f61619026e4edafb0a"
   integrity sha512-rN2LcQa+YDwfnPT0TQgn015eYqJkn3h3G/uVX5oOD2Ge7gKOuoJrntAJO4BiGb+K6lo6Mb+xJdoqbfzqaC75gw==
-  dependencies:
-    which "~1.0.5"
-    winreg "~1.2.2"
-
-find-java-home@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/find-java-home/-/find-java-home-2.0.0.tgz#9073a14df6f74b951f4f7c2af88cf005bc059737"
-  integrity sha512-m4Cf5WM5Y9UupofsLgcJuY5oFXVfVnfHx43pg3HJoVdtY2PN4Wfs7ex9svf7W7eLTP+6wmyBToaqGOCffHBHVA==
   dependencies:
     which "~1.0.5"
     winreg "~1.2.2"
