@@ -31,7 +31,7 @@
     "scripts": {
         "build": "parcel build",
         "fix": "yarn eslint . --ignore-path .gitignore --ext .js,.jsx,.ts,.tsx --fix",
-        "postinstall": "node scripts/postinstall.js; andromatic-install -p platform-tools 'build-tools;33.0.2'",
+        "postinstall": "node scripts/postinstall.js && andromatic-install -p platform-tools \"build-tools;33.0.2\"",
         "lint": "tsc && eslint . --ignore-path .gitignore --ext .js,.jsx,.ts,.tsx && git diff --check",
         "prepack": "rm -rf dist && yarn build && yarn typedoc",
         "test": "echo 'TODO: No tests specified yet.'",
