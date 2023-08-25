@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import { readFile } from 'fs/promises';
+import { join } from 'path';
 import { parseAppMeta, pause, platformApi } from '../src/index';
 
 // You can pass the following command line arguments:
@@ -27,13 +28,13 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
 
     await android.setClipboard('I copied this.');
 
-    const appMeta = await parseAppMeta(`${appPath}/${appId}/${appId}.apk`);
+    const appMeta = await parseAppMeta(join(appPath, appId, `${appId}.apk`) as `${string}.apk`);
     if (!appMeta) throw new Error('Invalid app.');
     console.log('App:', appMeta.id, '@', appMeta.version);
 
     console.log('Installed already?', await android.isAppInstalled(appId));
 
-    await android.installApp(`${appPath}/${appId}/${appId}.apk`);
+    await android.installApp(join(appPath, appId, `${appId}.apk`) as `${string}.apk`);
     await android.setAppBackgroundBatteryUsage(appId, 'unrestricted');
     // First, grant all permissions.
     await android.setAppPermissions(appId);
