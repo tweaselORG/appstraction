@@ -82,7 +82,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:422](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L422)
+[index.ts:425](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L425)
 
 ___
 
@@ -101,7 +101,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:428](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L428)
+[index.ts:431](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L431)
 
 ___
 
@@ -156,7 +156,7 @@ Functions that are available for the platforms.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `clearStuckModals` | `Platform` extends ``"android"`` ? () => `Promise`<`void`\> : `never` | Clear any potential stuck modals by pressing the back button followed by the home button. This is currently broken on iOS (see https://github.com/tweaselORG/appstraction/issues/12). Requires the `ssh` capability on iOS. |
-| `ensureDevice` | () => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities, performing necessary setup steps. This should always be the first function you call. Note that depending on the capabilities you set, the setup steps may make permanent changes to your device. |
+| `ensureDevice` | () => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities, performing necessary setup steps. This should always be the first function you call. Note that depending on the capabilities you set, the setup steps may make permanent changes to your device. For Android, you can set the url to the WireGuard APK which should be installed in the `WIREGUARD_APK_URL` environment variable. Note that it is only used if WireGuard isn’t installed already. |
 | `getDeviceAttribute` | <Attribute\>(`attribute`: `Attribute`, ...`options`: `Attribute` extends keyof [`GetDeviceAttributeOptions`](README.md#getdeviceattributeoptions) ? [options: GetDeviceAttributeOptions[Attribute]] : [options?: undefined]) => `Promise`<`string`\> | Get the value of the given attribute of the device. Requires the `frida` capability on iOS. |
 | `getForegroundAppId` | () => `Promise`<`string` \| `undefined`\> | Get the app ID of the running app that is currently in the foreground. Requires the `frida` capability on iOS. |
 | `getPidForAppId` | (`appId`: `string`) => `Promise`<`number` \| `undefined`\> | Get the PID of the app with the given app ID if it is currently running. Requires the `frida` capability on iOS. |
@@ -201,7 +201,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:345](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L345)
+[index.ts:348](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L348)
 
 ___
 
@@ -220,7 +220,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:436](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L436)
+[index.ts:439](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L439)
 
 ___
 
@@ -250,7 +250,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:377](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L377)
+[index.ts:380](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L380)
 
 ___
 
@@ -268,7 +268,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:415](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L415)
+[index.ts:418](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L418)
 
 ___
 
@@ -310,7 +310,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:443](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L443)
+[index.ts:446](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L446)
 
 ## Variables
 
@@ -451,4 +451,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:452](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L452)
+[index.ts:455](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L455)
