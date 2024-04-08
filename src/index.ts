@@ -56,6 +56,9 @@ export type PlatformApi<
      * necessary setup steps. This should always be the first function you call.
      *
      * Note that depending on the capabilities you set, the setup steps may make permanent changes to your device.
+     *
+     * For Android, you can set the url to the WireGuard APK which should be installed in the `WIREGUARD_APK_URL`
+     * environment variable. Note that it is only used if WireGuard isn’t installed already.
      */
     ensureDevice: () => Promise<void>;
     /**
