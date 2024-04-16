@@ -393,21 +393,46 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`,
         throw new Error('Failed to get prefs.');
     },
     async getDeviceAttribute(attribute, ...args) {
-        if (!options.capabilities.includes('frida'))
-            throw new Error('Frida is required for getting device attributes.');
+        // IDFV
+        if (attribute === 'idfv') {
+            if (!options.capabilities.includes('frida')) throw new Error('Frida is required for getting the IDFV.');
 
-        const opts = args[0]!;
+            const opts = args[0]!;
 
-        switch (attribute) {
-            case 'idfv': {
-                const pid = await this.getPidForAppId(opts.appId);
-                const idfv = await getObjFromFridaScript(pid, fridaScripts.getIdfv);
-                if (typeof idfv === 'string') return idfv;
-                throw new Error('Failed to get IDFV.');
-            }
+            const pid = await this.getPidForAppId(opts.appId);
+            const idfv = await getObjFromFridaScript(pid, fridaScripts.getIdfv);
+            if (typeof idfv === 'string') return idfv;
+            throw new Error('Failed to get IDFV.');
         }
 
-        throw new Error(`Unsupported device attribute: ${attribute}`);
+        // Manufacturer
+        if (attribute === 'manufacturer') return 'Apple';
+
+        // Attributes returned by `pymobiledevice3 lockdown info`
+        const lockdownAttributes = {
+            architectures: 'CPUArchitecture',
+            modelCodeName: 'HardwareModel',
+            name: 'DeviceName',
+            osBuild: 'BuildVersion',
+            osVersion: 'ProductVersion',
+        } as const;
+        if (!Object.keys(lockdownAttributes).includes(attribute))
+            throw new Error(`Unsupported device attribute: ${attribute}`);
+
+        const device = await python('pymobiledevice3', ['lockdown', 'info', '--no-color']).then(
+            ({ stdout }) =>
+                JSON.parse(stdout) as {
+                    BuildVersion: string;
+                    CPUArchitecture: string;
+                    DeviceName: string;
+                    HardwareModel: string;
+                    ProductVersion: string;
+                }
+        );
+
+        if (!device) throw new Error('No device connected.');
+
+        return device[lockdownAttributes[attribute as Exclude<typeof attribute, 'idfv' | 'manufacturer'>]];
     },
     async setClipboard(text) {
         if (!options.capabilities.includes('frida')) throw new Error('Frida is required for setting the clipboard.');

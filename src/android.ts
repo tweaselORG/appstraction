@@ -22,7 +22,6 @@ import { dependencies } from '../package.json';
 import { venvOptions } from '../scripts/common/python';
 import type { ParametersExceptFirst, XapkManifest } from './util';
 import {
-    asyncUnimplemented,
     escapeArg,
     escapeCommand,
     forEachInZip,
@@ -650,7 +649,30 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         if (isRecord(res)) return res;
         throw new Error('Failed to get prefs.');
     },
-    getDeviceAttribute: asyncUnimplemented('getDeviceAttribute'),
+    getDeviceAttribute: async (attribute, ..._) => {
+        // Device name
+        if (attribute === 'name') {
+            const { stdout } = await adb(['shell', 'dumpsys', 'bluetooth_manager']);
+            return /name: (.+)/.exec(stdout)?.[1] || '';
+        }
+
+        // Attributes returned by `getprop`
+        const getpropAttributes = {
+            apiLevel: 'ro.build.version.sdk',
+            architectures: 'ro.product.cpu.abilist',
+            manufacturer: 'ro.product.manufacturer',
+            model: 'ro.product.model',
+            modelCodeName: 'ro.product.device',
+            osBuild: 'ro.build.display.id',
+            osVersion: 'ro.build.version.release',
+        };
+        if (!Object.keys(getpropAttributes).includes(attribute))
+            throw new Error(`Unsupported device attribute: ${attribute}`);
+
+        return adb(['shell', 'getprop', getpropAttributes[attribute as Exclude<typeof attribute, 'name'>]]).then(
+            (p) => p.stdout
+        );
+    },
     async setClipboard(text) {
         if (!options.capabilities.includes('frida')) throw new Error('Frida is required for setting the clipboard.');
 
