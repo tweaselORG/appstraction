@@ -381,7 +381,7 @@ emulators running on the host.
 
 #### Defined in
 
-[util.ts:342](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L342)
+[util.ts:358](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L358)
 
 ___
 
@@ -390,6 +390,11 @@ ___
 ▸ **parseAppMeta**<`Platform`\>(`appPath`, `_platform?`): `Promise`<`undefined` \| [`AppMeta`](README.md#appmeta)\>
 
 Get metadata about the app at the given path.
+
+**`Remarks`**
+
+If you pass multiple APKs from different apps, no error will be raised. The metadata for the first app will be
+returned.
 
 #### Type parameters
 
@@ -413,7 +418,7 @@ An object containing the parsed metadata, or `undefined` if the file doesn't exi
 
 #### Defined in
 
-[util.ts:65](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L65)
+[util.ts:68](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L68)
 
 ___
 
