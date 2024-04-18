@@ -36,6 +36,25 @@ export type ObbInstallSpec = {
     installPath?: `${string}.obb`;
 };
 
+/** Metadata about an app, as returned by {@link parseAppMeta}. */
+export type AppMeta = {
+    /** The app/bundle ID. */
+    id: string;
+    /** The app's display name. */
+    name?: string;
+    /** The app's human-readable version. */
+    version?: string;
+    /** The app's version code. */
+    versionCode?: string;
+    /**
+     * A list of the architectures that the app supports. The identifiers for the architectures are normalized across
+     * Android and iOS.
+     *
+     * On Android, this will be empty for apps that don't have native code.
+     */
+    architectures: ('arm64' | 'arm' | 'x86' | 'x86_64' | 'mips' | 'mips64')[];
+};
+
 /** Functions that are available for the platforms. */
 export type PlatformApi<
     Platform extends SupportedPlatform,
