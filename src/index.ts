@@ -38,6 +38,8 @@ export type ObbInstallSpec = {
 
 /** Metadata about an app, as returned by {@link parseAppMeta}. */
 export type AppMeta = {
+    /** The platform the app is for. */
+    platform: SupportedPlatform;
     /** The app/bundle ID. */
     id: string;
     /** The app's display name. */

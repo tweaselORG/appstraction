@@ -103,6 +103,7 @@ export const parseAppMeta = async <Platform extends SupportedPlatform>(
             } as const;
 
             return {
+                platform,
                 id,
                 name: stdout.match(/application-label:'(.*?)'/)?.[1],
                 version: stdout.match(/versionName='([^']+?)'/)?.[1],
@@ -111,7 +112,7 @@ export const parseAppMeta = async <Platform extends SupportedPlatform>(
                     Object.keys(architectureNativeCodeMap) as (keyof typeof architectureNativeCodeMap)[]
                 ).filter((a) => nativeCode.includes(architectureNativeCodeMap[a])),
                 ...(options.includeIsSplit && { isSplit: stdout.includes("split='") }),
-            };
+            } as const;
         };
 
         if (Array.isArray(appPath)) {
@@ -174,6 +175,7 @@ export const parseAppMeta = async <Platform extends SupportedPlatform>(
         ).filter((a) => (meta.info['UIRequiredDeviceCapabilities'] as string[]).includes(architectureCapabilityMap[a]));
 
         return {
+            platform,
             id,
             // See https://stackoverflow.com/a/15423880 for why we use `CFBundleDisplayName` instead of `CFBundleName`.
             name: meta.info['CFBundleDisplayName'] as string | undefined,

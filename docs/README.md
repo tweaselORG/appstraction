@@ -61,6 +61,7 @@ Metadata about an app, as returned by [parseAppMeta](README.md#parseappmeta).
 | `architectures` | (``"arm64"`` \| ``"arm"`` \| ``"x86"`` \| ``"x86_64"`` \| ``"mips"`` \| ``"mips64"``)[] | A list of the architectures that the app supports. The identifiers for the architectures are normalized across Android and iOS. On Android, this will be empty for apps that don't have native code. |
 | `id` | `string` | The app/bundle ID. |
 | `name?` | `string` | The app's display name. |
+| `platform` | [`SupportedPlatform`](README.md#supportedplatform) | The platform the app is for. |
 | `version?` | `string` | The app's human-readable version. |
 | `versionCode?` | `string` | The app's version code. |
 
@@ -105,7 +106,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:450](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L450)
+[index.ts:452](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L452)
 
 ___
 
@@ -124,7 +125,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:454](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L454)
+[index.ts:456](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L456)
 
 ___
 
@@ -204,7 +205,7 @@ Functions that are available for the platforms.
 
 #### Defined in
 
-[index.ts:59](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L59)
+[index.ts:61](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L61)
 
 ___
 
@@ -224,7 +225,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:373](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L373)
+[index.ts:375](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L375)
 
 ___
 
@@ -243,7 +244,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:462](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L462)
+[index.ts:464](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L464)
 
 ___
 
@@ -273,7 +274,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:405](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L405)
+[index.ts:407](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L407)
 
 ___
 
@@ -291,7 +292,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:443](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L443)
+[index.ts:445](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L445)
 
 ___
 
@@ -333,7 +334,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:469](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L469)
+[index.ts:471](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L471)
 
 ## Variables
 
@@ -381,7 +382,7 @@ emulators running on the host.
 
 #### Defined in
 
-[util.ts:358](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L358)
+[util.ts:360](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L360)
 
 ___
 
@@ -472,4 +473,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:478](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L478)
+[index.ts:480](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L480)
