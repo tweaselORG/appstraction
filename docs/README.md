@@ -60,6 +60,7 @@ Metadata about an app, as returned by [parseAppMeta](README.md#parseappmeta).
 | :------ | :------ | :------ |
 | `architectures` | (``"arm64"`` \| ``"arm"`` \| ``"x86"`` \| ``"x86_64"`` \| ``"mips"`` \| ``"mips64"``)[] | A list of the architectures that the app supports. The identifiers for the architectures are normalized across Android and iOS. On Android, this will be empty for apps that don't have native code. |
 | `id` | `string` | The app/bundle ID. |
+| `md5?` | `string` | The MD5 hash of the app's package file. In the case of split APKs on Android, this will be the hash of the main APK. In the case of custom APK bundle formats (`.xapk`, `.apkm` and `.apks`), this will be the hash of the entire bundle. **Be careful when interpreting this value.** App stores can deliver different distributions of the exact same app. For example, apps downloaded from the App Store on iOS include the user's Apple ID, thus leading to different hashes even if different users download the very same version of the same app. |
 | `name?` | `string` | The app's display name. |
 | `platform` | [`SupportedPlatform`](README.md#supportedplatform) | The platform the app is for. |
 | `version?` | `string` | The app's human-readable version. |
@@ -106,7 +107,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:452](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L452)
+[index.ts:463](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L463)
 
 ___
 
@@ -125,7 +126,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:456](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L456)
+[index.ts:467](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L467)
 
 ___
 
@@ -205,7 +206,7 @@ Functions that are available for the platforms.
 
 #### Defined in
 
-[index.ts:61](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L61)
+[index.ts:72](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L72)
 
 ___
 
@@ -225,7 +226,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:375](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L375)
+[index.ts:386](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L386)
 
 ___
 
@@ -244,7 +245,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:464](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L464)
+[index.ts:475](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L475)
 
 ___
 
@@ -274,7 +275,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:407](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L407)
+[index.ts:418](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L418)
 
 ___
 
@@ -292,7 +293,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:445](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L445)
+[index.ts:456](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L456)
 
 ___
 
@@ -334,7 +335,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:471](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L471)
+[index.ts:482](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L482)
 
 ## Variables
 
@@ -382,7 +383,7 @@ emulators running on the host.
 
 #### Defined in
 
-[util.ts:360](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L360)
+[util.ts:390](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L390)
 
 ___
 
@@ -419,7 +420,7 @@ An object containing the parsed metadata, or `undefined` if the file doesn't exi
 
 #### Defined in
 
-[util.ts:68](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L68)
+[util.ts:69](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L69)
 
 ___
 
@@ -441,7 +442,7 @@ Pause for a given duration.
 
 #### Defined in
 
-[util.ts:49](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L49)
+[util.ts:50](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L50)
 
 ___
 
@@ -473,4 +474,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:480](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L480)
+[index.ts:491](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L491)

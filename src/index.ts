@@ -55,6 +55,17 @@ export type AppMeta = {
      * On Android, this will be empty for apps that don't have native code.
      */
     architectures: ('arm64' | 'arm' | 'x86' | 'x86_64' | 'mips' | 'mips64')[];
+    /**
+     * The MD5 hash of the app's package file.
+     *
+     * In the case of split APKs on Android, this will be the hash of the main APK. In the case of custom APK bundle
+     * formats (`.xapk`, `.apkm` and `.apks`), this will be the hash of the entire bundle.
+     *
+     * **Be careful when interpreting this value.** App stores can deliver different distributions of the exact same
+     * app. For example, apps downloaded from the App Store on iOS include the user's Apple ID, thus leading to
+     * different hashes even if different users download the very same version of the same app.
+     */
+    md5?: string;
 };
 
 /** Functions that are available for the platforms. */

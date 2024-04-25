@@ -8,6 +8,7 @@ import { createWriteStream } from 'fs';
 import fs from 'fs-extra';
 import type { FileHandle } from 'fs/promises';
 import { open, readFile } from 'fs/promises';
+import { hashFile } from 'hasha';
 import _ipaInfo from 'ipa-extract-info';
 import timeout from 'p-timeout';
 import { Certificate } from 'pkijs';
@@ -126,7 +127,11 @@ export const parseAppMeta = async <Platform extends SupportedPlatform>(
                     // which may well consist of a main APK plus split APKs.
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     const { isSplit, ...meta } = _meta;
-                    return meta;
+
+                    return {
+                        ...meta,
+                        md5: await hashFile(apkPath, { algorithm: 'md5' }),
+                    };
                 }
             }
 
@@ -144,7 +149,16 @@ export const parseAppMeta = async <Platform extends SupportedPlatform>(
                 const baseApkFileName = manifestJson.split_apks?.find((apk) => apk.id === 'base');
                 const baseApkPath = baseApkFileName && (await writeFileFromZipToTmp(xapk, baseApkFileName.file));
                 await xapk.close();
-                return baseApkPath ? parseApk(baseApkPath) : undefined;
+
+                if (baseApkPath) {
+                    const meta = await parseApk(baseApkPath);
+                    if (meta)
+                        return {
+                            ...meta,
+                            md5: await hashFile(appPath, { algorithm: 'md5' }),
+                        };
+                }
+                return undefined;
             });
         } else if (appPath.endsWith('.apkm') || appPath.endsWith('.apks')) {
             if ((await fileTypeFromFile(appPath))?.mime !== 'application/zip')
@@ -155,10 +169,25 @@ export const parseAppMeta = async <Platform extends SupportedPlatform>(
             const bundle = await open(appPath);
             const baseApkPath = await writeFileFromZipToTmp(bundle, 'base.apk');
             await bundle.close();
-            return baseApkPath ? parseApk(baseApkPath) : undefined;
+
+            if (baseApkPath) {
+                const meta = await parseApk(baseApkPath);
+                if (meta)
+                    return {
+                        ...meta,
+                        md5: await hashFile(appPath, { algorithm: 'md5' }),
+                    };
+            }
+            return undefined;
         }
 
-        return parseApk(appPath);
+        const meta = await parseApk(appPath);
+        if (meta)
+            return {
+                ...meta,
+                md5: await hashFile(appPath, { algorithm: 'md5' }),
+            };
+        return undefined;
     } else if (platform === 'ios') {
         const meta = await ipaInfo(appPath as AppPath<'ios'>);
 
@@ -182,6 +211,7 @@ export const parseAppMeta = async <Platform extends SupportedPlatform>(
             version: meta.info['CFBundleShortVersionString'] as string | undefined,
             versionCode: meta.info['CFBundleVersion'] as string | undefined,
             architectures,
+            md5: await hashFile(appPath as AppPath<'ios'>, { algorithm: 'md5' }),
         };
     }
 
