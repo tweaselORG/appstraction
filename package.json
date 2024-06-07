@@ -61,6 +61,7 @@
         "file-type": "^18.3.0",
         "frida": "^16.0.8",
         "fs-extra": "^11.1.0",
+        "hasha": "^6.0.0",
         "ipa-extract-info": "^1.2.6",
         "node-ssh": "^13.1.0",
         "p-retry": "^5.1.2",

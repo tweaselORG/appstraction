@@ -7,6 +7,7 @@ appstraction
 ### Type Aliases
 
 - [AndroidPermission](README.md#androidpermission)
+- [AppMeta](README.md#appmeta)
 - [AppPath](README.md#apppath)
 - [DeviceAttribute](README.md#deviceattribute)
 - [GetDeviceAttributeOptions](README.md#getdeviceattributeoptions)
@@ -47,6 +48,30 @@ An ID of a known permission on Android.
 
 ___
 
+### AppMeta
+
+Ƭ **AppMeta**: `Object`
+
+Metadata about an app, as returned by [parseAppMeta](README.md#parseappmeta).
+
+#### Type declaration
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `architectures` | (``"arm64"`` \| ``"arm"`` \| ``"x86"`` \| ``"x86_64"`` \| ``"mips"`` \| ``"mips64"``)[] | A list of the architectures that the app supports. The identifiers for the architectures are normalized across Android and iOS. On Android, this will be empty for apps that don't have native code. |
+| `id` | `string` | The app/bundle ID. |
+| `md5?` | `string` | The MD5 hash of the app's package file. In the case of split APKs on Android, this will be the hash of the main APK. In the case of custom APK bundle formats (`.xapk`, `.apkm` and `.apks`), this will be the hash of the entire bundle. **Be careful when interpreting this value.** App stores can deliver different distributions of the exact same app. For example, apps downloaded from the App Store on iOS include the user's Apple ID, thus leading to different hashes even if different users download the very same version of the same app. |
+| `name?` | `string` | The app's display name. |
+| `platform` | [`SupportedPlatform`](README.md#supportedplatform) | The platform the app is for. |
+| `version?` | `string` | The app's human-readable version. |
+| `versionCode?` | `string` | The app's version code. |
+
+#### Defined in
+
+[index.ts:40](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L40)
+
+___
+
 ### AppPath
 
 Ƭ **AppPath**<`Platform`\>: `Platform` extends ``"android"`` ? \`${string}.apk\` \| \`${string}.xapk\` \| \`${string}.apkm\` \| \`${string}.apks\` \| \`${string}.apk\`[] : \`${string}.ipa\`
@@ -82,7 +107,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:431](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L431)
+[index.ts:463](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L463)
 
 ___
 
@@ -101,7 +126,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:435](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L435)
+[index.ts:467](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L467)
 
 ___
 
@@ -181,7 +206,7 @@ Functions that are available for the platforms.
 
 #### Defined in
 
-[index.ts:40](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L40)
+[index.ts:72](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L72)
 
 ___
 
@@ -201,7 +226,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:354](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L354)
+[index.ts:386](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L386)
 
 ___
 
@@ -220,7 +245,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:443](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L443)
+[index.ts:475](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L475)
 
 ___
 
@@ -250,7 +275,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:386](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L386)
+[index.ts:418](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L418)
 
 ___
 
@@ -268,7 +293,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:424](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L424)
+[index.ts:456](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L456)
 
 ___
 
@@ -310,7 +335,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:450](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L450)
+[index.ts:482](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L482)
 
 ## Variables
 
@@ -358,22 +383,20 @@ emulators running on the host.
 
 #### Defined in
 
-[util.ts:358](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L358)
+[util.ts:390](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L390)
 
 ___
 
 ### parseAppMeta
 
-▸ **parseAppMeta**<`Platform`\>(`appPath`, `_platform?`): `Promise`<`undefined` \| { `architectures`: (``"arm64"`` \| ``"arm"`` \| ``"x86"`` \| ``"x86_64"`` \| ``"mips"`` \| ``"mips64"``)[] ; `id`: `string` ; `name?`: `string` ; `version?`: `string` ; `versionCode?`: `string`  }\>
+▸ **parseAppMeta**<`Platform`\>(`appPath`, `_platform?`): `Promise`<`undefined` \| [`AppMeta`](README.md#appmeta)\>
 
-Get metadata about the app at the given path. This includes the following properties:
+Get metadata about the app at the given path.
 
-- `id`: The app's ID.
-- `name`: The app's display name.
-- `version`: The app's human-readable version.
-- `versionCode`: The app's version code.
-- `architectures`: The architectures the device needs to support to run the app. On Android, this will be empty for
-  apps that don't have native code.
+**`Remarks`**
+
+If you pass multiple APKs from different apps, no error will be raised. The metadata for the first app will be
+returned.
 
 #### Type parameters
 
@@ -390,14 +413,14 @@ Get metadata about the app at the given path. This includes the following proper
 
 #### Returns
 
-`Promise`<`undefined` \| { `architectures`: (``"arm64"`` \| ``"arm"`` \| ``"x86"`` \| ``"x86_64"`` \| ``"mips"`` \| ``"mips64"``)[] ; `id`: `string` ; `name?`: `string` ; `version?`: `string` ; `versionCode?`: `string`  }\>
+`Promise`<`undefined` \| [`AppMeta`](README.md#appmeta)\>
 
-An object with the properties listed above, or `undefined` if the file doesn't exist or is not a valid app
-  for the platform.
+An object containing the parsed metadata, or `undefined` if the file doesn't exist or is not a valid app for
+  the platform.
 
 #### Defined in
 
-[util.ts:72](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L72)
+[util.ts:69](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L69)
 
 ___
 
@@ -419,7 +442,7 @@ Pause for a given duration.
 
 #### Defined in
 
-[util.ts:49](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L49)
+[util.ts:50](https://github.com/tweaselORG/appstraction/blob/main/src/util.ts#L50)
 
 ___
 
@@ -451,4 +474,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:459](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L459)
+[index.ts:491](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L491)

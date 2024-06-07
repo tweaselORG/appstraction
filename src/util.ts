@@ -8,6 +8,7 @@ import { createWriteStream } from 'fs';
 import fs from 'fs-extra';
 import type { FileHandle } from 'fs/promises';
 import { open, readFile } from 'fs/promises';
+import { hashFile } from 'hasha';
 import _ipaInfo from 'ipa-extract-info';
 import timeout from 'p-timeout';
 import { Certificate } from 'pkijs';
@@ -16,7 +17,7 @@ import { temporaryFile } from 'tempy';
 import type { Entry, ZipFile } from 'yauzl';
 import { fromFd } from 'yauzl';
 import { venvOptions } from '../scripts/common/python';
-import type { AppPath, SupportedPlatform } from './index';
+import type { AppMeta, AppPath, SupportedPlatform } from './index';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 export const asyncNop = async () => {};
@@ -52,40 +53,31 @@ export const pause = (durationInMs: number) =>
     });
 
 /**
- * Get metadata about the app at the given path. This includes the following properties:
+ * Get metadata about the app at the given path.
  *
- * - `id`: The app's ID.
- * - `name`: The app's display name.
- * - `version`: The app's human-readable version.
- * - `versionCode`: The app's version code.
- * - `architectures`: The architectures the device needs to support to run the app. On Android, this will be empty for
- *   apps that don't have native code.
- *
+ * @remarks
+ * If you pass multiple APKs from different apps, no error will be raised. The metadata for the first app will be
+ * returned.
  * @param appPath Path to the app file (`.ipa` on iOS, `.apk` on Android) to get the metadata of. On Android, this can
  *   also be an array of the paths of the split APKs of a single app or the following custom APK bundle formats:
  *   `.xapk`, `.apkm` and `.apks`.
  * @param platform The platform the app file is for. If not provided, it will be inferred from the file extension.
  *
- * @returns An object with the properties listed above, or `undefined` if the file doesn't exist or is not a valid app
- *   for the platform.
+ * @returns An object containing the parsed metadata, or `undefined` if the file doesn't exist or is not a valid app for
+ *   the platform.
  */
 export const parseAppMeta = async <Platform extends SupportedPlatform>(
     appPath: AppPath<Platform>,
     _platform?: Platform
-): Promise<
-    | {
-          id: string;
-          name?: string;
-          version?: string;
-          versionCode?: string;
-          architectures: ('arm64' | 'arm' | 'x86' | 'x86_64' | 'mips' | 'mips64')[];
-      }
-    | undefined
-> => {
+): Promise<AppMeta | undefined> => {
     const platform = _platform ?? (typeof appPath === 'string' && appPath.endsWith('.ipa') ? 'ios' : 'android');
 
     if (platform === 'android') {
-        const parseApk = async (apkPath: string) => {
+        /**
+         * @param options - `includeIsSplit`: The `isSplit` property is only used internally in this function if
+         *   multiple APKs are passed. It should not be exposed to the end user.
+         */
+        const parseApk = async (apkPath: string, options: { includeIsSplit?: boolean } = {}) => {
             // This sometimes fails with `AndroidManifest.xml:42: error: ERROR getting 'android:icon' attribute: attribute
             // value reference does not exist` but still has the correct version in the output.
             const { stdout } = await runAndroidDevTool('aapt', ['dump', 'badging', apkPath], { reject: false });
@@ -112,6 +104,7 @@ export const parseAppMeta = async <Platform extends SupportedPlatform>(
             } as const;
 
             return {
+                platform,
                 id,
                 name: stdout.match(/application-label:'(.*?)'/)?.[1],
                 version: stdout.match(/versionName='([^']+?)'/)?.[1],
@@ -119,14 +112,27 @@ export const parseAppMeta = async <Platform extends SupportedPlatform>(
                 architectures: (
                     Object.keys(architectureNativeCodeMap) as (keyof typeof architectureNativeCodeMap)[]
                 ).filter((a) => nativeCode.includes(architectureNativeCodeMap[a])),
-                isSplit: stdout.includes("split='"),
-            };
+                ...(options.includeIsSplit && { isSplit: stdout.includes("split='") }),
+            } as const;
         };
 
         if (Array.isArray(appPath)) {
             for (const apkPath of appPath) {
-                const meta = await parseApk(apkPath);
-                if (!meta?.isSplit) return meta;
+                const _meta = await parseApk(apkPath, { includeIsSplit: true });
+
+                // The actual metadata is in the main APK, which has `isSplit: false`.
+                if (_meta?.isSplit === false) {
+                    // We only use the `isSplit` flag to identify the main APK, so we remove it here. Including
+                    // `isSplit: false` would be misleading, since we are returning the metadata for the "whole" app,
+                    // which may well consist of a main APK plus split APKs.
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    const { isSplit, ...meta } = _meta;
+
+                    return {
+                        ...meta,
+                        md5: await hashFile(apkPath, { algorithm: 'md5' }),
+                    };
+                }
             }
 
             return undefined;
@@ -143,7 +149,16 @@ export const parseAppMeta = async <Platform extends SupportedPlatform>(
                 const baseApkFileName = manifestJson.split_apks?.find((apk) => apk.id === 'base');
                 const baseApkPath = baseApkFileName && (await writeFileFromZipToTmp(xapk, baseApkFileName.file));
                 await xapk.close();
-                return baseApkPath ? parseApk(baseApkPath) : undefined;
+
+                if (baseApkPath) {
+                    const meta = await parseApk(baseApkPath);
+                    if (meta)
+                        return {
+                            ...meta,
+                            md5: await hashFile(appPath, { algorithm: 'md5' }),
+                        };
+                }
+                return undefined;
             });
         } else if (appPath.endsWith('.apkm') || appPath.endsWith('.apks')) {
             if ((await fileTypeFromFile(appPath))?.mime !== 'application/zip')
@@ -154,10 +169,25 @@ export const parseAppMeta = async <Platform extends SupportedPlatform>(
             const bundle = await open(appPath);
             const baseApkPath = await writeFileFromZipToTmp(bundle, 'base.apk');
             await bundle.close();
-            return baseApkPath ? parseApk(baseApkPath) : undefined;
+
+            if (baseApkPath) {
+                const meta = await parseApk(baseApkPath);
+                if (meta)
+                    return {
+                        ...meta,
+                        md5: await hashFile(appPath, { algorithm: 'md5' }),
+                    };
+            }
+            return undefined;
         }
 
-        return parseApk(appPath);
+        const meta = await parseApk(appPath);
+        if (meta)
+            return {
+                ...meta,
+                md5: await hashFile(appPath, { algorithm: 'md5' }),
+            };
+        return undefined;
     } else if (platform === 'ios') {
         const meta = await ipaInfo(appPath as AppPath<'ios'>);
 
@@ -174,12 +204,14 @@ export const parseAppMeta = async <Platform extends SupportedPlatform>(
         ).filter((a) => (meta.info['UIRequiredDeviceCapabilities'] as string[]).includes(architectureCapabilityMap[a]));
 
         return {
+            platform,
             id,
             // See https://stackoverflow.com/a/15423880 for why we use `CFBundleDisplayName` instead of `CFBundleName`.
             name: meta.info['CFBundleDisplayName'] as string | undefined,
             version: meta.info['CFBundleShortVersionString'] as string | undefined,
             versionCode: meta.info['CFBundleVersion'] as string | undefined,
             architectures,
+            md5: await hashFile(appPath as AppPath<'ios'>, { algorithm: 'md5' }),
         };
     }
 
