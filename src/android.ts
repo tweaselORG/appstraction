@@ -652,8 +652,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
     getDeviceAttribute: async (attribute, ..._) => {
         // Device name
         if (attribute === 'name') {
-            const { stdout } = await adb(['shell', 'dumpsys', 'bluetooth_manager']);
-            return /name: (.+)/.exec(stdout)?.[1] || '';
+            const { stdout } = await adb(['shell', 'settings', 'get', 'global', 'device_name']);
+            return stdout;
         }
 
         // Attributes returned by `getprop`
