@@ -18,6 +18,9 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
 
     await ios.ensureDevice();
 
+    const osVersion = await ios.getDeviceAttribute('osVersion');
+    console.log('OS version:', osVersion);
+
     const installedApps = await ios.listApps();
     console.log('Installed apps:', installedApps);
 

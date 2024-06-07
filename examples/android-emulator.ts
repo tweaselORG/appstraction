@@ -24,6 +24,9 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
     await android.ensureDevice();
     await android.resetDevice(snapshotName);
 
+    const osVersion = await android.getDeviceAttribute('osVersion');
+    console.log('OS version:', osVersion);
+
     const installedApps = await android.listApps();
     console.log('Installed apps:', installedApps);
 

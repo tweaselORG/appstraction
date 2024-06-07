@@ -204,13 +204,19 @@ export type PlatformApi<
      */
     getPrefs: (appId: string) => Promise<Record<string, unknown> | undefined>;
     /**
-     * Get the value of the given attribute of the device.
-     *
-     * Requires the `frida` capability on iOS.
+     * Get the value of the given device attribute.
      *
      * @param attribute The attribute to get the value of, where:
      *
-     *   - `idfv`: The `identifierForVendor` for app given in `options` (iOS only).
+     *   - `apiLevel`: [Android SDK API level](https://developer.android.com/tools/releases/platforms) (Android only)
+     *   - `architectures`: architectures/ABIs supported by the device (comma-separated list)
+     *   - `idfv`: `identifierForVendor` for the app given in `options` (iOS only). Requires the `frida` capability.
+     *   - `manufacturer`: device manufacturer.
+     *   - `model`: device model.
+     *   - `modelCodeName`: code name/identifier for the device model.
+     *   - `name`: device name.
+     *   - `osBuild`: operating system build string.
+     *   - `osVersion`: operating system version.
      *
      * @param options Some attributes require additional options:
      *
@@ -423,10 +429,8 @@ export type SupportedCapability<Platform extends SupportedPlatform> = Platform e
 
 /** A supported attribute for the `getDeviceAttribute()` function, depending on the platform. */
 export type DeviceAttribute<Platform extends SupportedPlatform> = Platform extends 'android'
-    ? never
-    : Platform extends 'ios'
-    ? 'idfv'
-    : never;
+    ? 'apiLevel' | 'architectures' | 'manufacturer' | 'model' | 'modelCodeName' | 'name' | 'osBuild' | 'osVersion'
+    : 'architectures' | 'idfv' | 'manufacturer' | 'modelCodeName' | 'name' | 'osBuild' | 'osVersion';
 /** The options for each attribute available through the `getDeviceAttribute()` function. */
 export type GetDeviceAttributeOptions = {
     /** The options for the `idfv` attribute. */

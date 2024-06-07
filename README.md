@@ -17,7 +17,7 @@ With appstraction, you can perform the following actions programmatically on And
 * Find the app ID of the app that is currently in the foreground.
 * Get the PID of an app by its app ID if it is currently running.
 * Fetch an app's preferences (`SharedPreferences` on Android, `NSUserDefaults` on iOS) as JSON.
-* Get various device attributes (like the IDFV on iOS).
+* Get various device attributes (like OS version, device manufacturer and model, or IDFV on iOS).
 * Set the clipboard content.
 * Get metadata (app ID, display name, version, architectures) for an app file (`.apk` on Android, `.ipa` on iOS).
 * Install and remove root certificate authorities.
