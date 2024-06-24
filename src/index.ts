@@ -326,6 +326,18 @@ export type PlatformApi<
         ? (proxy: Proxy | null) => Promise<void>
         : never;
     /**
+     * Adds a simple event to the device’s calendar. Requires the `frida` capability.
+     *
+     * @param eventData The event to add.
+     */
+    addCalendarEvent: (eventData: CalendarEventData) => Promise<void>;
+    /**
+     * Add a contact to the device’s contact book. Requires the `frida` capability.
+     *
+     * @param contactData The contact to add.
+     */
+    addContact: (contactData: ContactData) => Promise<void>;
+    /**
      * An indicator for what platform and run target this instance of PlatformApi is configured for. This is useful
      * mostly to write typeguards.
      */
@@ -480,6 +492,26 @@ export type Proxy = {
 };
 /** Configuration string for WireGuard. */
 export type WireGuardConfig = string;
+/** Event to add to the device’s calendar. */
+export type CalendarEventData = {
+    /** Title of the event. */
+    title: string;
+    /** Date and time when the event should start. */
+    startDate: Date;
+    /** Date and time when the event should end. */
+    endDate: Date;
+};
+/** Contact to add to the device’s contacts. */
+export type ContactData = {
+    /** Last name of the contact to add. */
+    lastName: string;
+    /** First name of the contact to add. */
+    firstName?: string;
+    /** Phone number of the contact. Will be added as ‘Home’. */
+    phoneNumber?: string;
+    /** Email address of the contact. Will be added as ‘Home’. */
+    email?: string;
+};
 
 /**
  * Get the API object with the functions for the given platform and run target.

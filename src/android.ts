@@ -22,6 +22,7 @@ import { dependencies } from '../package.json';
 import { venvOptions } from '../scripts/common/python';
 import type { ParametersExceptFirst, XapkManifest } from './util';
 import {
+    asyncNop,
     escapeArg,
     escapeCommand,
     forEachInZip,
@@ -839,6 +840,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         )
             throw new Error('Failed to set proxy.');
     },
+    addCalendarEvent: asyncNop,
+    addContact: asyncNop,
 });
 
 /** The IDs of known permissions on Android. */

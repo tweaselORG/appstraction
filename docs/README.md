@@ -9,6 +9,8 @@ appstraction
 - [AndroidPermission](README.md#androidpermission)
 - [AppMeta](README.md#appmeta)
 - [AppPath](README.md#apppath)
+- [CalendarEventData](README.md#calendareventdata)
+- [ContactData](README.md#contactdata)
 - [DeviceAttribute](README.md#deviceattribute)
 - [GetDeviceAttributeOptions](README.md#getdeviceattributeoptions)
 - [IosPermission](README.md#iospermission)
@@ -44,7 +46,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:976](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L976)
+[android.ts:979](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L979)
 
 ___
 
@@ -93,6 +95,47 @@ On iOS, the path to an IPA file with the `.ipa` extension.
 
 ___
 
+### CalendarEventData
+
+Ƭ **CalendarEventData**: `Object`
+
+Event to add to the device’s calendar.
+
+#### Type declaration
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `endDate` | `Date` | Date and time when the event should end. |
+| `startDate` | `Date` | Date and time when the event should start. |
+| `title` | `string` | Title of the event. |
+
+#### Defined in
+
+[index.ts:496](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L496)
+
+___
+
+### ContactData
+
+Ƭ **ContactData**: `Object`
+
+Contact to add to the device’s contacts.
+
+#### Type declaration
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `email?` | `string` | Email address of the contact. Will be added as ‘Home’. |
+| `firstName?` | `string` | First name of the contact to add. |
+| `lastName` | `string` | Last name of the contact to add. |
+| `phoneNumber?` | `string` | Phone number of the contact. Will be added as ‘Home’. |
+
+#### Defined in
+
+[index.ts:505](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L505)
+
+___
+
 ### DeviceAttribute
 
 Ƭ **DeviceAttribute**<`Platform`\>: `Platform` extends ``"android"`` ? ``"apiLevel"`` \| ``"architectures"`` \| ``"manufacturer"`` \| ``"model"`` \| ``"modelCodeName"`` \| ``"name"`` \| ``"osBuild"`` \| ``"osVersion"`` : ``"architectures"`` \| ``"idfv"`` \| ``"manufacturer"`` \| ``"modelCodeName"`` \| ``"name"`` \| ``"osBuild"`` \| ``"osVersion"``
@@ -107,7 +150,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:463](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L463)
+[index.ts:475](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L475)
 
 ___
 
@@ -126,7 +169,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:467](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L467)
+[index.ts:479](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L479)
 
 ___
 
@@ -138,7 +181,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:520](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L520)
+[ios.ts:651](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L651)
 
 ___
 
@@ -180,6 +223,8 @@ Functions that are available for the platforms.
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
+| `addCalendarEvent` | (`eventData`: [`CalendarEventData`](README.md#calendareventdata)) => `Promise`<`void`\> | Adds a simple event to the device’s calendar. Requires the `frida` capability. |
+| `addContact` | (`contactData`: [`ContactData`](README.md#contactdata)) => `Promise`<`void`\> | Add a contact to the device’s contact book. Requires the `frida` capability. |
 | `clearStuckModals` | `Platform` extends ``"android"`` ? () => `Promise`<`void`\> : `never` | Clear any potential stuck modals by pressing the back button followed by the home button. This is currently broken on iOS (see https://github.com/tweaselORG/appstraction/issues/12). Requires the `ssh` capability on iOS. |
 | `ensureDevice` | () => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities, performing necessary setup steps. This should always be the first function you call. Note that depending on the capabilities you set, the setup steps may make permanent changes to your device. For Android, you can set the url to the WireGuard APK which should be installed in the `WIREGUARD_APK_URL` environment variable. Note that it is only used if WireGuard isn’t installed already. |
 | `getDeviceAttribute` | <Attribute\>(`attribute`: `Attribute`, ...`options`: `Attribute` extends keyof [`GetDeviceAttributeOptions`](README.md#getdeviceattributeoptions) ? [options: GetDeviceAttributeOptions[Attribute]] : [options?: undefined]) => `Promise`<`string`\> | Get the value of the given device attribute. |
@@ -226,7 +271,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:386](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L386)
+[index.ts:398](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L398)
 
 ___
 
@@ -245,7 +290,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:475](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L475)
+[index.ts:487](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L487)
 
 ___
 
@@ -275,7 +320,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:418](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L418)
+[index.ts:430](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L430)
 
 ___
 
@@ -293,7 +338,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:456](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L456)
+[index.ts:468](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L468)
 
 ___
 
@@ -335,7 +380,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:482](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L482)
+[index.ts:494](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L494)
 
 ## Variables
 
@@ -347,7 +392,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:845](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L845)
+[android.ts:848](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L848)
 
 ___
 
@@ -359,7 +404,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:503](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L503)
+[ios.ts:634](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L634)
 
 ## Functions
 
@@ -474,4 +519,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:491](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L491)
+[index.ts:523](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L523)

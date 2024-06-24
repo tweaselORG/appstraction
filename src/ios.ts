@@ -2,7 +2,7 @@ import { getVenv } from 'autopy';
 import { createHash } from 'crypto';
 import frida from 'frida';
 import { NodeSSH } from 'node-ssh';
-import type { PlatformApi, PlatformApiOptions, Proxy, SupportedCapability, SupportedRunTarget } from '.';
+import type { ContactData, PlatformApi, PlatformApiOptions, Proxy, SupportedCapability, SupportedRunTarget } from '.';
 import { venvOptions } from '../scripts/common/python';
 import {
     asyncUnimplemented,
@@ -11,6 +11,7 @@ import {
     isRecord,
     listDevices,
     parsePemCertificateFromFile,
+    pause,
     retryCondition,
     startUsbmuxProxy,
 } from './util';
@@ -127,6 +128,87 @@ function getProxySettingsForCurrentWifiNetwork() {
 }
 
 send({ name: "get_obj_from_frida_script", payload: getProxySettingsForCurrentWifiNetwork() });`,
+    addCalendarEvent: (eventData: {
+        title: string;
+        startDate: string;
+        endDate: string;
+    }) => `function addCalendarEvent(eventData) {
+    const eventStore = ObjC.classes.EKEventStore.alloc().init();
+    const NSError = ObjC.classes.NSError;
+    const NSISO8601DateFormatter = ObjC.classes.NSISO8601DateFormatter;
+    const NSString = ObjC.classes.NSString;
+    const EKEvent = ObjC.classes.EKEvent;
+
+    const formatter = NSISO8601DateFormatter.alloc().init();
+
+    const evt = EKEvent.eventWithEventStore_(eventStore);
+    evt.setTitle_(NSString.stringWithString_(eventData.title));
+    const start = formatter.dateFromString_(NSString.stringWithString_(eventData.startDate));
+    evt.setStartDate_(start);
+    const end = formatter.dateFromString_(NSString.stringWithString_(eventData.endDate));
+    evt.setEndDate_(end);
+    evt.setCalendar_(eventStore.defaultCalendarForNewEvents());
+
+    // https://github.com/frida/frida/issues/729
+    const errorPtr = Memory.alloc(Process.pointerSize);
+    Memory.writePointer(errorPtr, NULL);
+
+    eventStore.saveEvent_span_commit_error_(evt, 0, 1, errorPtr);
+
+    const error = Memory.readPointer(errorPtr);
+    if (!error.isNull()) {
+        const errorObj = new ObjC.Object(error); // now you can treat errorObj as an NSError instance
+        console.error(errorObj.toString());
+    }
+}
+
+addCalendarEvent(${JSON.stringify(eventData)});`,
+    addContact: (contactData: ContactData) => `function addContact(contactData) {
+    const CNMutableContact = ObjC.classes.CNMutableContact;
+    const NSString = ObjC.classes.NSString;
+    const CNLabeledValue = ObjC.classes.CNLabeledValue;
+    const CNPhoneNumber = ObjC.classes.CNPhoneNumber;
+    const CNSaveRequest = ObjC.classes.CNSaveRequest;
+    const NSMutableArray = ObjC.classes.NSMutableArray;
+    const CNContactStore = ObjC.classes.CNContactStore;
+
+    const contact = CNMutableContact.alloc().init();
+    contact.setLastName_(NSString.stringWithString_(contactData.lastName));
+    if(contactData.firstName) contact.setFirstName_(NSString.stringWithString_(contactData.firstName));
+
+    if (contactData.phoneNumber) {
+        const number = CNPhoneNumber.phoneNumberWithStringValue_(NSString.stringWithString_(contactData.phoneNumber));
+        const homePhone = CNLabeledValue.labeledValueWithLabel_value_(NSString.stringWithString_('home'), number);
+        const numbers = NSMutableArray.alloc().init();
+        numbers.addObject_(homePhone);
+        contact.setPhoneNumbers_(numbers);
+    }
+
+    if(contactData.email) {
+         const email = NSString.stringWithString_(contactData.email);
+         const homeEmail = CNLabeledValue.labeledValueWithLabel_value_(NSString.stringWithString_('home'), email);
+         const emails = NSMutableArray.alloc().init();
+         emails.addObject_(homeEmail);
+         contact.setEmailAddresses_(emails);
+    }
+
+    const request = CNSaveRequest.alloc().init();
+    request.addContact_toContainerWithIdentifier_(contact, null);
+
+    // https://github.com/frida/frida/issues/729
+    const errorPtr = Memory.alloc(Process.pointerSize);
+    Memory.writePointer(errorPtr, NULL);
+
+    const store = CNContactStore.alloc().init();
+    store.executeSaveRequest_error_(request, errorPtr);
+
+    const error = Memory.readPointer(errorPtr);
+    if (!error.isNull()) {
+        var errorObj = new ObjC.Object(error); // now you can treat errorObj as an NSError instance
+        console.error(errorObj.toString());
+    }
+}
+addContact(${JSON.stringify(contactData)});`,
 } as const;
 
 export const iosApi = <RunTarget extends SupportedRunTarget<'ios'>>(
@@ -496,6 +578,55 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`,
                     proxySettings['HTTPSPort'] !== proxy?.port + ''))
         )
             throw new Error('Failed to set proxy.');
+    },
+    addCalendarEvent: async (eventData) => {
+        if (!options.capabilities.includes('frida'))
+            throw new Error('Frida is required to add events to the calendar.');
+
+        // The ObjC formatter does not understand milliseconds
+        const simplifiedISO = (date: Date) => date.toISOString().replace(/\.[0-9]{0,3}Z$/, 'Z');
+
+        await frida.getUsbDevice().then(async (f) => {
+            // frida has problems spawning a process to attach to on iOS
+            await f.attach('SpringBoard').then(async (session) => {
+                const startCalendar = await session.createScript(fridaScripts.startApp('com.apple.mobilecal'));
+                await startCalendar.load();
+                await session.detach();
+            });
+            // wait until the Calendar has started
+            await pause(3000);
+            await f.attach('Calendar').then(async (session) => {
+                const addEvent = await session.createScript(
+                    fridaScripts.addCalendarEvent({
+                        title: eventData.title,
+                        startDate: simplifiedISO(eventData.startDate),
+                        endDate: simplifiedISO(eventData.endDate),
+                    })
+                );
+                await addEvent.load();
+                await session.detach();
+            });
+        });
+    },
+    addContact: async (contactData) => {
+        if (!options.capabilities.includes('frida'))
+            throw new Error('Frida is required to add contacts to the contact book.');
+
+        await frida.getUsbDevice().then(async (f) => {
+            // frida has problems spawning a process to attach to on iOS
+            await f.attach('SpringBoard').then(async (session) => {
+                const startCalendar = await session.createScript(fridaScripts.startApp('com.apple.MobileAddressBook'));
+                await startCalendar.load();
+                await session.detach();
+            });
+            await pause(3000);
+            await f.attach('Contacts').then(async (session) => {
+                const script = fridaScripts.addContact(contactData);
+                const addEvent = await session.createScript(script);
+                await addEvent.load();
+                await session.detach();
+            });
+        });
     },
 });
 
