@@ -621,9 +621,8 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`,
             });
             await pause(3000);
             await f.attach('Contacts').then(async (session) => {
-                const script = fridaScripts.addContact(contactData);
-                const addEvent = await session.createScript(script);
-                await addEvent.load();
+                const addContact = await session.createScript(fridaScripts.addContact(contactData));
+                await addContact.load();
                 await session.detach();
             });
         });

@@ -11,6 +11,7 @@ import { basename, dirname } from 'path';
 import { major as semverMajor, minVersion as semverMinVersion } from 'semver';
 import { temporaryFile } from 'tempy';
 import type {
+    ContactData,
     PlatformApi,
     PlatformApiOptions,
     Proxy,
@@ -60,6 +61,88 @@ send({ name: "get_obj_from_frida_script", payload: prefs });`,
 var cm = Java.cast(app_ctx.getSystemService("clipboard"), Java.use("android.content.ClipboardManager"));
 cm.setText(Java.use("java.lang.StringBuilder").$new("${text}"));
 send({ name: "get_obj_from_frida_script", payload: true });`,
+    addContact: (contactData: ContactData) => `// This follows https://github.com/frida/frida/issues/1049
+function loadMissingClass(className) {
+    const loaders = Java.enumerateClassLoadersSync();
+    let classFactory;
+    for (const loader of loaders) {
+        try {
+            loader.findClass(className);
+            classFactory = Java.ClassFactory.get(loader);
+            break;
+        } catch {
+            // There was an error while finding the class, try another loader;
+            continue;
+        }
+    }
+    return classFactory.use(className);
+}
+
+function addContact(contactData) {
+    const appContext = Java.use('android.app.ActivityThread').currentApplication().getApplicationContext();
+
+    const ContentProviderOperation = Java.use('android.content.ContentProviderOperation');
+    const ContactsContract = loadMissingClass('android.provider.ContactsContract');
+    const RawContacts = loadMissingClass('android.provider.ContactsContract$RawContacts');
+    const SyncColumns = loadMissingClass('android.provider.ContactsContract$SyncColumns');
+    const Data = loadMissingClass('android.provider.ContactsContract$Data');
+    const DataColumns = loadMissingClass('android.provider.ContactsContract$DataColumns');
+    const StructuredName = loadMissingClass('android.provider.ContactsContract$CommonDataKinds$StructuredName');
+    const PhoneDataType = loadMissingClass('android.provider.ContactsContract$CommonDataKinds$Phone');
+    const EmailDataType = loadMissingClass('android.provider.ContactsContract$CommonDataKinds$Email');
+    const JavaString = Java.use('java.lang.String');
+    const JavaInt = Java.use('java.lang.Integer');
+
+
+    const ops = Java.use('java.util.ArrayList').$new();
+    ops.add(
+        ContentProviderOperation.newInsert(RawContacts.CONTENT_URI.value)
+            .withValue(SyncColumns.ACCOUNT_TYPE.value, null)
+            .withValue(SyncColumns.ACCOUNT_NAME.value, null)
+            .build()
+    );
+
+    const name = (contactData.firstName ? contactData.firstName + ' ' : '') + contactData.lastName;
+
+    ops.add(
+        ContentProviderOperation.newInsert(Data.CONTENT_URI.value)
+            .withValueBackReference(DataColumns.RAW_CONTACT_ID.value, 0)
+            .withValue(DataColumns.MIMETYPE.value, StructuredName.CONTENT_ITEM_TYPE.value)
+            .withValue(StructuredName.DISPLAY_NAME.value, name)
+            .build()
+    );
+
+    if (contactData.phoneNumber) {
+        const numberString = JavaString.$new(contactData.phoneNumber);
+        ops.add(
+            ContentProviderOperation.newInsert(Data.CONTENT_URI.value)
+                .withValueBackReference(DataColumns.RAW_CONTACT_ID.value, 0)
+                .withValue(DataColumns.MIMETYPE.value, PhoneDataType.CONTENT_ITEM_TYPE.value)
+                .withValue(PhoneDataType.NUMBER.value, numberString)
+                .withValue(DataColumns.DATA2.value, JavaInt.$new(PhoneDataType.TYPE_HOME.value))
+                .build()
+        );
+    }
+
+    if (contactData.email) {
+        const emailString = JavaString.$new(contactData.email);
+        ops.add(
+            ContentProviderOperation.newInsert(Data.CONTENT_URI.value)
+                .withValueBackReference(DataColumns.RAW_CONTACT_ID.value, 0)
+                .withValue(DataColumns.MIMETYPE.value, EmailDataType.CONTENT_ITEM_TYPE.value)
+                .withValue(EmailDataType.ADDRESS.value, emailString)
+                .withValue(DataColumns.DATA2.value, JavaInt.$new(EmailDataType.TYPE_HOME.value))
+                .build()
+        );
+    }
+
+    try {
+        appContext.getContentResolver().applyBatch(ContactsContract.AUTHORITY.value, ops);
+    } catch (e) {
+        console.log(e);
+    }
+}
+addContact(${JSON.stringify(contactData)})`,
 } as const;
 
 export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
@@ -841,7 +924,20 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             throw new Error('Failed to set proxy.');
     },
     addCalendarEvent: asyncNop,
-    addContact: asyncNop,
+    addContact: async (contactData) => {
+        if (!options.capabilities.includes('frida'))
+            throw new Error('Frida is required to add contacts to the contact book.');
+
+        const device = await frida.getUsbDevice();
+        const pid = await device.spawn('com.android.contacts');
+        const startSession = await device.attach(pid);
+        await startSession.detach();
+
+        const session = await device.attach('Contacts');
+        const addContact = await session.createScript(fridaScripts.addContact(contactData));
+        await addContact.load();
+        await session.detach();
+    },
 });
 
 /** The IDs of known permissions on Android. */
