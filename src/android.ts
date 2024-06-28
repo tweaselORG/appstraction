@@ -23,7 +23,6 @@ import { dependencies } from '../package.json';
 import { venvOptions } from '../scripts/common/python';
 import type { ParametersExceptFirst, XapkManifest } from './util';
 import {
-    asyncNop,
     escapeArg,
     escapeCommand,
     forEachInZip,
@@ -33,6 +32,7 @@ import {
     listDevices,
     parseAppMeta,
     parsePemCertificateFromFile,
+    pause,
     retryCondition,
     tmpFileFromZipEntry,
 } from './util';
@@ -923,7 +923,21 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         )
             throw new Error('Failed to set proxy.');
     },
-    addCalendarEvent: asyncNop,
+    addCalendarEvent: async (eventData) => {
+        await adb(
+            [
+                'shell',
+                'am',
+                `start -a android.intent.action.INSERT -t 'vnd.android.cursor.dir/event' --el beginTime '${eventData.startDate.valueOf()}' --es title '${
+                    eventData.title
+                }' --el endTime '${eventData.endDate.valueOf()}'`,
+            ],
+            { reject: true }
+        );
+
+        await pause(3000); // wait for the calendar app to open
+        await adb(['shell', 'input', 'keyevent', '3']); // Home button, the apps is closed and creates the event
+    },
     addContact: async (contactData) => {
         if (!options.capabilities.includes('frida'))
             throw new Error('Frida is required to add contacts to the contact book.');
