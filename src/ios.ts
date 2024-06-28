@@ -627,6 +627,7 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`,
             });
         });
     },
+    setDeviceName: (deviceName) => python('pymobiledevice3', ['lockdown', 'device-name', deviceName]).then(),
 });
 
 /** The IDs of known permissions on iOS. */

@@ -338,6 +338,12 @@ export type PlatformApi<
      */
     addContact: (contactData: ContactData) => Promise<void>;
     /**
+     * Sets the name of the device, which shows up to other network or bluetooth devices.
+     *
+     * @param deviceName The new name for the device.
+     */
+    setDeviceName: (deviceName: string) => Promise<void>;
+    /**
      * An indicator for what platform and run target this instance of PlatformApi is configured for. This is useful
      * mostly to write typeguards.
      */

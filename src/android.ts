@@ -952,6 +952,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         await addContact.load();
         await session.detach();
     },
+    setDeviceName: (deviceName) => adb(['shell', `settings put global device_name '${deviceName}'`]).then(),
 });
 
 /** The IDs of known permissions on Android. */
