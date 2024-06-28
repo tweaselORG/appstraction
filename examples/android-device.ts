@@ -29,6 +29,18 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
     if (wireguardConfigPath) await android.setProxy(await readFile(wireguardConfigPath, 'utf8'));
 
     await android.setClipboard('I copied this.');
+    await android.addCalendarEvent({
+        title: 'Secret meeting',
+        startDate: new Date('2024-01-01T12:00:00'),
+        endDate: new Date('2024-01-01T12:12:00'),
+    });
+    await android.addContact({
+        lastName: 'Doe',
+        firstName: 'Kim',
+        email: 'kim.doe@example.org',
+        phoneNumber: '0123456789',
+    });
+    await android.setDeviceName('honeypotdontcopy');
 
     const appMeta = await parseAppMeta(`${appPath}/${appId}/${appId}.apk`);
     if (!appMeta) throw new Error('Invalid app.');

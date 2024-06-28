@@ -33,6 +33,18 @@ import { parseAppMeta, pause, platformApi } from '../src/index';
     if (proxyHost && proxyPort) await ios.setProxy({ host: proxyHost, port: +proxyPort });
 
     await ios.setClipboard('I copied this.');
+    await ios.addCalendarEvent({
+        title: 'Secret meeting',
+        startDate: new Date('2024-01-01T12:00:00'),
+        endDate: new Date('2024-01-01T12:12:00'),
+    });
+    await ios.addContact({
+        lastName: 'Doe',
+        firstName: 'Kim',
+        email: 'kim.doe@example.org',
+        phoneNumber: '0123456789',
+    });
+    await ios.setDeviceName('honeypotdontcopy');
 
     const appMeta = await parseAppMeta(appPath as `${string}.ipa`);
     if (!appMeta) throw new Error('Invalid app.');
