@@ -936,7 +936,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         );
 
         await pause(3000); // wait for the calendar app to open
-        await adb(['shell', 'input', 'keyevent', '3']); // Home button, the apps is closed and creates the event
+        await adb(['shell', 'input', 'keyevent', '3']); // Home button, the app is closed and creates the event
     },
     addContact: async (contactData) => {
         if (!options.capabilities.includes('frida'))

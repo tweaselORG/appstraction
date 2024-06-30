@@ -22,7 +22,7 @@ With appstraction, you can perform the following actions programmatically on And
 * Get metadata (app ID, display name, version, architectures) for an app file (`.apk` on Android, `.ipa` on iOS).
 * Install and remove root certificate authorities.
 * Configure the proxy settings, optionally using WireGuard instead of a regular proxy. WireGuard is automatically installed and configured on the device if enabled.
-* Place honeypot data on the device, such as contacts, events and the device name
+* Place honeypot data on the device, such as contacts, events, and the device name.
 
 Appstraction is written in TypeScript and provides comprehensive type definitions to make development easy.
 
