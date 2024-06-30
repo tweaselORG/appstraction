@@ -328,11 +328,15 @@ export type PlatformApi<
     /**
      * Adds a simple event to the device’s calendar. Requires the `frida` capability.
      *
+     * On Android, this currently only works if a calendar has already been set up.
+     *
      * @param eventData The event to add.
      */
     addCalendarEvent: (eventData: CalendarEventData) => Promise<void>;
     /**
      * Add a contact to the device’s contact book. Requires the `frida` capability.
+     *
+     * On Android, this currently only works if `com.android.contacts` is installed.
      *
      * @param contactData The contact to add.
      */

@@ -46,7 +46,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:1090](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L1090)
+[android.ts:1094](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L1094)
 
 ___
 
@@ -111,7 +111,7 @@ Event to add to the device’s calendar.
 
 #### Defined in
 
-[index.ts:502](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L502)
+[index.ts:506](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L506)
 
 ___
 
@@ -132,7 +132,7 @@ Contact to add to the device’s contacts.
 
 #### Defined in
 
-[index.ts:511](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L511)
+[index.ts:515](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L515)
 
 ___
 
@@ -150,7 +150,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:481](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L481)
+[index.ts:485](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L485)
 
 ___
 
@@ -169,7 +169,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:485](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L485)
+[index.ts:489](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L489)
 
 ___
 
@@ -223,8 +223,8 @@ Functions that are available for the platforms.
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `addCalendarEvent` | (`eventData`: [`CalendarEventData`](README.md#calendareventdata)) => `Promise`<`void`\> | Adds a simple event to the device’s calendar. Requires the `frida` capability. |
-| `addContact` | (`contactData`: [`ContactData`](README.md#contactdata)) => `Promise`<`void`\> | Add a contact to the device’s contact book. Requires the `frida` capability. |
+| `addCalendarEvent` | (`eventData`: [`CalendarEventData`](README.md#calendareventdata)) => `Promise`<`void`\> | Adds a simple event to the device’s calendar. Requires the `frida` capability. On Android, this currently only works if a calendar has already been set up. |
+| `addContact` | (`contactData`: [`ContactData`](README.md#contactdata)) => `Promise`<`void`\> | Add a contact to the device’s contact book. Requires the `frida` capability. On Android, this currently only works if `com.android.contacts` is installed. |
 | `clearStuckModals` | `Platform` extends ``"android"`` ? () => `Promise`<`void`\> : `never` | Clear any potential stuck modals by pressing the back button followed by the home button. This is currently broken on iOS (see https://github.com/tweaselORG/appstraction/issues/12). Requires the `ssh` capability on iOS. |
 | `ensureDevice` | () => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities, performing necessary setup steps. This should always be the first function you call. Note that depending on the capabilities you set, the setup steps may make permanent changes to your device. For Android, you can set the url to the WireGuard APK which should be installed in the `WIREGUARD_APK_URL` environment variable. Note that it is only used if WireGuard isn’t installed already. |
 | `getDeviceAttribute` | <Attribute\>(`attribute`: `Attribute`, ...`options`: `Attribute` extends keyof [`GetDeviceAttributeOptions`](README.md#getdeviceattributeoptions) ? [options: GetDeviceAttributeOptions[Attribute]] : [options?: undefined]) => `Promise`<`string`\> | Get the value of the given device attribute. |
@@ -272,7 +272,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:404](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L404)
+[index.ts:408](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L408)
 
 ___
 
@@ -291,7 +291,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:493](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L493)
+[index.ts:497](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L497)
 
 ___
 
@@ -321,7 +321,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:436](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L436)
+[index.ts:440](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L440)
 
 ___
 
@@ -339,7 +339,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:474](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L474)
+[index.ts:478](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L478)
 
 ___
 
@@ -381,7 +381,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:500](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L500)
+[index.ts:504](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L504)
 
 ## Variables
 
@@ -393,7 +393,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:959](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L959)
+[android.ts:963](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L963)
 
 ___
 
@@ -520,4 +520,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:529](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L529)
+[index.ts:533](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L533)

@@ -938,12 +938,14 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         await pause(3000); // wait for the calendar app to open
         await adb(['shell', 'input', 'keyevent', '3']); // Home button, the app is closed and creates the event
     },
-    addContact: async (contactData) => {
+    async addContact(contactData) {
         if (!options.capabilities.includes('frida'))
             throw new Error('Frida is required to add contacts to the contact book.');
 
+        const contactsAppId = 'com.android.contacts';
+
         const device = await frida.getUsbDevice();
-        const pid = await device.spawn('com.android.contacts');
+        const pid = await device.spawn(contactsAppId);
         const startSession = await device.attach(pid);
         await startSession.detach();
 
@@ -951,6 +953,8 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         const addContact = await session.createScript(fridaScripts.addContact(contactData));
         await addContact.load();
         await session.detach();
+
+        await this.stopApp(contactsAppId);
     },
     setDeviceName: (deviceName) => adb(['shell', `settings put global device_name '${deviceName}'`]).then(),
 });
