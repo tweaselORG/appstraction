@@ -579,53 +579,50 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`,
         )
             throw new Error('Failed to set proxy.');
     },
-    addCalendarEvent: async (eventData) => {
+    async addCalendarEvent(eventData) {
         if (!options.capabilities.includes('frida'))
             throw new Error('Frida is required to add events to the calendar.');
+
+        const calendarAppId = 'com.apple.mobilecal';
 
         // The ObjC formatter does not understand milliseconds
         const simplifiedISO = (date: Date) => date.toISOString().replace(/\.[0-9]{0,3}Z$/, 'Z');
 
-        await frida.getUsbDevice().then(async (f) => {
-            // frida has problems spawning a process to attach to on iOS
-            await f.attach('SpringBoard').then(async (session) => {
-                const startCalendar = await session.createScript(fridaScripts.startApp('com.apple.mobilecal'));
-                await startCalendar.load();
-                await session.detach();
-            });
-            // wait until the Calendar has started
-            await pause(3000);
-            await f.attach('Calendar').then(async (session) => {
-                const addEvent = await session.createScript(
-                    fridaScripts.addCalendarEvent({
-                        title: eventData.title,
-                        startDate: simplifiedISO(eventData.startDate),
-                        endDate: simplifiedISO(eventData.endDate),
-                    })
-                );
-                await addEvent.load();
-                await session.detach();
-            });
-        });
+        await this.startApp(calendarAppId);
+        await retryCondition(async () => (await this.getForegroundAppId()) === calendarAppId, 100, 100);
+        await pause(2000);
+
+        const device = await frida.getUsbDevice();
+        const session = await device.attach('Calendar');
+        const addEvent = await session.createScript(
+            fridaScripts.addCalendarEvent({
+                title: eventData.title,
+                startDate: simplifiedISO(eventData.startDate),
+                endDate: simplifiedISO(eventData.endDate),
+            })
+        );
+        await addEvent.load();
+        await session.detach();
+
+        await this.stopApp(calendarAppId);
     },
-    addContact: async (contactData) => {
+    async addContact(contactData) {
         if (!options.capabilities.includes('frida'))
             throw new Error('Frida is required to add contacts to the contact book.');
 
-        await frida.getUsbDevice().then(async (f) => {
-            // frida has problems spawning a process to attach to on iOS
-            await f.attach('SpringBoard').then(async (session) => {
-                const startCalendar = await session.createScript(fridaScripts.startApp('com.apple.MobileAddressBook'));
-                await startCalendar.load();
-                await session.detach();
-            });
-            await pause(3000);
-            await f.attach('Contacts').then(async (session) => {
-                const addContact = await session.createScript(fridaScripts.addContact(contactData));
-                await addContact.load();
-                await session.detach();
-            });
-        });
+        const contactsAppId = 'com.apple.MobileAddressBook';
+
+        await this.startApp(contactsAppId);
+        await retryCondition(async () => (await this.getForegroundAppId()) === contactsAppId, 100, 100);
+        await pause(2000);
+
+        const device = await frida.getUsbDevice();
+        const session = await device.attach('Contacts');
+        const addContact = await session.createScript(fridaScripts.addContact(contactData));
+        await addContact.load();
+        await session.detach();
+
+        await this.stopApp(contactsAppId);
     },
     setDeviceName: (deviceName) => python('pymobiledevice3', ['lockdown', 'device-name', deviceName]).then(),
 });

@@ -181,7 +181,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:651](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L651)
+[ios.ts:648](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L648)
 
 ___
 
@@ -405,7 +405,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:634](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L634)
+[ios.ts:631](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L631)
 
 ## Functions
 
