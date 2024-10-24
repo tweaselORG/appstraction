@@ -332,7 +332,7 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`,
     },
 
     resetDevice: asyncUnimplemented('resetDevice') as never,
-    snapshotDeviceState: asyncUnimplemented('resetDevice') as never,
+    snapshotDeviceState: asyncUnimplemented('snapshotDeviceState') as never,
     async waitForDevice(tries = 20) {
         if (
             !(await retryCondition(
