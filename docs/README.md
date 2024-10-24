@@ -46,7 +46,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-[android.ts:1094](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L1094)
+[android.ts:1102](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L1102)
 
 ___
 
@@ -111,7 +111,7 @@ Event to add to the device’s calendar.
 
 #### Defined in
 
-[index.ts:506](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L506)
+[index.ts:516](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L516)
 
 ___
 
@@ -132,7 +132,7 @@ Contact to add to the device’s contacts.
 
 #### Defined in
 
-[index.ts:515](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L515)
+[index.ts:525](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L525)
 
 ___
 
@@ -150,7 +150,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-[index.ts:485](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L485)
+[index.ts:495](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L495)
 
 ___
 
@@ -169,7 +169,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-[index.ts:489](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L489)
+[index.ts:499](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L499)
 
 ___
 
@@ -181,7 +181,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-[ios.ts:648](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L648)
+[ios.ts:649](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L649)
 
 ___
 
@@ -242,6 +242,7 @@ Functions that are available for the platforms.
 | `setClipboard` | (`text`: `string`) => `Promise`<`void`\> | Set the clipboard to the given text. Requires the `frida` capability on Android and iOS. |
 | `setDeviceName` | (`deviceName`: `string`) => `Promise`<`void`\> | Sets the name of the device, which shows up to other network or bluetooth devices. |
 | `setProxy` | `Platform` extends ``"android"`` ? (`proxy`: ``"wireguard"`` extends `Capability` ? [`WireGuardConfig`](README.md#wireguardconfig) : [`Proxy`](README.md#proxy) \| ``null``) => `Promise`<`void`\> : `Platform` extends ``"ios"`` ? (`proxy`: [`Proxy`](README.md#proxy) \| ``null``) => `Promise`<`void`\> : `never` | Set or disable the proxy on the device. If you have enabled the `wireguard` capability, this will start or stop a WireGuard tunnel. Otherwise, it will set the global proxy on the device. On iOS, the proxy is set for the current WiFi network. It won't apply for other networks or for cellular data connections. WireGuard is currently only supported on Android. Enabling a WireGuard tunnel requires the `root` capability. **`Remarks`** The WireGuard integration will create a new tunnel in the app called `appstraction` and delete it when the proxy is stopped. If you have an existing tunnel with the same name, it will be overridden. **`Param`** The proxy to set, or `null` to disable the proxy. If you have enabled the `wireguard` capability, this is a string of the full WireGuard configuration to use. |
+| `snapshotDeviceState` | `Platform` extends ``"android"`` ? `RunTarget` extends ``"emulator"`` ? (`snapshotName`: `string`) => `Promise`<`void`\> : `never` : `never` | Save the device state to the specified snapshot (only available for emulators). **`Param`** The name of the snapshot to save to. |
 | `startApp` | (`appId`: `string`) => `Promise`<`void`\> | Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning bypass if enabled. Requires the `frida` or `ssh` capability on iOS. On Android, this will start the app with or without a certificate pinning bypass depending on the `certificate-pinning-bypass` capability. |
 | `stopApp` | (`appId`: `string`) => `Promise`<`void`\> | Force-stop the app with the given app ID. |
 | `target` | { `platform`: `Platform` ; `runTarget`: `RunTarget`  } | An indicator for what platform and run target this instance of PlatformApi is configured for. This is useful mostly to write typeguards. |
@@ -272,7 +273,7 @@ The options for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:408](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L408)
+[index.ts:418](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L418)
 
 ___
 
@@ -291,7 +292,7 @@ Connection details for a proxy.
 
 #### Defined in
 
-[index.ts:497](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L497)
+[index.ts:507](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L507)
 
 ___
 
@@ -321,7 +322,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[index.ts:440](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L440)
+[index.ts:450](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L450)
 
 ___
 
@@ -339,7 +340,7 @@ A capability for the `platformApi()` function.
 
 #### Defined in
 
-[index.ts:478](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L478)
+[index.ts:488](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L488)
 
 ___
 
@@ -381,7 +382,7 @@ Configuration string for WireGuard.
 
 #### Defined in
 
-[index.ts:504](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L504)
+[index.ts:514](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L514)
 
 ## Variables
 
@@ -393,7 +394,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-[android.ts:963](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L963)
+[android.ts:971](https://github.com/tweaselORG/appstraction/blob/main/src/android.ts#L971)
 
 ___
 
@@ -405,7 +406,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-[ios.ts:631](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L631)
+[ios.ts:632](https://github.com/tweaselORG/appstraction/blob/main/src/ios.ts#L632)
 
 ## Functions
 
@@ -520,4 +521,4 @@ The API object for the given platform and run target.
 
 #### Defined in
 
-[index.ts:533](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L533)
+[index.ts:543](https://github.com/tweaselORG/appstraction/blob/main/src/index.ts#L543)

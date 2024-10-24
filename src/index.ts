@@ -104,6 +104,16 @@ export type PlatformApi<
             : never
         : never;
     /**
+     * Save the device state to the specified snapshot (only available for emulators).
+     *
+     * @param snapshotName The name of the snapshot to save to.
+     */
+    snapshotDeviceState: Platform extends 'android'
+        ? RunTarget extends 'emulator'
+            ? (snapshotName: string) => Promise<void>
+            : never
+        : never;
+    /**
      * Clear any potential stuck modals by pressing the back button followed by the home button.
      *
      * This is currently broken on iOS (see https://github.com/tweaselORG/appstraction/issues/12).

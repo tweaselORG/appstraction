@@ -419,6 +419,14 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         await this.waitForDevice();
         await this.ensureDevice();
     },
+    async snapshotDeviceState(snapshotName) {
+        if (options.runTarget !== 'emulator') throw new Error('Snapshotting devices is only supported for emulators.');
+
+        const { stderr, exitCode } = await adb(['emu', 'avd', 'snapshot', 'save', snapshotName]);
+        if (exitCode !== 0) throw new Error(`Failed to save snapshot: ${stderr}.`);
+
+        await this.waitForDevice();
+    },
     async ensureDevice() {
         await this._internal.ensureAdb();
 
