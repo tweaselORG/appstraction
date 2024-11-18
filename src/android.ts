@@ -800,7 +800,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         await adbRootShell([`chown root:root ${join(systemCertPath, '*')}`]);
         await adbRootShell([`chmod 655 ${join(systemCertPath, '*')}`]);
         await adbRootShell([`chcon u:object_r:system_file:s0 ${join(systemCertPath, '*')}`]);
-        await adbRootShell([`chcon u:object_r:system_file:s0  ${systemCertPath}`]);
+        await adbRootShell([`chcon u:object_r:system_file:s0 ${systemCertPath}`]);
     },
     async removeCertificateAuthority(path) {
         const certFilename = `${await this._internal.getCertificateSubjectHashOld(path)}.0`;
