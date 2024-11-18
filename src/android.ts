@@ -322,10 +322,15 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
             return ulong.toString(16);
         },
-        hasCertificateAuthority: (filename) =>
-            adb(['shell', 'ls', `/system/etc/security/cacerts/${filename}`], { reject: false }).then(
-                ({ exitCode }) => exitCode === 0
-            ),
+        hasCertificateAuthority: async (filename) => {
+            const { exitCode, stdout: permissions } = await adb(
+                ['shell', `stat -c '%U %G %C %a' /system/etc/security/cacerts/${filename}`],
+                { reject: false }
+            );
+            if (exitCode !== 0) return false;
+
+            return permissions === 'root root u:object_r:system_file:s0 655';
+        },
         async overlayTmpfs(directoryPath) {
             const { adbRootShell } = await this.requireRoot('to overlay the system tmpfs.');
             const isTmpfsAlready = (await adbRootShell(['mount'])).stdout
