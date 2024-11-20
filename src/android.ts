@@ -7,7 +7,7 @@ import { fileTypeFromFile } from 'file-type';
 import frida from 'frida';
 import { open, readFile, rm, writeFile } from 'fs/promises';
 import pRetry from 'p-retry';
-import { basename, dirname } from 'path';
+import { basename, dirname, join } from 'path';
 import { major as semverMajor, minVersion as semverMinVersion } from 'semver';
 import { temporaryFile } from 'tempy';
 import type {
@@ -322,10 +322,15 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
             return ulong.toString(16);
         },
-        hasCertificateAuthority: (filename) =>
-            adb(['shell', 'ls', `/system/etc/security/cacerts/${filename}`], { reject: false }).then(
-                ({ exitCode }) => exitCode === 0
-            ),
+        hasCertificateAuthority: async (filename) => {
+            const { exitCode, stdout: permissions } = await adb(
+                ['shell', `stat -c '%U %G %C %a' /system/etc/security/cacerts/${filename}`],
+                { reject: false }
+            );
+            if (exitCode !== 0) return false;
+
+            return permissions === 'root root u:object_r:system_file:s0 655';
+        },
         async overlayTmpfs(directoryPath) {
             const { adbRootShell } = await this.requireRoot('to overlay the system tmpfs.');
             const isTmpfsAlready = (await adbRootShell(['mount'])).stdout
@@ -786,15 +791,21 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
 
         if (await this._internal.hasCertificateAuthority(certFilename)) return;
 
-        const { adbRootPush } = await this._internal.requireRoot('installCertificateAuthority');
+        const { adbRootShell, adbRootPush } = await this._internal.requireRoot('installCertificateAuthority');
 
         // Since Android 10, we cannot write to `/system` anymore, even if we are root, see:
         // https://github.com/tweaselORG/meta/issues/18#issuecomment-1437057934
         // Thanks to HTTP Toolkit for the idea to use a tmpfs as a workaround:
         // https://github.com/httptoolkit/httptoolkit-server/blob/9658bef164fb5cfce13b2c4b1bedacc158767f57/src/interceptors/android/adb-commands.ts#L228-L230
-        await this._internal.overlayTmpfs('/system/etc/security/cacerts');
+        const systemCertPath = '/system/etc/security/cacerts';
+        await this._internal.overlayTmpfs(systemCertPath);
 
         await adbRootPush(path, `/system/etc/security/cacerts/${certFilename}`);
+
+        await adbRootShell([`chown root:root ${join(systemCertPath, '*')}`]);
+        await adbRootShell([`chmod 655 ${join(systemCertPath, '*')}`]);
+        await adbRootShell([`chcon u:object_r:system_file:s0 ${join(systemCertPath, '*')}`]);
+        await adbRootShell([`chcon u:object_r:system_file:s0 ${systemCertPath}`]);
     },
     async removeCertificateAuthority(path) {
         const certFilename = `${await this._internal.getCertificateSubjectHashOld(path)}.0`;
