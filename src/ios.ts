@@ -333,7 +333,7 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`,
 
     resetDevice: asyncUnimplemented('resetDevice') as never,
     snapshotDeviceState: asyncUnimplemented('snapshotDeviceState') as never,
-    async waitForDevice(tries = 20) {
+    async waitForDevice(tries = 20, signal?) {
         if (
             !(await retryCondition(
                 // Actually wait until the SpringBoard has been started and users could interact with the device.
@@ -342,12 +342,15 @@ Components:" > /etc/apt/sources.list.d/appstraction.sources`,
                         reject: false,
                         timeout: 10000,
                     }).then(({ stderr, exitCode }) => exitCode === 0 && !stderr.includes('ERROR')),
-                tries
+                tries,
+                undefined,
+                signal
             ))
         )
             throw new Error('Failed to wait for device: No booted device found after timeout.');
     },
-    async ensureDevice() {
+    async ensureDevice(signal?) {
+        signal?.throwIfAborted();
         const availableDevices = await listDevices({ frida: options.capabilities.includes('frida') });
 
         if (availableDevices.length > 1)

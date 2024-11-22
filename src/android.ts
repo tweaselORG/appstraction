@@ -236,24 +236,25 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             );
             if (!fridaIsStarted) throw new Error('Failed to start Frida.');
         },
-        ensureAdb: () =>
-            adb(['start-server'], { reject: false, timeout: 15000 }).then(({ stdout, exitCode }) => {
+        ensureAdb: (signal?) =>
+            adb(['start-server'], { reject: false, timeout: 15000, signal }).then(({ stdout, exitCode }) => {
                 if (!(exitCode === 0 && (stdout.includes('daemon started successfully') || stdout === '')))
                     throw new Error('Failed to start ADB.');
             }),
         async hasDeviceBooted(options) {
             const waitForDevice = options?.waitForDevice ?? false;
+            const signal = options?.signal;
             const { stdout: devBootcomplete } = await adb(
                 [...(waitForDevice ? ['wait-for-device'] : []), 'shell', 'getprop', 'dev.bootcomplete'],
-                { reject: false, timeout: 200 }
+                { reject: false, timeout: 200, signal }
             );
             const { stdout: sysBootCompleted } = await adb(
                 [...(waitForDevice ? ['wait-for-device'] : []), 'shell', 'getprop', 'sys.boot_completed'],
-                { reject: false, timeout: 200 }
+                { reject: false, timeout: 200, signal }
             );
             const { stdout: bootanim } = await adb(
                 [...(waitForDevice ? ['wait-for-device'] : []), 'shell', 'getprop', 'init.svc.bootanim'],
-                { reject: false, timeout: 200 }
+                { reject: false, timeout: 200, signal }
             );
             return devBootcomplete.includes('1') && sysBootCompleted.includes('1') && bootanim.includes('stopped');
         },
@@ -402,38 +403,42 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
         },
     },
 
-    async waitForDevice(tries = 20) {
-        await this._internal.ensureAdb();
+    async waitForDevice(tries = 20, signal?) {
+        await this._internal.ensureAdb(signal);
         if (
-            !(await retryCondition(() => this._internal.hasDeviceBooted({ waitForDevice: true }), tries, 100).catch(
-                (e) => {
-                    throw new Error('Failed to wait for device: Error in adb', { cause: e });
-                }
-            ))
+            !(await retryCondition(
+                () => this._internal.hasDeviceBooted({ waitForDevice: true, signal }),
+                tries,
+                100,
+                signal
+            ).catch((e) => {
+                throw new Error('Failed to wait for device: Error in adb', { cause: e });
+            }))
         )
             throw new Error('Failed to wait for device: No booted device found after timeout.');
     },
-    async resetDevice(snapshotName) {
+    async resetDevice(snapshotName, signal?) {
         if (options.runTarget !== 'emulator') throw new Error('Resetting devices is only supported for emulators.');
 
         // Annoyingly, this command doesn't return a non-zero exit code if it fails (e.g. if the snapshot doesn't
         // exist). It only prints to stdout (not even stderr -.-).
-        const { stdout } = await adb(['emu', 'avd', 'snapshot', 'load', snapshotName]);
+        const { stdout } = await adb(['emu', 'avd', 'snapshot', 'load', snapshotName], { signal });
         if (stdout.includes('KO')) throw new Error(`Failed to load snapshot: ${stdout}.`);
 
-        await this.waitForDevice();
-        await this.ensureDevice();
+        await this.waitForDevice(undefined, signal);
+        await this.ensureDevice(signal);
     },
-    async snapshotDeviceState(snapshotName) {
+    async snapshotDeviceState(snapshotName, signal?) {
         if (options.runTarget !== 'emulator') throw new Error('Snapshotting devices is only supported for emulators.');
 
-        const { stderr, exitCode } = await adb(['emu', 'avd', 'snapshot', 'save', snapshotName]);
+        const { stderr, exitCode } = await adb(['emu', 'avd', 'snapshot', 'save', snapshotName], { signal });
         if (exitCode !== 0) throw new Error(`Failed to save snapshot: ${stderr}.`);
 
-        await this.waitForDevice();
+        await this.waitForDevice(undefined, signal);
     },
-    async ensureDevice() {
-        await this._internal.ensureAdb();
+    async ensureDevice(signal?) {
+        signal?.throwIfAborted();
+        await this._internal.ensureAdb(signal);
 
         const availableDevices = await listDevices({ frida: options.capabilities.includes('frida') });
 
@@ -451,7 +456,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
             );
 
         if (
-            !(await this._internal.hasDeviceBooted().catch((e) => {
+            !(await this._internal.hasDeviceBooted({ signal }).catch((e) => {
                 throw new Error('Failed to look for device: Error in adb', { cause: e });
             }))
         )
@@ -459,7 +464,7 @@ export const androidApi = <RunTarget extends SupportedRunTarget<'android'>>(
                 'No fully booted device was found. Please wait until the device has been fully booted. Try using `waitForDevice()`.'
             );
 
-        await pRetry(() => this._internal.ensureFrida(), { retries: 5 });
+        await pRetry(() => this._internal.ensureFrida(), { retries: 5, signal });
 
         if (options.capabilities.includes('wireguard')) {
             // Install app if necessary.
