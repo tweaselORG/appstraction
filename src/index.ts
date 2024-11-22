@@ -82,7 +82,7 @@ export type PlatformApi<
      *   after 7 seconds and the default number of tries is 20. On iOS, one try times out after 10 seconds and the
      *   default number of tries is 20.
      */
-    waitForDevice: (tries?: number) => Promise<void>;
+    waitForDevice: (tries?: number, signal?: AbortSignal) => Promise<void>;
     /**
      * Assert that the selected device is connected and ready to be used with the selected capabilities, performing
      * necessary setup steps. This should always be the first function you call.
@@ -92,7 +92,7 @@ export type PlatformApi<
      * For Android, you can set the url to the WireGuard APK which should be installed in the `WIREGUARD_APK_URL`
      * environment variable. Note that it is only used if WireGuard isn’t installed already.
      */
-    ensureDevice: () => Promise<void>;
+    ensureDevice: (signal?: AbortSignal) => Promise<void>;
     /**
      * Reset the device to the specified snapshot (only available for emulators).
      *
@@ -100,7 +100,7 @@ export type PlatformApi<
      */
     resetDevice: Platform extends 'android'
         ? RunTarget extends 'emulator'
-            ? (snapshotName: string) => Promise<void>
+            ? (snapshotName: string, signal?: AbortSignal) => Promise<void>
             : never
         : never;
     /**
@@ -110,7 +110,7 @@ export type PlatformApi<
      */
     snapshotDeviceState: Platform extends 'android'
         ? RunTarget extends 'emulator'
-            ? (snapshotName: string) => Promise<void>
+            ? (snapshotName: string, signal?: AbortSignal) => Promise<void>
             : never
         : never;
     /**
@@ -370,13 +370,13 @@ export type PlatformApi<
     /** @ignore */
     _internal: Platform extends 'android'
         ? {
-              hasDeviceBooted: (options?: { waitForDevice?: boolean }) => Promise<boolean>;
+              hasDeviceBooted: (options?: { waitForDevice?: boolean; signal?: AbortSignal }) => Promise<boolean>;
               ensureFrida: () => Promise<void>;
               requireRoot: (action: string) => Promise<{
                   adbRootShell: AdbRootFunction;
                   adbRootPush: (source: string, destination: string) => Promise<void>;
               }>;
-              ensureAdb: () => Promise<void>;
+              ensureAdb: (signal?: AbortSignal) => Promise<void>;
 
               getCertificateSubjectHashOld: (path: string) => Promise<string | undefined>;
               hasCertificateAuthority: (filename: string) => Promise<boolean>;
