@@ -29,15 +29,15 @@ export const retryCondition = async (
     condition: () => boolean | Promise<boolean>,
     maxTries = 50,
     pauseBetweenTries = 250,
-    signal?: AbortSignal
+    abortSignal?: AbortSignal
 ) => {
     let tries = 0;
 
     while (!(await condition())) {
-        if (signal?.aborted) return false;
+        if (abortSignal?.aborted) return false;
         if (tries > maxTries) return false;
 
-        await pause(pauseBetweenTries);
+        await pause(pauseBetweenTries, abortSignal);
         tries++;
     }
 
@@ -49,15 +49,15 @@ export const retryCondition = async (
  *
  * @param durationInMs The duration to pause for, in milliseconds.
  */
-export const pause = (durationInMs: number, signal?: AbortSignal) =>
+export const pause = (durationInMs: number, abortSignal?: AbortSignal) =>
     new Promise((res, rej) => {
         setTimeout(res, durationInMs);
-        if (signal) {
+        if (abortSignal) {
             const abortListener = () => {
-                signal.removeEventListener('abort', abortListener);
-                rej(signal.reason);
+                abortSignal.removeEventListener('abort', abortListener);
+                rej(abortSignal.reason);
             };
-            signal?.addEventListener('abort', abortListener);
+            abortSignal?.addEventListener('abort', abortListener);
         }
     });
 
